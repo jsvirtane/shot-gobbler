@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import football_pitch from "../../assets/football_pitch.svg";
 import { Shot } from "../../types/Shot";
 
 interface FootballPitchProps {
@@ -87,9 +88,8 @@ const FootballPitch: React.FC<FootballPitchProps> = ({
       className="relative flex w-full cursor-crosshair items-center justify-center overflow-hidden"
       onClick={handleClick}
     >
-      {/* Using SVG from public folder */}
       <img
-        src="/football_pitch.svg"
+        src={football_pitch}
         alt="Football Pitch"
         className="block aspect-[74/110] h-auto w-full bg-green-700"
       />
