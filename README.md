@@ -16,13 +16,13 @@ Shot Gobbler helps football analysts, fans, and data enthusiasts gather shot inf
 - Import shot data
 
 ## Live demo
-Check out the live demo at [Shot Gobbler](https://jsvirtane.github.io/ShotGobbler/). Best viewed on mobile.
+Check out the live demo at [Shot Gobbler](https://jsvirtane.github.io/shot-gobbler/). Best viewed on mobile.
 
 ## Run locally
 
 ```bash
 # Clone the repository
-git clone https://github.com/jsvirtane/ShotGobbler
+git clone https://github.com/jsvirtane/shot-gobbler
 
 # Navigate to the project directory
 cd shot-gobbler
