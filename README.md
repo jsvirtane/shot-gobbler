@@ -1,54 +1,35 @@
-# React + TypeScript + Vite
+# Shot Gobbler
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple and efficient tool for collecting, analyzing, and visualizing shot data from football/soccer matches.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Shot Gobbler helps football analysts, fans, and data enthusiasts gather shot information from matches ~~and calculate expected goals metrics~~ *(Coming!)*.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Record shot locations & relevant shot data
+- Visualization of shot map
+- Display shot data on list view
+- Filter shot data by all, home & away teams
+- Export shot data as JSON
+- Import shot data
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-});
-```
+## Live demo
+Check out the live demo at [Shot Gobbler](https://jsvirtane.github.io/ShotGobbler/). Best viewed on mobile.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Run locally
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+```bash
+# Clone the repository
+git clone https://github.com/jsvirtane/ShotGobbler
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    "react-x": reactX,
-    "react-dom": reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs["recommended-typescript"].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-});
+# Navigate to the project directory
+cd shot-gobbler
+
+# Install dependencies
+npm install
+
+# Run the application locally
+npm run dev
 ```
