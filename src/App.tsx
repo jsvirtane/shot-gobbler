@@ -3,6 +3,7 @@ import FootballPitch from "./components/FootballPitch/FootballPitch";
 import ShotForm from "./components/ShotForm/ShotForm";
 import ShotList from "./components/ShotList/ShotList";
 import { Shot, Team } from "./types/Shot";
+import shot_gobbler from "./assets/shot_gobbler.svg";
 
 // Storage key for localStorage
 const SHOTS_STORAGE_KEY = "shot-gobbler-data";
@@ -144,7 +145,7 @@ function App() {
       <nav className="sticky top-0 right-0 left-0 z-10 flex h-15 w-full bg-gray-100 shadow-md">
         <div className="flex flex-1 cursor-pointer flex-col justify-center">
           <img
-            src="/shot_gobbler.svg"
+            src={shot_gobbler}
             alt="Shot Gobbler"
             className="h-20 w-25"
           />
