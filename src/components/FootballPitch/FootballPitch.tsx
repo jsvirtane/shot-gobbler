@@ -7,7 +7,7 @@ interface FootballPitchProps {
   shots: Shot[];
 }
 
-const FootballPitch: React.FC<FootballPitchProps> = ({
+export const FootballPitch: React.FC<FootballPitchProps> = ({
   onPitchClick,
   shots,
 }) => {
@@ -136,5 +136,4 @@ const FootballPitch: React.FC<FootballPitchProps> = ({
     </div>
   );
 };
-
 export default FootballPitch;
