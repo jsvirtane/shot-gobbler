@@ -214,6 +214,7 @@ describe("ShotList Component", () => {
     const mockFileReader = {
       readAsText: vi.fn(),
       result: JSON.stringify(mockShots),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onload: null as any,
     };
 
