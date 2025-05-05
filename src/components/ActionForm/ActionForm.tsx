@@ -174,7 +174,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
             <button
               type="button"
               onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful")}`}
+              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
             >
               ❌ Unsuccessful
             </button>
@@ -200,14 +200,14 @@ const ActionForm: React.FC<ActionFormProps> = ({
             <button
               type="button"
               onClick={() => setSelectedOutcome("off-target")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "off-target")}`}
+              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "off-target", true)}`}
             >
               ↪️ Off Target
             </button>
             <button
               type="button"
               onClick={() => setSelectedOutcome("blocked")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "blocked")}`}
+              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "blocked", true)}`}
             >
               🛑 Blocked
             </button>
@@ -226,7 +226,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
             <button
               type="button"
               onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful")}`}
+              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
             >
               ❌ Unsuccessful
             </button>
@@ -333,7 +333,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
             <button
               type="button"
               onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`flex flex-1 items-center justify-center rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful")}`}
+              className={`flex flex-1 items-center justify-center rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
             >
               ❌ Unsuccessful
             </button>
