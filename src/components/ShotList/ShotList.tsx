@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { Shot } from "../../types/Shot";
 
 interface ShotListProps {
-  shots: Shot[]; // This now receives already-filtered shots
+  shots: Shot[];
   onRemoveShot: (id: string) => void;
   onClearAllShots: () => void;
   onImportShots?: (shots: Shot[]) => void;
@@ -87,7 +87,7 @@ const ShotList: React.FC<ShotListProps> = ({
     )}`;
     const link = document.createElement("a");
     link.href = jsonString;
-    link.download = `xg_shots_${new Date().toISOString().slice(0, 10)}.json`; // Filename like xg_shots_YYYY-MM-DD.json
+    link.download = `shots_${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     console.log("Exporting data...");
   };
