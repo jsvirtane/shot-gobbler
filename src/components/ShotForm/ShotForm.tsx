@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { BodyPart, Shot, ShotType, Team } from "../../types/Shot";
+import {
+  getCancelButtonStyle,
+  getShotFormButtonStyle,
+  getSubmitButtonStyle,
+} from "../../utils/buttonStyles";
 
 interface ShotFormProps {
   isOpen: boolean;
@@ -65,22 +70,14 @@ const ShotForm: React.FC<ShotFormProps> = ({
               <button
                 type="button"
                 onClick={() => setTeam("home")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  team === "home"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(team === "home")}`}
               >
                 🏠 Home
               </button>
               <button
                 type="button"
                 onClick={() => setTeam("away")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  team === "away"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(team === "away")}`}
               >
                 🚌 Away
               </button>
@@ -95,22 +92,14 @@ const ShotForm: React.FC<ShotFormProps> = ({
               <button
                 type="button"
                 onClick={() => setIsGoal(false)}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  !isGoal
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(isGoal === false)}`}
               >
                 ❌ Miss
               </button>
               <button
                 type="button"
                 onClick={() => setIsGoal(true)}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  isGoal
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(isGoal === true)}`}
               >
                 ⚽ Goal
               </button>
@@ -125,33 +114,21 @@ const ShotForm: React.FC<ShotFormProps> = ({
               <button
                 type="button"
                 onClick={() => setBodyPart("Foot")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  bodyPart === "Foot"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(bodyPart === "Foot")}`}
               >
                 👟 Foot
               </button>
               <button
                 type="button"
                 onClick={() => setBodyPart("Head")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  bodyPart === "Head"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(bodyPart === "Head")}`}
               >
                 👤 Head
               </button>
               <button
                 type="button"
                 onClick={() => setBodyPart("Other")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  bodyPart === "Other"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(bodyPart === "Other")}`}
               >
                 🦵 Other
               </button>
@@ -166,33 +143,21 @@ const ShotForm: React.FC<ShotFormProps> = ({
               <button
                 type="button"
                 onClick={() => setShotType("Open Play")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  shotType === "Open Play"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(shotType === "Open Play")}`}
               >
                 Open Play
               </button>
               <button
                 type="button"
                 onClick={() => setShotType("Set Piece")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  shotType === "Set Piece"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(shotType === "Set Piece")}`}
               >
                 Set Piece
               </button>
               <button
                 type="button"
                 onClick={() => setShotType("Penalty")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${
-                  shotType === "Penalty"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(shotType === "Penalty")}`}
               >
                 Penalty
               </button>
@@ -219,7 +184,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
           <div className="mt-5 flex flex-col justify-between gap-3 md:flex-row">
             <button
               type="button"
-              className="min-w-[120px] rounded-md bg-green-600 px-5 py-3 text-base font-bold text-white transition-colors hover:bg-green-700"
+              className={getSubmitButtonStyle()}
               onClick={handleShotAdd}
             >
               Add Shot
@@ -227,7 +192,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="min-w-[120px] rounded-md bg-red-600 px-5 py-3 text-base font-bold text-white transition-colors hover:bg-red-700"
+              className={getCancelButtonStyle()}
             >
               Cancel
             </button>
