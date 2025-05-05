@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+@theme {
+  --color-attacking-50: var(--color-blue-50);
+  --color-attacking-100: var(--color-blue-100);
+  --color-attacking-200: var(--color-blue-200);
+  --color-attacking-300: var(--color-blue-300);
+  --color-attacking-400: var(--color-blue-400);
+  --color-attacking-500: var(--color-blue-500);
+  --color-attacking-600: var(--color-blue-600);
+  --color-attacking-700: var(--color-blue-700);
+  --color-attacking-800: var(--color-blue-800);
+  --color-attacking-900: var(--color-blue-900);
+  --color-attacking-950: var(--color-blue-950);
+  --color-defensive-50: var(--color-red-50);
+  --color-defensive-100: var(--color-red-100);
+  --color-defensive-200: var(--color-red-200);
+  --color-defensive-300: var(--color-red-300);
+  --color-defensive-400: var(--color-red-400);
+  --color-defensive-500: var(--color-red-500);
+  --color-defensive-600: var(--color-red-600);
+  --color-defensive-700: var(--color-red-700);
+  --color-defensive-800: var(--color-red-800);
+  --color-defensive-900: var(--color-red-900);
+  --color-defensive-950: var(--color-red-950);
+  --color-duel-50: var(--color-yellow-50);
+  --color-duel-100: var(--color-yellow-100);
+  --color-duel-200: var(--color-yellow-200);
+  --color-duel-300: var(--color-yellow-300);
+  --color-duel-400: var(--color-yellow-400);
+  --color-duel-500: var(--color-yellow-500);
+  --color-duel-600: var(--color-yellow-600);
+  --color-duel-700: var(--color-yellow-700);
+  --color-duel-800: var(--color-yellow-800);
+  --color-duel-900: var(--color-yellow-900);
+  --color-duel-950: var(--color-yellow-950);
+}

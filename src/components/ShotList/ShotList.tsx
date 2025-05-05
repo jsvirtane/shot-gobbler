@@ -93,7 +93,7 @@ const ShotList: React.FC<ShotListProps> = ({
   };
 
   return (
-    <div className="mx-auto w-full max-w-md p-4">
+    <div className="mx-auto w-full max-w-md">
       <div className="mb-4 rounded border border-gray-200 p-4 shadow-sm">
         <h2>Recorded Shots ({shots.length})</h2>
         <ul className="mt-4 divide-y divide-gray-200">

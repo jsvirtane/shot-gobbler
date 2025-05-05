@@ -1,14 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Shot } from "../../types/Shot";
-import FootballPitch from "./FootballPitch";
+import ShotMap from "./ShotMap";
 
 // Mock the SVG import
 vi.mock("../../assets/football_pitch.svg", () => ({
   default: "mocked-football-pitch",
 }));
 
-describe("FootballPitch Component", () => {
+describe("ShotMap Component", () => {
   // Test props
   const mockOnPitchClick = vi.fn();
   const mockShots: Shot[] = [
@@ -54,7 +54,7 @@ describe("FootballPitch Component", () => {
   });
 
   it("renders the football pitch", () => {
-    render(<FootballPitch onPitchClick={mockOnPitchClick} shots={[]} />);
+    render(<ShotMap onPitchClick={mockOnPitchClick} shots={[]} />);
 
     const pitchImage = screen.getByAltText("Football Pitch");
     // Replace toBeInTheDocument with direct assertion
@@ -63,7 +63,7 @@ describe("FootballPitch Component", () => {
   });
 
   it("renders shots on the pitch", () => {
-    render(<FootballPitch onPitchClick={mockOnPitchClick} shots={mockShots} />);
+    render(<ShotMap onPitchClick={mockOnPitchClick} shots={mockShots} />);
 
     // Should render exactly 2 shot elements
     const shotElements = document.querySelectorAll(".transform.rounded-full");
@@ -91,7 +91,7 @@ describe("FootballPitch Component", () => {
   });
 
   it("calls onPitchClick when pitch is clicked with correct relative coordinates", () => {
-    render(<FootballPitch onPitchClick={mockOnPitchClick} shots={[]} />);
+    render(<ShotMap onPitchClick={mockOnPitchClick} shots={[]} />);
 
     const pitchDiv = document.querySelector(".cursor-crosshair");
     expect(pitchDiv).not.toBeNull();
@@ -110,7 +110,7 @@ describe("FootballPitch Component", () => {
   });
 
   it("handles clicks on existing shots", () => {
-    render(<FootballPitch onPitchClick={mockOnPitchClick} shots={mockShots} />);
+    render(<ShotMap onPitchClick={mockOnPitchClick} shots={mockShots} />);
 
     const shotElements = document.querySelectorAll(".transform.rounded-full");
     fireEvent.click(shotElements[0]);
@@ -120,7 +120,7 @@ describe("FootballPitch Component", () => {
   });
 
   it("ignores clicks outside the pitch boundaries", () => {
-    render(<FootballPitch onPitchClick={mockOnPitchClick} shots={[]} />);
+    render(<ShotMap onPitchClick={mockOnPitchClick} shots={[]} />);
 
     const pitchDiv = document.querySelector(".cursor-crosshair");
 
