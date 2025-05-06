@@ -93,50 +93,54 @@ const ShotList: React.FC<ShotListProps> = ({
   };
 
   return (
-    <div className="mx-auto w-full max-w-md">
-      <div className="mb-4 rounded border border-gray-200 p-4 shadow-sm">
-        <h2>Recorded Shots ({shots.length})</h2>
-        <ul className="mt-4 divide-y divide-gray-200">
+    <div className="flex flex-col gap-2">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">
+          Recorded Shots ({shots.length})
+        </h3>
+        <ul className="overflow-y-auto">
           {shots.map((shot) => (
             <li
               key={shot.id}
-              className="flex items-center justify-between py-2"
+              className={`mb-2 border-l-3 p-3 ${shot.team === "home" ? "border-l-blue-600" : "border-l-red-600"}`}
             >
-              <span>
-                <strong>{shot.isGoal ? "GOAL" : "Miss"}</strong> at (
-                {shot.x.toFixed(0)}, {shot.y.toFixed(0)}) - {shot.shotType},{" "}
-                {shot.bodyPart}
-                {shot.playerName && ` (${shot.playerName})`}
-                {" - "}
-                <span
-                  className={
-                    shot.team === "home" ? "text-blue-600" : "text-red-600"
-                  }
-                >
-                  {shot.team === "home" ? "Home" : "Away"}
-                </span>
-              </span>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-lg font-semibold uppercase">
+                    {shot.bodyPart}{" "}
+                    {shot.playerName && <span> ({shot.playerName}) </span>}
+                  </span>
+                  <p
+                    className={` ${shot.isGoal ? "text-green-500" : "text-red-500"} text-base capitalize`}
+                  >
+                    {shot.isGoal ? "goal" : "miss"}
+                  </p>
+                  <p className="text-sm text-gray-500 capitalize">
+                    {shot.shotType}
+                  </p>
+                </div>
 
-              <button
-                onClick={() => onRemoveShot(shot.id)}
-                className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 hover:bg-red-600 focus:ring-2 focus:ring-blue-700 focus:outline-none"
-                title="Remove this shot"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <button
+                  onClick={() => onRemoveShot(shot.id)}
+                  className="h-5 w-5 cursor-pointer items-center justify-center rounded bg-red-500 hover:bg-red-600"
+                  title="Remove this shot"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
             </li>
           ))}
         </ul>
