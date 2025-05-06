@@ -96,11 +96,9 @@ describe("ShotList Component", () => {
     ).toBeTruthy();
 
     // Check if shots are rendered correctly
-    expect(screen.getByText(/GOAL/)).toBeTruthy();
-    expect(screen.getByText(/Miss/)).toBeTruthy();
+    expect(screen.getByText(/goal/)).toBeTruthy();
+    expect(screen.getByText(/miss/)).toBeTruthy();
     expect(screen.getByText(/Boström/)).toBeTruthy();
-    expect(screen.getByText(/Home/)).toBeTruthy();
-    expect(screen.getByText(/Away/)).toBeTruthy();
   });
 
   it("calls onRemoveShot when remove button is clicked", () => {

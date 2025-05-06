@@ -88,26 +88,26 @@ export const TouchList = ({
             {actions.map((action) => (
               <li
                 key={action.id}
-                className={`mb-2 border-l p-3 ${action.category === "attacking" ? "border-l-attacking-500" : action.category === "defensive" ? "border-l-defensive-500" : "border-l-duel-500"}`}
+                className={`mb-2 border-l-3 p-3 ${action.category === "attacking" ? "border-l-attacking-500" : action.category === "defensive" ? "border-l-defensive-500" : "border-l-duel-500"}`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-semibold">
-                      {action.actionType.toUpperCase()}
+                    <span className="font-semibold text-lg uppercase">
+                      {action.actionType}
                     </span>
                     <p
-                      className={` ${isSuccessfulActionOutcome(action.outcome) ? "text-green-500" : "text-red-500"}`}
+                      className={` ${isSuccessfulActionOutcome(action.outcome) ? "text-green-500" : "text-red-500"} text-base capitalize`}
                     >
-                      Outcome: {action.outcome}
+                      {action.outcome}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 capitalize">
                       Category: {action.category}
                     </p>
                   </div>
 
                   <button
                     onClick={() => onRemoveAction(action.id)}
-                    className="h-5 w-5 items-center justify-center rounded bg-red-500 hover:bg-red-600"
+                    className="h-5 w-5 cursor-pointer items-center justify-center rounded bg-red-500 hover:bg-red-600"
                     title="Remove this action"
                   >
                     <svg
