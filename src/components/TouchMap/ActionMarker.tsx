@@ -28,7 +28,7 @@ export const ActionMarker: React.FC<ActionMarkerProps> = ({ action }) => {
 
   return (
     <div
-      className={`absolute h-3 w-3 rounded-full ${getMarkerClasses()}`}
+      className={`absolute h-5 w-5 rounded-full ${getMarkerClasses()}`}
       style={{
         left: `${action.x}%`,
         top: `${action.y}%`,
