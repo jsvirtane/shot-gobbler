@@ -41,3 +41,13 @@ npm install
 # Run the application locally
 npm run dev
 ```
+
+## Deployment
+Application is currently deployed using GitHub Pages. To deploy the application, create a tag in the format `YY-MM-DD`.
+
+```bash
+# Create a new tag
+git tag -a YY-MM-DD -m "Release YY-MM-DD"
+# Push the tag to the remote repository
+git push origin YY-MM-DD
+```
