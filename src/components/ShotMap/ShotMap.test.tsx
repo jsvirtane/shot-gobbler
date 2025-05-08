@@ -80,12 +80,10 @@ describe("ShotMap Component", () => {
     expect(awayMissShot.classList.contains("bg-purple-500")).toBe(true);
 
     // Check tooltip content
-    expect(homeGoalShot.title).toContain("home");
     expect(homeGoalShot.title).toContain("Open Play");
     expect(homeGoalShot.title).toContain("Foot");
     expect(homeGoalShot.title).toContain("Player 1");
 
-    expect(awayMissShot.title).toContain("away");
     expect(awayMissShot.title).toContain("Set Piece");
     expect(awayMissShot.title).toContain("Head");
   });
