@@ -20,9 +20,7 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({ shot }) => {
         left: `${shot.x}%`,
         top: `${shot.y}%`,
       }}
-      title={`${shot.team} - (${shot.x.toFixed(1)}%, ${shot.y.toFixed(
-        1,
-      )}%) - ${shot.shotType} - ${shot.bodyPart}${
+      title={`${shot.shotType} - ${shot.bodyPart}${
         shot.playerName ? " - " + shot.playerName : ""
       }`}
     ></div>
