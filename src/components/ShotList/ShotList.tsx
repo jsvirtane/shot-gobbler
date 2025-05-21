@@ -61,20 +61,24 @@ const ShotList: React.FC<ShotListProps> = ({
       <div className="flex flex-col items-center justify-center p-6 text-center">
         <p>No shots recorded yet. Click on the pitch to add one.</p>
         <div className="mt-4 flex flex-col items-center">
-          <p>Or import a previously saved shot list:</p>
-          <input
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            ref={fileInputRef}
-            className="hidden"
-          />
-          <button
-            onClick={triggerFileInput}
-            className="mt-2 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-          >
-            Import Shot List
-          </button>
+          {displayFilter === "all" && (
+            <>
+              <p>Or import a previously saved shot list:</p>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                ref={fileInputRef}
+                className="hidden"
+              />
+              <button
+                onClick={triggerFileInput}
+                className="mt-2 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              >
+                Import Shot List
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
