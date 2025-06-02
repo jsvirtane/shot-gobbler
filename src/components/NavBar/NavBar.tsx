@@ -1,8 +1,8 @@
 import shot_gobbler from "../../assets/shot_gobbler.svg";
 
 type NavBarProps = {
-  activeTab: "shots" | "touches";
-  setActiveTab: (tab: "shots" | "touches") => void;
+  activeTab: "shots" | "touches" | "pass-chains";
+  setActiveTab: (tab: "shots" | "touches" | "pass-chains") => void;
 };
 
 const NavBar = ({ activeTab, setActiveTab }: NavBarProps) => {
@@ -31,6 +31,17 @@ const NavBar = ({ activeTab, setActiveTab }: NavBarProps) => {
         >
           <span className="mb-1 text-2xl">👟</span>
           <span className="text-xs">Touches</span>
+        </div>
+        <div
+          className={`flex flex-1 cursor-pointer flex-col items-center justify-center ${
+            activeTab === "pass-chains"
+              ? "font-bold text-blue-500"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("pass-chains")}
+        >
+          <span className="mb-1 text-2xl">🔗</span>
+          <span className="text-xs">Chains</span>
         </div>
       </div>
     </nav>
