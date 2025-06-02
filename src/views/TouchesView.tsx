@@ -90,7 +90,7 @@ const TouchesView: React.FC = () => {
       {currentView === "pitch" ? (
         <>
           <p className="mb-4 text-sm text-gray-600">
-            Click on the pitch to record player actions during the match.
+            Click on the pitch to record player's actions during the match.
           </p>
           <TouchMap onPitchClick={handlePitchClick} actions={actions} />
         </>
