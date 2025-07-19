@@ -1,13 +1,18 @@
-import { useRef } from "react";
 import { Action } from "../../types/Action";
 import { isSuccessfulActionOutcome } from "../../utils/isSuccessfulActionOutcome";
+import {
+  ClearButton,
+  ExportButton,
+  ImportButton,
+  RemoveItemButton,
+} from "../common";
 
-interface TouchListProps {
+type TouchListProps = {
   actions: Action[];
   onClearAllActions: () => void;
   onImportActions?: (actions: Action[]) => void;
   onRemoveAction: (id: string) => void;
-}
+};
 
 export const TouchList = ({
   actions,
@@ -15,7 +20,6 @@ export const TouchList = ({
   onImportActions = () => {},
   onRemoveAction,
 }: TouchListProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -36,18 +40,12 @@ export const TouchList = ({
           "Failed to parse the imported file. Please ensure it's valid JSON.",
         );
       }
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      // Note: File input reset is handled by ImportButton component
     };
     reader.onerror = () => {
       alert("Error reading the file.");
     };
     reader.readAsText(file);
-  };
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
   };
 
   // Export Data Function
@@ -68,19 +66,7 @@ export const TouchList = ({
       {actions.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
           <p>No actions recorded yet.</p>
-          <input
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            ref={fileInputRef}
-            className="hidden"
-          />
-          <button
-            onClick={triggerFileInput}
-            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-          >
-            Import Touch List
-          </button>
+          <ImportButton onImport={handleImport}>Import Touch List</ImportButton>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -92,7 +78,7 @@ export const TouchList = ({
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-semibold text-lg uppercase">
+                    <span className="text-lg font-semibold uppercase">
                       {action.actionType}
                     </span>
                     <p
@@ -105,42 +91,18 @@ export const TouchList = ({
                     </p>
                   </div>
 
-                  <button
+                  <RemoveItemButton
                     onClick={() => onRemoveAction(action.id)}
-                    className="h-5 w-5 cursor-pointer items-center justify-center rounded bg-red-500 hover:bg-red-600"
                     title="Remove this action"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                  />
                 </div>
               </li>
             ))}
           </ul>
-          <button
-            onClick={handleExportData}
-            className="rounded bg-neutral-900 px-4 py-2 text-nowrap text-white hover:bg-neutral-800"
-          >
+          <ExportButton onClick={handleExportData}>
             Export Data as JSON
-          </button>
-          <button
-            onClick={onClearAllActions}
-            className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-          >
-            Clear All
-          </button>
+          </ExportButton>
+          <ClearButton onClick={onClearAllActions}>Clear All</ClearButton>
         </div>
       )}
     </>

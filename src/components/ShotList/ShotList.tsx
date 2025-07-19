@@ -1,5 +1,11 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Shot } from "../../types/Shot";
+import {
+  ClearButton,
+  ExportButton,
+  ImportButton,
+  RemoveItemButton,
+} from "../common";
 
 interface ShotListProps {
   shots: Shot[];
@@ -16,8 +22,6 @@ const ShotList: React.FC<ShotListProps> = ({
   onImportShots = () => {},
   displayFilter = "all", // Default value
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Handle importing JSON data
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -39,21 +43,12 @@ const ShotList: React.FC<ShotListProps> = ({
           "Failed to parse the imported file. Please ensure it's valid JSON.",
         );
       }
-
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      // Note: File input reset is handled by ImportButton component
     };
     reader.onerror = () => {
       alert("Error reading the file.");
     };
     reader.readAsText(file);
-  };
-
-  // Trigger file input click
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
   };
 
   if (shots.length === 0) {
@@ -64,19 +59,9 @@ const ShotList: React.FC<ShotListProps> = ({
           {displayFilter === "all" && (
             <>
               <p>Or import a previously saved shot list:</p>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                ref={fileInputRef}
-                className="hidden"
-              />
-              <button
-                onClick={triggerFileInput}
-                className="mt-2 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-              >
+              <ImportButton onImport={handleImport}>
                 Import Shot List
-              </button>
+              </ImportButton>
             </>
           )}
         </div>
@@ -124,26 +109,10 @@ const ShotList: React.FC<ShotListProps> = ({
                   </p>
                 </div>
 
-                <button
+                <RemoveItemButton
                   onClick={() => onRemoveShot(shot.id)}
-                  className="h-5 w-5 cursor-pointer items-center justify-center rounded bg-red-500 hover:bg-red-600"
                   title="Remove this shot"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                />
               </div>
             </li>
           ))}
@@ -151,18 +120,10 @@ const ShotList: React.FC<ShotListProps> = ({
       </div>
       {shots.length > 0 && displayFilter === "all" && (
         <div className="mt-4 flex flex-col space-y-2">
-          <button
-            onClick={handleExportData}
-            className="rounded bg-neutral-900 px-4 py-2 text-white hover:bg-neutral-800"
-          >
+          <ExportButton onClick={handleExportData}>
             Export Data as JSON
-          </button>
-          <button
-            onClick={onClearAllShots}
-            className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-          >
-            Clear All Shots
-          </button>
+          </ExportButton>
+          <ClearButton onClick={onClearAllShots}>Clear All Shots</ClearButton>
         </div>
       )}
     </div>
