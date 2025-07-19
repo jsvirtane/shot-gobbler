@@ -3,7 +3,8 @@ import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import ShotMap from "../components/ShotMap/ShotMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
-import { Shot, Team } from "../types/Shot";
+import { Shot } from "../types/Shot";
+import { Team } from "../types/common";
 
 // Storage key for localStorage
 const SHOTS_STORAGE_KEY = "shot-gobbler-data";
@@ -34,7 +35,6 @@ const ShotsView: React.FC = () => {
     y: number;
   }>({ x: 0, y: 0 });
 
-  // Save shots to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem(SHOTS_STORAGE_KEY, JSON.stringify(shots));

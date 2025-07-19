@@ -3,7 +3,7 @@ import { Shot } from "../../types/Shot";
 import PitchContainer from "../PitchContainer/PitchContainer";
 import ShotMarker from "./ShotMarker";
 
-interface ShotMapProps {
+type ShotMapProps = {
   onPitchClick: (x: number, y: number) => void;
   shots: Shot[];
 }

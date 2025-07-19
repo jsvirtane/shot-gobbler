@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Team } from "../../types/Shot";
+import { Team } from "../../types/common";
 import ShotForm from "./ShotForm";
 
 describe("ShotForm Component", () => {

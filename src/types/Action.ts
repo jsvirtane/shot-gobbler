@@ -1,3 +1,5 @@
+import { Coordinates } from "./common";
+
 // Action categories
 export type ActionCategory = "attacking" | "defensive" | "duel";
 
@@ -36,7 +38,7 @@ type BlockOutcome = "posession-won" | "unsuccessful";
 type InterceptionOutcome = "successful";
 type ClearanceOutcome = "cleared" | "unsuccessful";
 
-type DefensiveActionOutcome = 
+type DefensiveActionOutcome =
   | TackleOutcome
   | BlockOutcome
   | InterceptionOutcome
@@ -51,15 +53,13 @@ export type ActionOutcome =
   | DefensiveActionOutcome
   | DuelActionOutcome;
 
-export interface Action {
+export type Action = Coordinates & {
   id: string;
-  x: number;
-  y: number;
   category: ActionCategory;
   actionType: ActionType;
   outcome: ActionOutcome;
   timestamp: number;
-}
+};
 
 export const unsuccessfullOutcomes = [
   "unsuccessful",
