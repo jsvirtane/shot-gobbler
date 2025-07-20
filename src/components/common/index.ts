@@ -4,3 +4,5 @@ export {
   ImportButton,
   RemoveItemButton,
 } from "./ActionButtons";
+
+export { default as SvgArrow } from "./SvgArrow";
