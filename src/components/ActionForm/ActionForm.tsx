@@ -97,6 +97,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
   const renderOutcomeButtons = () => {
     switch (selectedAction) {
       case "pass":
+      case "cross": // Pass & cross have currently the same outcome options, so they fall through to the same logic
         return (
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -105,6 +106,13 @@ const ActionForm: React.FC<ActionFormProps> = ({
               className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
             >
               ✅ Successful
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedOutcome("unsuccessful")}
+              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
+            >
+              ❌ Unsuccessful
             </button>
             <button
               type="button"
@@ -119,46 +127,6 @@ const ActionForm: React.FC<ActionFormProps> = ({
               className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "key-pass")}`}
             >
               🔑 Key Pass
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-      case "cross":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("assist")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "assist")}`}
-            >
-              🅰️ Assist
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("key-pass")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "key-pass")}`}
-            >
-              🔑 Key Pass
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
             </button>
           </div>
         );
