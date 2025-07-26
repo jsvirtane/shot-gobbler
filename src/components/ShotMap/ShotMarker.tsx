@@ -13,14 +13,28 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({ shot }) => {
     return ShotMarkerColors[shot.team][status];
   };
 
+  // Determine border style based on shot result
+  const getBorderStyle = () => {
+    switch (shot.result) {
+      case "Saved":
+        return "border-2 border-dashed border-black";
+      case "Blocked":
+        return "border-2 border-dotted border-black";
+      case "Goal":
+      case "Miss":
+      default:
+        return "border-2 border-solid border-black";
+    }
+  };
+
   return (
     <div
-      className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 transform rounded-full border border-black shadow ${getColorClass()} z-10 opacity-80`}
+      className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 transform rounded-full shadow ${getColorClass()} ${getBorderStyle()} z-10 opacity-80`}
       style={{
         left: `${shot.x}%`,
         top: `${shot.y}%`,
       }}
-      title={`${shot.shotType} - ${shot.bodyPart}${
+      title={`${shot.shotType} - ${shot.bodyPart} - ${shot.result}${
         shot.playerName ? " - " + shot.playerName : ""
       }`}
     ></div>

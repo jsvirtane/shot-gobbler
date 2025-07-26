@@ -140,6 +140,7 @@ describe("ShotForm Component", () => {
     fireEvent.click(screen.getByText("⚽ Goal")); // Set as goal
     fireEvent.click(screen.getByText("👤 Head")); // Set body part to head
     fireEvent.click(screen.getByText("Penalty")); // Set shot type to penalty
+    
     fireEvent.change(screen.getByPlaceholderText("e.g., Ronaldo or 7"), {
       target: { value: "Pippola" },
     });
@@ -152,6 +153,7 @@ describe("ShotForm Component", () => {
       x: 50,
       y: 25,
       isGoal: true,
+      result: "Goal",
       bodyPart: "Head",
       shotType: "Penalty",
       team: "away",
