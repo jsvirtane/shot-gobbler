@@ -27,6 +27,10 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
     }
   };
 
+  const isFirstAction = () => {
+    return action.sequenceNumber === 1;
+  }
+
   const getMarkerBorder = () => {
     if (isCurrentChain) {
       return "border-2 border-white";
@@ -55,8 +59,9 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
     const { opacity, size } = getMarkerStyling();
     const border = getMarkerBorder();
     const shape = getMarkerShape();
+    const outline = isFirstAction() ? "outline-double outline-red-500" : "";
 
-    return `absolute ${size} ${baseColor} ${opacity} ${border} ${shape} shadow-lg z-10 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs`;
+    return `absolute ${size} ${baseColor} ${opacity} ${border} ${shape} ${outline} shadow-lg z-10 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs`;
   };
 
   return (
