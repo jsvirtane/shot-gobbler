@@ -30,7 +30,7 @@ const getArrowStyle = (
     case "shot":
       return {
         ...base,
-        strokeColor: "#ef4444",
+        strokeWidth: "3",
       };
     case "pass":
     case "cross":
