@@ -19,8 +19,10 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
       case "carry":
         return "rounded-lg";
       case "shot":
-        return "rounded-none";
+        return "rounded-lg";
       case "cross":
+        return "rounded-full";
+      case "placeholder":
         return "rounded-full";
       default:
         return "rounded-full";
@@ -71,12 +73,12 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
         left: `${action.x}%`,
         top: `${action.y}%`,
       }}
-      title={`${action.actionType} - Sequence ${action.sequenceNumber + 1} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
+      title={`${action.actionType} - Sequence ${action.sequenceNumber} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
     >
       <span
         className={`text-xs font-bold ${isCurrentChain ? "text-white" : "text-gray-300"}`}
       >
-        {action.sequenceNumber + 1}
+        {action.actionType === "placeholder" ? "•" : action.sequenceNumber}
       </span>
     </div>
   );

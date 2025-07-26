@@ -1,7 +1,13 @@
 import { PitchZone } from "../utils/pitchZones";
 import { Coordinates } from "./common";
 
-export type ChainActionType = "pass" | "carry" | "shot" | "cross" | "start";
+export type ChainActionType =
+  | "pass"
+  | "carry"
+  | "shot"
+  | "cross"
+  | "start"
+  | "placeholder";
 
 export type ChainTerminationReason =
   | "goal"
