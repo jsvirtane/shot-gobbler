@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Team } from "../../types/common";
-import { BodyPart, Shot, ShotType } from "../../types/Shot";
+import { BodyPart, Shot, ShotResult, ShotType } from "../../types/Shot";
 import {
   getCancelButtonStyle,
   getShotFormButtonStyle,
@@ -23,16 +23,17 @@ const ShotForm: React.FC<ShotFormProps> = ({
   initialCoords,
   defaultTeam = "home",
 }) => {
-  const [isGoal, setIsGoal] = useState<boolean>(false);
+  const [result, setResult] = useState<ShotResult>("Miss");
   const [bodyPart, setBodyPart] = useState<BodyPart>("Foot");
   const [shotType, setShotType] = useState<ShotType>("Open Play");
   const [playerName, setPlayerName] = useState<string>("");
   const [team, setTeam] = useState<Team>(defaultTeam);
+  const isGoal = result === "Goal";
 
   // Reset form when it opens with new coordinates
   useEffect(() => {
     if (isOpen) {
-      setIsGoal(false);
+      setResult("Miss");
       setBodyPart("Foot");
       setShotType("Open Play");
       setPlayerName("");
@@ -50,6 +51,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
       x: initialCoords.x,
       y: initialCoords.y,
       isGoal,
+      result,
       bodyPart,
       shotType,
       team,
@@ -86,18 +88,32 @@ const ShotForm: React.FC<ShotFormProps> = ({
 
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">Result:</label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setIsGoal(false)}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(isGoal === false)}`}
+              onClick={() => setResult("Miss")}
+              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Miss")}`}
             >
               ❌ Miss
             </button>
             <button
               type="button"
-              onClick={() => setIsGoal(true)}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(isGoal === true)}`}
+              onClick={() => setResult("Saved")}
+              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Saved")}`}
+            >
+              🧤 Saved
+            </button>
+            <button
+              type="button"
+              onClick={() => setResult("Blocked")}
+              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Blocked")}`}
+            >
+              🛑 Blocked
+            </button>
+            <button
+              type="button"
+              onClick={() => setResult("Goal")}
+              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Goal")}`}
             >
               ⚽ Goal
             </button>

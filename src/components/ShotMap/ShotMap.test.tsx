@@ -17,6 +17,7 @@ describe("ShotMap Component", () => {
       x: 50, // center of pitch horizontally
       y: 25, // top quarter of pitch
       isGoal: true,
+      result: "Goal",
       bodyPart: "Foot",
       shotType: "Open Play",
       team: "home",
@@ -28,6 +29,7 @@ describe("ShotMap Component", () => {
       x: 50, // center of pitch horizontally
       y: 75, // bottom quarter of pitch
       isGoal: false,
+      result: "Miss",
       bodyPart: "Head",
       shotType: "Set Piece",
       team: "away",
