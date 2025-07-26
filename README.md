@@ -4,11 +4,12 @@ A simple and efficient tool for collecting, analyzing, and visualizing shot & to
 
 ## Overview
 
-Shot Gobbler helps football analysts, fans, and data enthusiasts gather touch and/or shot information from matches ~~and calculate expected goals metrics~~ *(Coming!)*.
+Shot Gobbler helps football analysts, fans, and data enthusiasts gather touch and/or shot information from matches ~~and calculate expected goals metrics~~ _(Coming!)_.
 
 ## Features
 
 ### Shot map
+
 - Record shot locations & relevant shot data
 - Visualization of shot map
 - Display shot data on list view
@@ -17,13 +18,24 @@ Shot Gobbler helps football analysts, fans, and data enthusiasts gather touch an
 - Import shot data
 
 ### Touch map
+
 - Record single players touch locations & relevant touch data
 - Visualization of touch map
 - Display touch data on list view
 - Export touch data as JSON
 - Import touch data
 
+### Pass chains map
+
+- Record sequences of actions (passes, carries, shots, crosses) that form attacking chains
+- Visualization of pass chains map
+- Pitch zone tracking (defensive/midfield/attacking × left/central/right)
+- Display pass chain data on list view with action sequences and termination details
+- Export pass chain data as JSON
+- Import pass chain data
+
 ## Live demo
+
 Check out the live demo at [Shot Gobbler](https://jsvirtane.github.io/shot-gobbler/). Best viewed on mobile.
 
 ## Run locally
@@ -43,6 +55,7 @@ npm run dev
 ```
 
 ## Deployment
+
 Application is currently deployed using GitHub Pages. To deploy the application, create a tag in the format `YY-MM-DD`.
 
 ```bash
