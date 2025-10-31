@@ -31,7 +31,7 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
 
   const isFirstAction = () => {
     return action.sequenceNumber === 1;
-  }
+  };
 
   const getMarkerBorder = () => {
     if (isCurrentChain) {
@@ -72,6 +72,12 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
       style={{
         left: `${action.x}%`,
         top: `${action.y}%`,
+        borderRadius:
+          action.actionType === "pass" ||
+          action.actionType === "cross" ||
+          action.actionType === "placeholder"
+            ? "50%"
+            : "0.5rem", // Explicit for html2canvas iOS compatibility
       }}
       title={`${action.actionType} - Sequence ${action.sequenceNumber} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
     >

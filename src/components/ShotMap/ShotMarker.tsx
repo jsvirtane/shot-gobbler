@@ -33,6 +33,7 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({ shot }) => {
       style={{
         left: `${shot.x}%`,
         top: `${shot.y}%`,
+        borderRadius: "50%", // Explicit for html2canvas iOS compatibility
       }}
       title={`${shot.shotType} - ${shot.bodyPart} - ${shot.result}${
         shot.playerName ? " - " + shot.playerName : ""

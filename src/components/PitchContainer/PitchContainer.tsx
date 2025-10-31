@@ -49,6 +49,7 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
 
     return (
       <div
+        id="share-pitch"
         ref={pitchRef}
         className="relative flex w-full cursor-crosshair items-center justify-center overflow-hidden"
         onClick={handleClick}

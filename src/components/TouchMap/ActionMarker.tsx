@@ -33,6 +33,7 @@ export const ActionMarker: React.FC<ActionMarkerProps> = ({ action }) => {
         left: `${action.x}%`,
         top: `${action.y}%`,
         transform: "translate(-50%, -50%)",
+        borderRadius: "50%", // Explicit for html2canvas iOS compatibility
       }}
       title={`${action.category} - ${action.actionType} (${action.outcome})`}
     />
