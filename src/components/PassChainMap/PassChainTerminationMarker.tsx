@@ -47,7 +47,7 @@ export const PassChainTerminationMarker: React.FC<
     const { opacity, size } = getMarkerStyling();
     const border = getMarkerBorder();
 
-    return `absolute ${size} ${baseColor} ${opacity} ${border} rounded-sm shadow-lg z-10 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs`;
+    return `absolute ${size} ${baseColor} ${opacity} ${border} rounded-sm shadow-lg z-[6] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs`;
   };
 
   const getTerminationSymbol = () => {
