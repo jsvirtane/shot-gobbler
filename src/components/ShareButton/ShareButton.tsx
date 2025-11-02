@@ -13,7 +13,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   className = "",
   title = "Shot Gobbler Analysis",
 }) => {
-  const handleShare = async () => {
+  const onShare = async () => {
     try {
       // Find the target element to capture
       const targetElement = targetElementId
@@ -41,17 +41,14 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
       // Check if Web Share API is supported (mainly on mobile)
       if (navigator.share && navigator.canShare) {
-        const file = new File(
-          [blob],
-          `${title.toLowerCase().replace(/\s+/g, "-")}.png`,
-          {
+        const filesArray: File[] = [
+          new File([blob], `${title.toLowerCase().replace(/\s+/g, "-")}.png`, {
             type: "image/png",
-            lastModified: Date.now(),
-          },
-        );
-
+            lastModified: new Date().getTime(),
+          }),
+        ];
         const shareData = {
-          files: [file],
+          files: filesArray,
         };
 
         // Check if files can be shared
@@ -78,7 +75,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
   return (
     <button
-      onClick={handleShare}
+      onClick={onShare}
       className={`flex items-center justify-center p-3 text-gray-600 transition-all duration-200 hover:scale-105 hover:text-blue-500 ${className}`}
       title="Share screenshot"
       aria-label="Share screenshot"
