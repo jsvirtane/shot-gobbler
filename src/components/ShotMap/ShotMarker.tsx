@@ -29,7 +29,7 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({ shot }) => {
 
   return (
     <div
-      className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 transform rounded-full shadow ${getColorClass()} ${getBorderStyle()} z-10 opacity-80`}
+      className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 transform rounded-full shadow ${getColorClass()} ${getBorderStyle()} opacity-80`}
       style={{
         left: `${shot.x}%`,
         top: `${shot.y}%`,
