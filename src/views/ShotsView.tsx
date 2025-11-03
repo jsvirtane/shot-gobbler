@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import ShotCard from "../components/ShotCard";
 import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import ShotMap from "../components/ShotMap/ShotMap";
@@ -28,6 +29,8 @@ const ShotsView: React.FC = () => {
   const [shotsView, setShotsView] = useState<ShotsView>("pitch");
   const [shotDisplayFilter, setShotDisplayFilter] =
     useState<DisplayFilter>("all");
+
+  const [currentShotIndex, setCurrentShotIndex] = useState(0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentShotCoords, setCurrentShotCoords] = useState<{
@@ -94,7 +97,24 @@ const ShotsView: React.FC = () => {
       timestamp: shot.timestamp || Date.now(),
     }));
     setShots(shotsWithNewIds);
+    setCurrentShotIndex(0);
   }, []);
+
+  // Shot navigation handlers
+  const handleNextShot = useCallback(() => {
+    setCurrentShotIndex((prev) => (prev + 1) % filteredShots.length);
+  }, [filteredShots.length]);
+
+  const handlePreviousShot = useCallback(() => {
+    setCurrentShotIndex((prev) =>
+      prev === 0 ? filteredShots.length - 1 : prev - 1,
+    );
+  }, [filteredShots.length]);
+
+  // Reset current shot index when filter changes
+  useEffect(() => {
+    setCurrentShotIndex(0);
+  }, [shotDisplayFilter]);
 
   // UI components
   const filterButtonsUI = (
@@ -172,13 +192,24 @@ const ShotsView: React.FC = () => {
           </p>
         </>
       ) : (
-        <ShotList
-          shots={filteredShots}
-          onRemoveShot={handleRemoveShot}
-          onClearAllShots={handleClearAllShots}
-          onImportShots={handleImportShots}
-          displayFilter={shotDisplayFilter}
-        />
+        <>
+          {filteredShots.length > 0 && (
+            <ShotCard
+              shot={filteredShots[currentShotIndex]}
+              currentIndex={currentShotIndex}
+              totalShots={filteredShots.length}
+              onNext={handleNextShot}
+              onPrevious={handlePreviousShot}
+            />
+          )}
+          <ShotList
+            shots={filteredShots}
+            onRemoveShot={handleRemoveShot}
+            onClearAllShots={handleClearAllShots}
+            onImportShots={handleImportShots}
+            displayFilter={shotDisplayFilter}
+          />
+        </>
       )}
       <ShotForm
         isOpen={isModalOpen}
