@@ -84,9 +84,6 @@ const ShotList: React.FC<ShotListProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">
-          Recorded Shots ({shots.length})
-        </h3>
         <ul className="overflow-y-auto">
           {shots.map((shot) => (
             <li
