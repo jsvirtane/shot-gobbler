@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { Accordion } from "../components/Accordion";
 import ShotCard from "../components/ShotCard";
 import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
@@ -192,24 +193,37 @@ const ShotsView: React.FC = () => {
           </p>
         </>
       ) : (
-        <>
+        <div className="flex flex-col gap-2">
           {filteredShots.length > 0 && (
-            <ShotCard
-              shot={filteredShots[currentShotIndex]}
-              currentIndex={currentShotIndex}
-              totalShots={filteredShots.length}
-              onNext={handleNextShot}
-              onPrevious={handlePreviousShot}
-            />
+            <Accordion
+                header={<h3 className="text-lg font-semibold">Shot details</h3>}
+                defaultOpen={true}
+            >
+              <ShotCard
+                shot={filteredShots[currentShotIndex]}
+                currentIndex={currentShotIndex}
+                totalShots={filteredShots.length}
+                onNext={handleNextShot}
+                onPrevious={handlePreviousShot}
+              />
+            </Accordion>
           )}
-          <ShotList
-            shots={filteredShots}
-            onRemoveShot={handleRemoveShot}
-            onClearAllShots={handleClearAllShots}
-            onImportShots={handleImportShots}
-            displayFilter={shotDisplayFilter}
-          />
-        </>
+          <Accordion
+            header={
+              <h3 className="text-lg font-semibold">
+                Recorded Shots ({filteredShots.length})
+              </h3>
+            }
+          >
+            <ShotList
+              shots={filteredShots}
+              onRemoveShot={handleRemoveShot}
+              onClearAllShots={handleClearAllShots}
+              onImportShots={handleImportShots}
+              displayFilter={shotDisplayFilter}
+            />
+          </Accordion>
+        </div>
       )}
       <ShotForm
         isOpen={isModalOpen}

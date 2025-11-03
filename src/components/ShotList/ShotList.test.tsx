@@ -92,11 +92,6 @@ describe("ShotList Component", () => {
       />,
     );
 
-    // Check header shows correct count
-    expect(
-      screen.getByText(`Recorded Shots (${mockShots.length})`),
-    ).toBeTruthy();
-
     // Check if shots are rendered correctly
     expect(screen.getByText(/goal/)).toBeTruthy();
     expect(screen.getByText(/miss/)).toBeTruthy();
