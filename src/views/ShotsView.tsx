@@ -117,6 +117,12 @@ const ShotsView: React.FC = () => {
     setCurrentShotIndex(0);
   }, [shotDisplayFilter]);
 
+  // Ensure currentShotIndex is within bounds
+  const safeCurrentShotIndex = Math.min(
+    currentShotIndex,
+    Math.max(0, filteredShots.length - 1),
+  );
+
   // UI components
   const filterButtonsUI = (
     <div className="mb-4 flex justify-center">
@@ -196,12 +202,12 @@ const ShotsView: React.FC = () => {
         <div className="flex flex-col gap-2">
           {filteredShots.length > 0 && (
             <Accordion
-                header={<h3 className="text-lg font-semibold">Shot details</h3>}
-                defaultOpen={true}
+              header={<h3 className="text-lg font-semibold">Shot details</h3>}
+              defaultOpen={true}
             >
               <ShotCard
-                shot={filteredShots[currentShotIndex]}
-                currentIndex={currentShotIndex}
+                shot={filteredShots[safeCurrentShotIndex]}
+                currentIndex={safeCurrentShotIndex}
                 totalShots={filteredShots.length}
                 onNext={handleNextShot}
                 onPrevious={handlePreviousShot}
