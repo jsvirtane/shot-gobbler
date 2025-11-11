@@ -3,6 +3,7 @@ import ActionForm from "../components/ActionForm/ActionForm";
 import { TouchList } from "../components/TouchList/TouchList";
 import TouchMap from "../components/TouchMap/TouchMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
 
 // Storage key for localStorage
@@ -23,7 +24,10 @@ const TouchesView: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
-  const [currentView, setCurrentView] = useState<TouchesView>("pitch");
+  const [currentView, setCurrentView] = useUrlState<TouchesView>(
+    "view",
+    "pitch",
+  );
 
   // Save actions to localStorage whenever they change
   useEffect(() => {

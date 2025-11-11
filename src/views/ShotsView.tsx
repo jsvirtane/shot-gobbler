@@ -5,6 +5,7 @@ import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import ShotMap from "../components/ShotMap/ShotMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useUrlState } from "../hooks/useUrlState";
 import { Shot } from "../types/Shot";
 import { Team } from "../types/common";
 
@@ -27,9 +28,11 @@ const ShotsView: React.FC = () => {
 
   const [currentTeam, setCurrentTeam] = useState<Team>("home");
 
-  const [shotsView, setShotsView] = useState<ShotsView>("pitch");
-  const [shotDisplayFilter, setShotDisplayFilter] =
-    useState<DisplayFilter>("all");
+  const [shotsView, setShotsView] = useUrlState<ShotsView>("view", "pitch");
+  const [shotDisplayFilter, setShotDisplayFilter] = useUrlState<DisplayFilter>(
+    "filter",
+    "all",
+  );
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
 
