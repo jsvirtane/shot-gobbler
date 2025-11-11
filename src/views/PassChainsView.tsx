@@ -4,6 +4,7 @@ import PassChainForm from "../components/PassChainForm/PassChainForm";
 import PassChainsListView from "../components/PassChainsListView/PassChainsListView";
 import PassChainsPitchView from "../components/PassChainsPitchView/PassChainsPitchView";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useUrlState } from "../hooks/useUrlState";
 import {
   ChainAction,
   ChainActionType,
@@ -25,7 +26,10 @@ const viewOptions = [
 ];
 
 const PassChainsView: React.FC = () => {
-  const [currentView, setCurrentView] = useState<PassChainsView>("pitch");
+  const [currentView, setCurrentView] = useUrlState<PassChainsView>(
+    "view",
+    "pitch",
+  );
   const [selectedActionType, setSelectedActionType] =
     useState<ChainActionType>("start");
 

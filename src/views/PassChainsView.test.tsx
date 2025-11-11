@@ -4,6 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChainTerminationReason } from "../types/PassChain";
 import PassChainsView from "./PassChainsView";
 
+// Mock useUrlState hook to return controlled state for tests
+vi.mock("../hooks/useUrlState", () => ({
+  useUrlState: (_key: string, defaultValue: string) => {
+    const [state, setState] = React.useState(defaultValue);
+    return [state, setState];
+  },
+}));
+
 // Mock the components that PassChainsView uses
 vi.mock("../components/PassChainsPitchView/PassChainsPitchView", () => ({
   default: ({
