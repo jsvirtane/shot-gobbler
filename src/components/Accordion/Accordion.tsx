@@ -23,7 +23,7 @@ const Accordion: React.FC<AccordionProps> = ({
     <div className={`accordion ${className}`}>
       <button
         onClick={toggleAccordion}
-        className="flex w-full items-center justify-between p-4 rounded-lg bg-gray-100  text-left hover:bg-gray-200 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+        className="flex w-full items-center justify-between p-4 rounded-lg bg-white mb-2 text-left hover:bg-gray-200 focus:ring-2 focus:ring-gray-300 focus:outline-none"
         aria-expanded={isOpen}
       >
         <div className="flex-1">{header}</div>
@@ -45,7 +45,7 @@ const Accordion: React.FC<AccordionProps> = ({
         </svg>
       </button>
       {isOpen && (
-        <div className="accordion-content mt-2 rounded-lg border border-gray-200 bg-white p-4">
+        <div className="accordion-content">
           {children}
         </div>
       )}

@@ -33,14 +33,14 @@ const ShotCard: React.FC<ShotCardProps> = ({
 
   return (
     <div
-      className={`mb-4 rounded-lg border-2 ${shot.team === "home" ? "border-blue-600" : "border-red-600"} bg-white p-4 shadow-lg`}
+      className={`rounded-lg border-2 ${shot.team === "home" ? "border-blue-600" : "border-red-600"} bg-white p-4 shadow-lg`}
     >
       {/* Header with navigation */}
       <div className="mb-4 flex items-center justify-between">
         <button
           onClick={onPrevious}
           disabled={totalShots <= 1}
-          className="rounded-full bg-gray-200 p-2 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full bg-gray-200 p-1 hover:bg-gray-300 active:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
           title="Previous shot"
         >
           <svg
@@ -81,7 +81,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
         <button
           onClick={onNext}
           disabled={totalShots <= 1}
-          className="rounded-full bg-gray-200 p-2 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full bg-gray-200 p-1 hover:bg-gray-300 active:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
           title="Next shot"
         >
           <svg

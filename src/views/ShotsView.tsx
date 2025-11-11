@@ -199,7 +199,7 @@ const ShotsView: React.FC = () => {
           </p>
         </>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           {filteredShots.length > 0 && (
             <Accordion
               header={<h3 className="text-lg font-semibold">Shot details</h3>}
