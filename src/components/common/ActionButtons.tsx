@@ -1,61 +1,7 @@
-import React, { useRef } from "react";
+import React from "react";
 
-type ImportButtonProps = {
-  onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  children: React.ReactNode;
-  accept?: string;
-};
-
-export const ImportButton: React.FC<ImportButtonProps> = ({
-  onImport,
-  children,
-  accept = ".json",
-}) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  return (
-    <>
-      <input
-        type="file"
-        accept={accept}
-        onChange={onImport}
-        ref={fileInputRef}
-        className="hidden"
-      />
-      <button
-        onClick={triggerFileInput}
-        className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-      >
-        {children}
-      </button>
-    </>
-  );
-};
-
-interface ExportButtonProps {
-  onClick: () => void;
-  children: React.ReactNode;
-}
-
-export const ExportButton: React.FC<ExportButtonProps> = ({
-  onClick,
-  children,
-}) => {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded bg-neutral-900 px-4 py-2 text-white hover:bg-neutral-800"
-    >
-      {children}
-    </button>
-  );
-};
-
-interface ClearButtonProps {
+interface ClearButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick: () => void;
   children: React.ReactNode;
 }
@@ -63,11 +9,13 @@ interface ClearButtonProps {
 export const ClearButton: React.FC<ClearButtonProps> = ({
   onClick,
   children,
+  ...rest
 }) => {
   return (
     <button
       onClick={onClick}
       className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+      {...rest}
     >
       {children}
     </button>

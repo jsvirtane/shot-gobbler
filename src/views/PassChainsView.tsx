@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
+import { ClearButton } from "../components/common";
 import Modal from "../components/Modal/Modal";
 import PassChainForm from "../components/PassChainForm/PassChainForm";
 import PassChainsListView from "../components/PassChainsListView/PassChainsListView";
@@ -18,14 +19,20 @@ import {
 
 type PassChainsView = "pitch" | "list";
 
-const PASS_CHAINS_STORAGE_KEY = "shot-gobbler-pass-chains";
-
 const viewOptions = [
   { id: "pitch", label: "Pitch View", icon: "⚽️" },
   { id: "list", label: "List View", icon: "📋" },
 ];
 
-const PassChainsView: React.FC = () => {
+interface PassChainsViewProps {
+  passChains: PassChain[];
+  setPassChains: React.Dispatch<React.SetStateAction<PassChain[]>>;
+}
+
+const PassChainsView: React.FC<PassChainsViewProps> = ({
+  passChains,
+  setPassChains,
+}) => {
   const [currentView, setCurrentView] = useUrlState<PassChainsView>(
     "view",
     "pitch",
@@ -33,15 +40,6 @@ const PassChainsView: React.FC = () => {
   const [selectedActionType, setSelectedActionType] =
     useState<ChainActionType>("start");
 
-  const [passChains, setPassChains] = useState<PassChain[]>(() => {
-    try {
-      const storedChains = localStorage.getItem(PASS_CHAINS_STORAGE_KEY);
-      return storedChains ? JSON.parse(storedChains) : [];
-    } catch (error) {
-      console.error("Error loading pass chains from localStorage:", error);
-      return [];
-    }
-  });
   const [currentPassChain, setCurrentPassChain] = useState<ChainAction[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isActivePassChain = currentPassChain.length > 0;
@@ -113,33 +111,16 @@ const PassChainsView: React.FC = () => {
       setPassChains([]);
       console.log("Cleared all pass chains");
     }
-  }, []);
+  }, [setPassChains]);
 
-  const handleImportPassChains = useCallback(
-    (importedPassChains: PassChain[]) => {
-      const passChainsWithNewIds = importedPassChains.map((chain) => ({
-        ...chain,
-        id: `chain-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-      }));
-      setPassChains((prevChains) => [...prevChains, ...passChainsWithNewIds]);
-      console.log(`Imported ${importedPassChains.length} pass chains`);
+  const handleRemovePassChain = useCallback(
+    (chainId: string) => {
+      setPassChains((prevChains) =>
+        prevChains.filter((chain) => chain.id !== chainId),
+      );
     },
-    [],
+    [setPassChains],
   );
-
-  const handleRemovePassChain = useCallback((chainId: string) => {
-    setPassChains((prevChains) =>
-      prevChains.filter((chain) => chain.id !== chainId),
-    );
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(PASS_CHAINS_STORAGE_KEY, JSON.stringify(passChains));
-    } catch (error) {
-      console.error("Error saving pass chains to localStorage:", error);
-    }
-  }, [passChains]);
 
   return (
     <>
@@ -166,12 +147,20 @@ const PassChainsView: React.FC = () => {
           onClearCurrentChain={handleClearCurrentChain}
         />
       ) : (
-        <PassChainsListView
-          passChains={passChains}
-          onClearAllPassChains={handleClearAllPassChains}
-          onImportPassChains={handleImportPassChains}
-          onRemovePassChain={handleRemovePassChain}
-        />
+        <div className="flex flex-col gap-4">
+          <PassChainsListView
+            passChains={passChains}
+            onRemovePassChain={handleRemovePassChain}
+          />
+          {passChains.length > 0 && (
+            <ClearButton
+              onClick={handleClearAllPassChains}
+              data-testid="clear-all"
+            >
+              Clear All Pass Chains
+            </ClearButton>
+          )}
+        </div>
       )}
 
       <Modal isOpen={isModalOpen} title="Complete Pass Chain" maxWidth="500px">

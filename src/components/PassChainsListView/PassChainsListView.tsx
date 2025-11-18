@@ -1,75 +1,17 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { PassChain } from "../../types/PassChain";
 import { formatPitchZoneCapitalized } from "../../utils/pitchZones";
-import {
-  ClearButton,
-  ExportButton,
-  ImportButton,
-  RemoveItemButton,
-} from "../common";
+import { RemoveItemButton } from "../common";
 
 type PassChainsListViewProps = {
   passChains: PassChain[];
-  onClearAllPassChains: () => void;
-  onImportPassChains?: (passChains: PassChain[]) => void;
   onRemovePassChain?: (chainId: string) => void;
 };
 
 const PassChainsListView: React.FC<PassChainsListViewProps> = ({
   passChains,
-  onClearAllPassChains,
-  onImportPassChains = () => {},
   onRemovePassChain = () => {},
 }) => {
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const importedPassChains = JSON.parse(e.target?.result as string);
-        if (
-          Array.isArray(importedPassChains) &&
-          importedPassChains.length > 0
-        ) {
-          onImportPassChains(importedPassChains);
-          console.log(`Imported ${importedPassChains.length} pass chains`);
-        } else {
-          alert("The imported file doesn't contain valid pass chain data.");
-        }
-      } catch (error) {
-        console.error("Error parsing JSON:", error);
-        alert(
-          "Failed to parse the imported file. Please ensure it's valid JSON.",
-        );
-      }
-      // Note: File input reset is handled by ImportButton component
-    };
-    reader.onerror = () => {
-      alert("Error reading the file.");
-    };
-    reader.readAsText(file);
-  };
-
-  const handleExportJSON = useCallback(() => {
-    if (passChains.length === 0) {
-      alert("No pass chains to export");
-      return;
-    }
-
-    const dataStr = JSON.stringify(passChains, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `pass-chains-${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [passChains]);
-
   const formatTerminationReason = (reason: string) => {
     return reason
       .split("_")
@@ -97,14 +39,6 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
         <p className="mb-4 text-gray-600">
           Start creating pass chains in the pitch view to see them here.
         </p>
-        <div className="mt-4 flex flex-col items-center">
-          <p className="mb-2 text-gray-600">
-            Or import a previously saved pass chains list:
-          </p>
-          <ImportButton onImport={handleImport}>
-            Import Pass Chains
-          </ImportButton>
-        </div>
       </div>
     );
   }
@@ -115,7 +49,7 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
         <h2 className="text-xl font-bold text-gray-800">
           Pass Chains ({passChains.length})
         </h2>
-        </div>
+      </div>
       {/* Pass chains list */}
       <div className="grid gap-4">
         {passChains.map((chain, index) => (
@@ -187,15 +121,7 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
           </div>
         ))}
       </div>
-        <div className="flex flex-col space-y-2">
-          <ExportButton onClick={handleExportJSON}>
-            Export Data as JSON
-          </ExportButton>
-          <ClearButton onClick={onClearAllPassChains}>
-            Clear All Pass Chains
-          </ClearButton>
-        </div>
-      </div>
+    </div>
   );
 };
 
