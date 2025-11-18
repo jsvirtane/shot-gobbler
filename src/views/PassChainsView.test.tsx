@@ -1,8 +1,35 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ChainTerminationReason } from "../types/PassChain";
+import { ChainTerminationReason, PassChain } from "../types/PassChain";
 import PassChainsView from "./PassChainsView";
+
+// Helper function to render PassChainsView with default props
+const renderPassChainsView = (initialPassChains: PassChain[] = []) => {
+  const mockSetPassChains = vi.fn((updater) => {
+    if (typeof updater === "function") {
+      const newChains = updater(initialPassChains);
+      initialPassChains.length = 0;
+      initialPassChains.push(...newChains);
+    } else {
+      initialPassChains.length = 0;
+      initialPassChains.push(...updater);
+    }
+  });
+
+  const result = render(
+    <PassChainsView
+      passChains={initialPassChains}
+      setPassChains={mockSetPassChains}
+    />,
+  );
+
+  return {
+    ...result,
+    mockSetPassChains,
+    passChains: initialPassChains,
+  };
+};
 
 // Mock useUrlState hook to return controlled state for tests
 vi.mock("../hooks/useUrlState", () => ({
@@ -59,44 +86,13 @@ vi.mock("../components/PassChainsPitchView/PassChainsPitchView", () => ({
 vi.mock("../components/PassChainsListView/PassChainsListView", () => ({
   default: ({
     passChains,
-    onClearAllPassChains,
-    onImportPassChains,
     onRemovePassChain,
   }: {
     passChains: unknown[];
-    onClearAllPassChains: () => void;
-    onImportPassChains: (chains: unknown[]) => void;
     onRemovePassChain: (chainId: string) => void;
   }) => (
     <div data-testid="list-view">
       <div data-testid="pass-chains-count">{passChains.length}</div>
-      <button data-testid="clear-all" onClick={onClearAllPassChains}>
-        Clear All
-      </button>
-      <button
-        data-testid="import-chains"
-        onClick={() =>
-          onImportPassChains([
-            {
-              id: "imported-1",
-              actions: [
-                {
-                  x: 10,
-                  y: 10,
-                  sequenceNumber: 0,
-                  actionType: "start",
-                  pitchZone: { horizontal: "left", vertical: "attacking" },
-                },
-              ],
-              terminationReason: "goal",
-              isCompleted: true,
-              zones: null,
-            },
-          ])
-        }
-      >
-        Import Chains
-      </button>
       <button
         data-testid="remove-chain"
         onClick={() => onRemovePassChain("test-id")}
@@ -207,7 +203,7 @@ describe("PassChainsView", () => {
 
   describe("Initial State", () => {
     it("should initialize with pitch view and start action type", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       expect(screen.getByTestId("current-view").textContent).toBe("pitch");
       expect(screen.getByTestId("selected-action-type").textContent).toBe(
@@ -216,46 +212,28 @@ describe("PassChainsView", () => {
       expect(screen.getByTestId("current-chain-length").textContent).toBe("0");
     });
 
-    it("should load pass chains from localStorage on initialization", () => {
+    it("should render with provided pass chains", () => {
       const storedChains = [
         {
           id: "chain-1",
           actions: [],
-          terminationReason: "goal",
+          terminationReason: "goal" as ChainTerminationReason,
           isCompleted: true,
           zones: null,
         },
       ];
-      localStorageMock.getItem.mockReturnValue(JSON.stringify(storedChains));
 
-      render(<PassChainsView />);
+      renderPassChainsView(storedChains);
 
-      expect(localStorageMock.getItem).toHaveBeenCalledWith(
-        "shot-gobbler-pass-chains",
-      );
-    });
-
-    it("should handle localStorage error gracefully", () => {
-      localStorageMock.getItem.mockImplementation(() => {
-        throw new Error("localStorage error");
-      });
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      render(<PassChainsView />);
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Error loading pass chains from localStorage:",
-        expect.any(Error),
-      );
-      consoleSpy.mockRestore();
+      // When we switch to list view, we should see the chain
+      fireEvent.click(screen.getByTestId("switch-to-list"));
+      expect(screen.getByTestId("pass-chains-count").textContent).toBe("1");
     });
   });
 
   describe("Action Type Logic", () => {
     it("should always set first action as 'start' regardless of selected action type", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Change action type to something else
       fireEvent.click(screen.getByTestId("change-action-type"));
@@ -271,7 +249,7 @@ describe("PassChainsView", () => {
     });
 
     it("should automatically switch to 'pass' after first action when starting with 'start'", async () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Verify initial state
       expect(screen.getByTestId("selected-action-type").textContent).toBe(
@@ -290,7 +268,7 @@ describe("PassChainsView", () => {
     });
 
     it("should not auto-switch to 'pass' if action type was manually changed from 'start'", async () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Change action type from 'start' to 'cross'
       fireEvent.click(screen.getByTestId("change-action-type"));
@@ -308,7 +286,7 @@ describe("PassChainsView", () => {
     });
 
     it("should use selected action type for subsequent actions", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add first action (will be 'start')
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -328,7 +306,7 @@ describe("PassChainsView", () => {
 
   describe("Pass Chain Actions", () => {
     it("should add actions to current pass chain on pitch click", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add first action
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -340,7 +318,7 @@ describe("PassChainsView", () => {
     });
 
     it("should undo last action", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add two actions
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -353,7 +331,7 @@ describe("PassChainsView", () => {
     });
 
     it("should clear current chain and reset action type", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add action and change action type
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -374,7 +352,7 @@ describe("PassChainsView", () => {
 
   describe("Pass Chain Completion", () => {
     it("should open modal when ending chain with actions", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add an action
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -388,7 +366,7 @@ describe("PassChainsView", () => {
     });
 
     it("should not open modal when ending chain without actions", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // End chain without any actions
       fireEvent.click(screen.getByTestId("end-chain"));
@@ -398,7 +376,7 @@ describe("PassChainsView", () => {
     });
 
     it("should complete pass chain and reset state on form submit", async () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add an action and end chain
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -418,7 +396,7 @@ describe("PassChainsView", () => {
     });
 
     it("should close modal on form cancel", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add an action and end chain
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -435,7 +413,7 @@ describe("PassChainsView", () => {
 
   describe("View Toggle", () => {
     it("should switch between pitch and list views", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Should start with pitch view
       expect(screen.getByTestId("current-view").textContent).toBe("pitch");
@@ -456,7 +434,7 @@ describe("PassChainsView", () => {
     });
 
     it("should hide view toggle when there is an active pass chain", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // View toggle should be visible initially
       expect(screen.getByTestId("view-toggle")).toBeTruthy();
@@ -471,7 +449,12 @@ describe("PassChainsView", () => {
 
   describe("Pass Chain Management", () => {
     it("should clear all pass chains with confirmation", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
+
+      // Create and complete a pass chain first
+      fireEvent.click(screen.getByTestId("pitch-click"));
+      fireEvent.click(screen.getByTestId("end-chain"));
+      fireEvent.click(screen.getByTestId("submit-form"));
 
       // Switch to list view and clear all
       fireEvent.click(screen.getByTestId("switch-to-list"));
@@ -484,7 +467,12 @@ describe("PassChainsView", () => {
 
     it("should not clear pass chains if confirmation is cancelled", () => {
       mockConfirm.mockReturnValue(false);
-      render(<PassChainsView />);
+      renderPassChainsView();
+
+      // Create and complete a pass chain first
+      fireEvent.click(screen.getByTestId("pitch-click"));
+      fireEvent.click(screen.getByTestId("end-chain"));
+      fireEvent.click(screen.getByTestId("submit-form"));
 
       // Switch to list view and try to clear all
       fireEvent.click(screen.getByTestId("switch-to-list"));
@@ -495,21 +483,13 @@ describe("PassChainsView", () => {
       // but the confirm dialog should have been shown
     });
 
-    it("should import pass chains with new IDs", () => {
-      render(<PassChainsView />);
-
-      // Switch to list view and import
-      fireEvent.click(screen.getByTestId("switch-to-list"));
-      fireEvent.click(screen.getByTestId("import-chains"));
-
-      // The mock will simulate importing chains
-      // We can't easily test the actual ID generation without exposing internal state
-    });
-
     it("should remove individual pass chain", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Switch to list view and remove a chain
+      fireEvent.click(screen.getByTestId("switch-to-list"));
+      fireEvent.click(screen.getByTestId("remove-chain"));
+
       fireEvent.click(screen.getByTestId("switch-to-list"));
       fireEvent.click(screen.getByTestId("remove-chain"));
 
@@ -517,102 +497,9 @@ describe("PassChainsView", () => {
     });
   });
 
-  describe("LocalStorage Integration", () => {
-    it("should save pass chains to localStorage when chains change", async () => {
-      render(<PassChainsView />);
-
-      // Add and complete a chain
-      fireEvent.click(screen.getByTestId("pitch-click"));
-      fireEvent.click(screen.getByTestId("end-chain"));
-      fireEvent.click(screen.getByTestId("submit-form"));
-
-      // Should save to localStorage
-      await waitFor(() => {
-        expect(localStorageMock.setItem).toHaveBeenCalledWith(
-          "shot-gobbler-pass-chains",
-          expect.any(String),
-        );
-      });
-    });
-
-    it("should handle localStorage save errors gracefully", async () => {
-      // Spy on console.error to suppress expected error logs during test
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      localStorageMock.setItem.mockImplementation(() => {
-        throw new Error("localStorage save error");
-      });
-
-      render(<PassChainsView />);
-
-      // Add and complete a chain
-      fireEvent.click(screen.getByTestId("pitch-click"));
-      fireEvent.click(screen.getByTestId("end-chain"));
-      fireEvent.click(screen.getByTestId("submit-form"));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          "Error saving pass chains to localStorage:",
-          expect.any(Error),
-        );
-      });
-
-      // Verify app continues to work despite localStorage error
-      expect(screen.getByTestId("current-chain-length").textContent).toBe("0");
-      expect(screen.getByTestId("selected-action-type").textContent).toBe(
-        "start",
-      );
-
-      consoleSpy.mockRestore();
-    });
-
-    it("should continue normal operation when localStorage is completely unavailable", async () => {
-      // Spy on console.error to suppress expected error logs during test
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      // Mock both get and set to fail
-      localStorageMock.getItem.mockImplementation(() => {
-        throw new Error("localStorage unavailable");
-      });
-      localStorageMock.setItem.mockImplementation(() => {
-        throw new Error("localStorage unavailable");
-      });
-
-      // Component should still render and work despite localStorage failures
-      render(<PassChainsView />);
-
-      // Basic functionality should work
-      expect(screen.getByTestId("current-view").textContent).toBe("pitch");
-      expect(screen.getByTestId("selected-action-type").textContent).toBe(
-        "start",
-      );
-
-      // Can still create and work with pass chains in memory
-      fireEvent.click(screen.getByTestId("pitch-click"));
-      expect(screen.getByTestId("current-chain-length").textContent).toBe("1");
-
-      // Can complete a chain (even though it won't persist)
-      fireEvent.click(screen.getByTestId("end-chain"));
-      fireEvent.click(screen.getByTestId("submit-form"));
-      expect(screen.getByTestId("current-chain-length").textContent).toBe("0");
-
-      // Verify error was logged but app didn't crash
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Error loading pass chains from localStorage:",
-        expect.any(Error),
-      );
-
-      consoleSpy.mockRestore();
-    });
-  });
-
   describe("Sequence Number Logic", () => {
     it("should assign correct sequence numbers to actions", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Add multiple actions
       fireEvent.click(screen.getByTestId("pitch-click")); // sequence 0
@@ -633,7 +520,7 @@ describe("PassChainsView", () => {
 
   describe("Edge Cases", () => {
     it("should handle multiple rapid clicks correctly", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Rapidly click multiple times
       for (let i = 0; i < 5; i++) {
@@ -644,7 +531,7 @@ describe("PassChainsView", () => {
     });
 
     it("should handle undo when chain is empty", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Try to undo when chain is empty
       fireEvent.click(screen.getByTestId("undo-action"));
@@ -654,7 +541,7 @@ describe("PassChainsView", () => {
     });
 
     it("should handle form submit when chain is empty", () => {
-      render(<PassChainsView />);
+      renderPassChainsView();
 
       // Try to end chain when empty
       fireEvent.click(screen.getByTestId("end-chain"));

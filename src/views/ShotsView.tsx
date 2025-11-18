@@ -1,31 +1,24 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Accordion } from "../components/Accordion";
+import { ClearButton } from "../components/common";
 import ShotCard from "../components/ShotCard";
 import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import ShotMap from "../components/ShotMap/ShotMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUrlState } from "../hooks/useUrlState";
-import { Shot } from "../types/Shot";
 import { Team } from "../types/common";
-
-// Storage key for localStorage
-const SHOTS_STORAGE_KEY = "shot-gobbler-data";
+import { Shot } from "../types/Shot";
 
 type DisplayFilter = "all" | "home" | "away";
 type ShotsView = "pitch" | "list";
 
-const ShotsView: React.FC = () => {
-  const [shots, setShots] = useState<Shot[]>(() => {
-    try {
-      const savedShots = localStorage.getItem(SHOTS_STORAGE_KEY);
-      return savedShots ? JSON.parse(savedShots) : [];
-    } catch (error) {
-      console.error("Error loading shots from localStorage:", error);
-      return [];
-    }
-  });
+interface ShotsViewProps {
+  shots: Shot[];
+  setShots: React.Dispatch<React.SetStateAction<Shot[]>>;
+}
 
+const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   const [currentTeam, setCurrentTeam] = useState<Team>("home");
 
   const [shotsView, setShotsView] = useUrlState<ShotsView>("view", "pitch");
@@ -41,14 +34,6 @@ const ShotsView: React.FC = () => {
     x: number;
     y: number;
   }>({ x: 0, y: 0 });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(SHOTS_STORAGE_KEY, JSON.stringify(shots));
-    } catch (error) {
-      console.error("Error saving shots to localStorage:", error);
-    }
-  }, [shots]);
 
   // Shot filtering
   const filteredShots = shots.filter((shot) => {
@@ -78,10 +63,13 @@ const ShotsView: React.FC = () => {
     console.log("Added shot:", newShot);
   };
 
-  const handleRemoveShot = useCallback((id: string) => {
-    setShots((prevShots) => prevShots.filter((shot) => shot.id !== id));
-    console.log("Removed shot with id:", id);
-  }, []);
+  const handleRemoveShot = useCallback(
+    (id: string) => {
+      setShots((prevShots) => prevShots.filter((shot) => shot.id !== id));
+      console.log("Removed shot with id:", id);
+    },
+    [setShots],
+  );
 
   const handleClearAllShots = useCallback(() => {
     if (
@@ -92,17 +80,7 @@ const ShotsView: React.FC = () => {
       setShots([]);
       console.log("Cleared all shots");
     }
-  }, []);
-
-  const handleImportShots = useCallback((importedShots: Shot[]) => {
-    const shotsWithNewIds = importedShots.map((shot) => ({
-      ...shot,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-      timestamp: shot.timestamp || Date.now(),
-    }));
-    setShots(shotsWithNewIds);
-    setCurrentShotIndex(0);
-  }, []);
+  }, [setShots]);
 
   // Shot navigation handlers
   const handleNextShot = useCallback(() => {
@@ -224,14 +202,13 @@ const ShotsView: React.FC = () => {
               </h3>
             }
           >
-            <ShotList
-              shots={filteredShots}
-              onRemoveShot={handleRemoveShot}
-              onClearAllShots={handleClearAllShots}
-              onImportShots={handleImportShots}
-              displayFilter={shotDisplayFilter}
-            />
+            <ShotList shots={filteredShots} onRemoveShot={handleRemoveShot} />
           </Accordion>
+          {filteredShots.length > 0 && shotDisplayFilter === "all" && (
+            <ClearButton onClick={handleClearAllShots}>
+              Clear All Shots
+            </ClearButton>
+          )}
         </div>
       )}
       <ShotForm

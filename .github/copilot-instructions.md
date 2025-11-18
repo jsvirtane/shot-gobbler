@@ -56,6 +56,8 @@ npm run lint         # ESLint with Prettier
 
 Tests exist for core views and complex components (`ShotForm.test.tsx`, `PassChainsView.test.tsx`). Use Vitest + Testing Library with jsdom environment. Mock `localStorage` in tests - see `PassChainsView.test.tsx` for pattern.
 
+**Regression Testing**: When fixing a bug, ALWAYS write a test that reproduces the bug first, then verify the fix resolves it. Add tests to the appropriate test file (e.g., `App.test.tsx` for App-level bugs, component test files for component bugs). This ensures the bug won't reoccur in future changes.
+
 ### Deployment
 
 GitHub Actions deploys on tags matching `YY-MM-DD` format. `vite.config.ts` sets `base: "/shot-gobbler/"` for GitHub Pages.

@@ -1,42 +1,26 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import ActionForm from "../components/ActionForm/ActionForm";
+import { ClearButton } from "../components/common";
 import { TouchList } from "../components/TouchList/TouchList";
 import TouchMap from "../components/TouchMap/TouchMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
 
-// Storage key for localStorage
-const TOUCHES_STORAGE_KEY = "shot-gobbler-touches-data";
-
 type TouchesView = "pitch" | "list";
 
-const TouchesView: React.FC = () => {
-  const [actions, setActions] = useState<Action[]>(() => {
-    try {
-      const savedActions = localStorage.getItem(TOUCHES_STORAGE_KEY);
-      return savedActions ? JSON.parse(savedActions) : [];
-    } catch (error) {
-      console.error("Error loading touches from localStorage:", error);
-      return [];
-    }
-  });
+interface TouchesViewProps {
+  actions: Action[];
+  setActions: React.Dispatch<React.SetStateAction<Action[]>>;
+}
 
+const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
   const [currentView, setCurrentView] = useUrlState<TouchesView>(
     "view",
     "pitch",
   );
-
-  // Save actions to localStorage whenever they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(TOUCHES_STORAGE_KEY, JSON.stringify(actions));
-    } catch (error) {
-      console.error("Error saving touches to localStorage:", error);
-    }
-  }, [actions]);
 
   const handlePitchClick = (x: number, y: number) => {
     setCurrentPosition({ x, y });
@@ -69,13 +53,7 @@ const TouchesView: React.FC = () => {
     ) {
       setActions([]);
     }
-  }, []);
-
-  const handleImportActions = (importedActions: Action[]) => {
-    if (importedActions.length > 0) {
-      setActions((prev) => [...prev, ...importedActions]);
-    }
-  };
+  }, [setActions]);
 
   const viewOptions = [
     { id: "pitch", label: "Pitch View", icon: "⚽️" },
@@ -99,12 +77,12 @@ const TouchesView: React.FC = () => {
           <TouchMap onPitchClick={handlePitchClick} actions={actions} />
         </>
       ) : (
-        <TouchList
-          actions={actions}
-          onClearAllActions={handleClearAllActions}
-          onImportActions={handleImportActions}
-          onRemoveAction={handleRemoveAction}
-        />
+        <div className="flex flex-col gap-4">
+          <TouchList actions={actions} onRemoveAction={handleRemoveAction} />
+          {actions.length > 0 && (
+            <ClearButton onClick={handleClearAllActions}>Clear All</ClearButton>
+          )}
+        </div>
       )}
 
       <ActionForm
