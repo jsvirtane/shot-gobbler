@@ -1,7 +1,8 @@
 import React from "react";
-import { ShotMarkerColors } from "../../constants/markerColors";
 import { Shot } from "../../types/Shot";
+import { getShotMarkerStyle } from "../../utils/markerStyle";
 import { getShotResult } from "../../utils/shotResult";
+import MarkerShape from "../Markers/MarkerShape";
 import PitchMarker from "../PitchContainer/PitchMarker";
 
 interface ShotMarkerProps {
@@ -18,26 +19,7 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({
   onMove,
 }) => {
   const result = getShotResult(shot);
-
-  // Determine color based on team and goal/miss
-  const getColorClass = () => {
-    const status = result === "Goal" ? "goal" : "miss";
-    return ShotMarkerColors[shot.team][status];
-  };
-
-  // Determine border style based on shot result
-  const getBorderStyle = () => {
-    switch (result) {
-      case "Saved":
-        return "border-2 border-dashed border-black";
-      case "Blocked":
-        return "border-2 border-dotted border-black";
-      case "Goal":
-      case "Miss":
-      default:
-        return "border-2 border-solid border-black";
-    }
-  };
+  const style = getShotMarkerStyle(shot);
 
   return (
     <PitchMarker
@@ -50,12 +32,7 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({
       onMove={onMove}
       testId="shot-marker"
     >
-      <div
-        className={`h-5 w-5 rounded-full shadow ${getColorClass()} ${getBorderStyle()} opacity-80`}
-        style={{
-          borderRadius: "50%", // Explicit for html2canvas iOS compatibility
-        }}
-      />
+      <MarkerShape {...style} />
     </PitchMarker>
   );
 };

@@ -1,4 +1,5 @@
 import { ChainAction, PassChain } from "../../types/PassChain";
+import { PassChainLegend } from "../MapLegend/MapLegend";
 import PitchContainer from "../PitchContainer/PitchContainer";
 import PassChainVisualization from "./PassChainVisualization";
 
@@ -24,7 +25,12 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
     !!selectedChainId && passChains.some((c) => c.id === selectedChainId);
 
   return (
-    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="22.25rem">
+    // Reserved height includes the match bar and the two-row legend
+    <PitchContainer
+      onCoordinateClick={onPitchClick}
+      reservedHeight="24.75rem"
+      legend={<PassChainLegend />}
+    >
       {/* Render completed pass chains */}
       {passChains.map((chain) => {
         const isSelected = hasSelection && chain.id === selectedChainId;

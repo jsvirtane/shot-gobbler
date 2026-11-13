@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Shot } from "../../types/Shot";
 import { longPressDrag, polyfillPointerEvent } from "../../test/pointerEvents";
+import { TEAM_MARKER_COLORS } from "../../constants/markerColors";
 import ShotMap from "./ShotMap";
 
 // Mock the SVG import
@@ -67,6 +68,13 @@ describe("ShotMap Component", () => {
     expect(pitchImage.classList.contains("bg-green-700")).toBe(true);
   });
 
+  it("shows the legend inside the shared image area", () => {
+    render(<ShotMap onPitchClick={mockOnPitchClick} shots={mockShots} />);
+    const capture = document.getElementById("share-pitch")!;
+    expect(capture.contains(screen.getByTestId("map-legend"))).toBe(true);
+    expect(capture.contains(screen.getByTestId("pitch"))).toBe(true);
+  });
+
   it("renders shots on the pitch", () => {
     render(<ShotMap onPitchClick={mockOnPitchClick} shots={mockShots} />);
 
@@ -78,11 +86,15 @@ describe("ShotMap Component", () => {
     const homeGoalShot = shotElements[0];
     const awayMissShot = shotElements[1];
 
-    // Home goal should have yellow background
-    expect(homeGoalShot.querySelector(".bg-yellow-400")).not.toBeNull();
+    // Home goal is a blue star
+    const homeGlyph = homeGoalShot.querySelector("svg")!;
+    expect(homeGlyph.dataset.shape).toBe("star");
+    expect(homeGlyph.dataset.color).toBe(TEAM_MARKER_COLORS.home);
 
-    // Away miss should have purple background
-    expect(awayMissShot.querySelector(".bg-purple-500")).not.toBeNull();
+    // Away miss is an orange hollow circle
+    const awayGlyph = awayMissShot.querySelector("svg")!;
+    expect(awayGlyph.dataset.shape).toBe("ring");
+    expect(awayGlyph.dataset.color).toBe(TEAM_MARKER_COLORS.away);
 
     // Check tooltip content
     expect(homeGoalShot.title).toContain("Open Play");
@@ -185,8 +197,9 @@ describe("ShotMap Component", () => {
       const marker = screen.getByRole("button", { name: /Open Play/ });
       expect(marker.className).toContain("h-11");
       expect(marker.className).toContain("w-11");
-      // The visible dot keeps its size
-      expect(marker.querySelector(".h-5.w-5")).not.toBeNull();
+      // The visible marker is smaller than the hit area
+      const glyph = marker.querySelector("svg")!;
+      expect(Number(glyph.getAttribute("width"))).toBeLessThan(44);
     });
 
     it("tapping a marker opens that shot and does not create a new one", () => {

@@ -18,6 +18,9 @@ const VISIBLE_HEIGHT: Record<PitchVariant, number> = {
  */
 const DEFAULT_RESERVED_HEIGHT = "16rem";
 
+/** Narrowest shared-image area, so a legend fits in two rows. */
+const LEGEND_MIN_WIDTH = "22rem";
+
 interface PitchContainerProps {
   /** Called with full-pitch % coordinates (0-100) of the clicked point. */
   onCoordinateClick: (x: number, y: number) => void;
@@ -29,6 +32,11 @@ interface PitchContainerProps {
   variant?: PitchVariant;
   /** CSS length of the viewport height not available to the pitch. */
   reservedHeight?: string;
+  /**
+   * Key shown under the pitch. It is inside the shared-image area, so it
+   * also appears in shared images.
+   */
+  legend?: React.ReactNode;
   /** Markers positioned with `left: x%` / `top: y%` of the full pitch. */
   children?: React.ReactNode;
 }
@@ -39,6 +47,7 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
       onCoordinateClick,
       variant = "full",
       reservedHeight = DEFAULT_RESERVED_HEIGHT,
+      legend,
       children,
     },
     ref,
@@ -48,6 +57,8 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
 
     const visibleHeight = VISIBLE_HEIGHT[variant];
     const aspectRatio = PITCH_RATIO / visibleHeight;
+    // Shrink the width when the height would overflow the viewport
+    const pitchWidth = `min(100%, calc((100dvh - ${reservedHeight}) * ${aspectRatio}))`;
 
     // Time until which pitch clicks are ignored (set when a marker drag ends)
     const suppressClickUntil = useRef(0);
@@ -98,31 +109,40 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     return (
       <div className="flex w-full justify-center">
         <div
+          // Captured for shared images: the pitch plus its legend
           id="share-pitch"
-          ref={pitchRef}
           data-variant={variant}
-          className="relative cursor-crosshair overflow-hidden"
+          className="flex flex-col items-center"
           style={{
-            aspectRatio,
-            // Shrink the width when the height would overflow the viewport
-            width: `min(100%, calc((100dvh - ${reservedHeight}) * ${aspectRatio}))`,
+            // At least wide enough for a compact legend, even when the pitch
+            // is narrow
+            width: `max(min(100%, ${LEGEND_MIN_WIDTH}), ${pitchWidth})`,
           }}
+          // Clicks outside the pitch (on the legend) are ignored
           onClick={handleClick}
         >
-          {/* Full pitch; taller than the visible area when cropped */}
           <div
-            className="absolute inset-x-0 top-0"
-            style={{ height: `${100 / visibleHeight}%` }}
+            ref={pitchRef}
+            data-testid="pitch"
+            className="relative cursor-crosshair overflow-hidden"
+            style={{ aspectRatio, width: pitchWidth }}
           >
-            <img
-              src={football_pitch}
-              alt="Football Pitch"
-              className="block h-full w-full bg-green-700"
-            />
-            <PitchContext.Provider value={pitchApi}>
-              {children}
-            </PitchContext.Provider>
+            {/* Full pitch; taller than the visible area when cropped */}
+            <div
+              className="absolute inset-x-0 top-0"
+              style={{ height: `${100 / visibleHeight}%` }}
+            >
+              <img
+                src={football_pitch}
+                alt="Football Pitch"
+                className="block h-full w-full bg-green-700"
+              />
+              <PitchContext.Provider value={pitchApi}>
+                {children}
+              </PitchContext.Provider>
+            </div>
           </div>
+          {legend}
         </div>
       </div>
     );

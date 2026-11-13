@@ -11,74 +11,45 @@ const sampleZone: PitchZone = {
   vertical: "attacking",
 };
 
-// Shot marker samples
+// Shot marker samples. Docs centre each marker, but the pitch position
+// still sets its xG and therefore its size.
+const shotSample = (
+  id: string,
+  overrides: Partial<Shot> & Pick<Shot, "team" | "result">,
+): Shot => ({
+  id,
+  x: 50,
+  y: 12,
+  isGoal: overrides.result === "Goal",
+  bodyPart: "Foot",
+  shotType: "Open Play",
+  timestamp: Date.now(),
+  ...overrides,
+});
+
 export const shotMarkerSamples: Record<string, Shot> = {
-  homeGoal: {
-    id: "sample-1",
-    ...centerPosition,
-    isGoal: true,
-    result: "Goal",
-    bodyPart: "Foot",
-    shotType: "Open Play",
-    team: "home",
-    timestamp: Date.now(),
-  },
-
-  homeMiss: {
-    id: "sample-2",
-    ...centerPosition,
-    isGoal: false,
-    result: "Miss",
-    bodyPart: "Foot",
-    shotType: "Open Play",
-    team: "home",
-    timestamp: Date.now(),
-  },
-
-  awayGoal: {
-    id: "sample-3",
-    ...centerPosition,
-    isGoal: true,
-    result: "Goal",
-    bodyPart: "Foot",
-    shotType: "Open Play",
-    team: "away",
-    timestamp: Date.now(),
-  },
-
-  awayMiss: {
-    id: "sample-4",
-    ...centerPosition,
-    isGoal: false,
-    result: "Miss",
-    bodyPart: "Foot",
-    shotType: "Open Play",
-    team: "away",
-    timestamp: Date.now(),
-  },
-
-  saved: {
-    id: "sample-5",
-    ...centerPosition,
-    isGoal: false,
-    result: "Saved",
-    bodyPart: "Foot",
-    shotType: "Open Play",
-    team: "home",
-    timestamp: Date.now(),
-  },
-
-  blocked: {
-    id: "sample-6",
-    ...centerPosition,
-    isGoal: false,
-    result: "Blocked",
-    bodyPart: "Foot",
-    shotType: "Open Play",
-    team: "away",
-    timestamp: Date.now(),
-  },
+  homeGoal: shotSample("sample-1", { team: "home", result: "Goal" }),
+  homeSaved: shotSample("sample-2", { team: "home", result: "Saved" }),
+  homeBlocked: shotSample("sample-3", { team: "home", result: "Blocked" }),
+  homeMiss: shotSample("sample-4", { team: "home", result: "Miss" }),
+  awaySaved: shotSample("sample-5", { team: "away", result: "Saved" }),
 };
+
+/** The same shot from further out and closer in: size follows xG. */
+export const xgSizeSamples: { label: string; shot: Shot }[] = [
+  {
+    label: "Long range (low xG)",
+    shot: shotSample("sample-xg-1", { team: "home", result: "Saved", y: 30 }),
+  },
+  {
+    label: "Edge of the box",
+    shot: shotSample("sample-xg-2", { team: "home", result: "Saved", y: 17 }),
+  },
+  {
+    label: "Close range (high xG)",
+    shot: shotSample("sample-xg-3", { team: "home", result: "Saved", y: 5 }),
+  },
+];
 
 // Action marker samples
 export const actionMarkerSamples: Record<string, Action> = {

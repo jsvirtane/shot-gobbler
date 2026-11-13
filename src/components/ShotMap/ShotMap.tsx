@@ -1,10 +1,12 @@
 import React from "react";
 import { Shot } from "../../types/Shot";
+import { Team } from "../../types/common";
 import {
   displayToStored,
   mirrorToTopHalf,
   PitchVariant,
 } from "../../utils/pitchView";
+import { ShotLegend } from "../MapLegend/MapLegend";
 import PitchContainer from "../PitchContainer/PitchContainer";
 import ShotMarker from "./ShotMarker";
 
@@ -16,6 +18,8 @@ type ShotMapProps = {
   onShotClick?: (shot: Shot) => void;
   /** A shot was dragged; gets its new stored (full-pitch) coordinates. */
   onShotMove?: (id: string, x: number, y: number) => void;
+  /** Team names for the legend; defaults to Home / Away. */
+  teamLabels?: Record<Team, string>;
 };
 
 export const ShotMap: React.FC<ShotMapProps> = ({
@@ -24,14 +28,16 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   variant = "full",
   onShotClick,
   onShotMove,
+  teamLabels,
 }) => {
   return (
-    // Reserved height includes the match bar and the Shots view's quick
-    // entry toggle row
+    // Reserved height includes the match bar, the Shots view's quick
+    // entry toggle row and the two-row legend
     <PitchContainer
       onCoordinateClick={onPitchClick}
       variant={variant}
-      reservedHeight="20.75rem"
+      reservedHeight="23.25rem"
+      legend={<ShotLegend teamLabels={teamLabels} />}
     >
       {shots.map((shot) => (
         <ShotMarker
