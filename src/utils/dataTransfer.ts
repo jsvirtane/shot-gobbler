@@ -31,7 +31,7 @@ export const exportTabData = <T>(tab: DataTabConfig<T>): void => {
 export const importTabData = <T>(tab: DataTabConfig<T>, parsed: unknown) => {
   const result = tab.validate(parsed);
   if (!result.ok) {
-    notify(result.error);
+    notify(result.error, "error");
     return;
   }
 

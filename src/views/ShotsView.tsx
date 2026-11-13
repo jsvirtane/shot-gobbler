@@ -6,6 +6,7 @@ import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import ShotMap from "../components/ShotMap/ShotMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import QuickShotSheet from "../components/QuickShotSheet/QuickShotSheet";
 import { Team } from "../types/common";
@@ -54,6 +55,11 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   );
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
+
+  const shotList = useUndoableList(shots, setShots, {
+    one: "Shot",
+    many: "shots",
+  });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQuickSheetOpen, setIsQuickSheetOpen] = useState(false);
@@ -120,7 +126,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: Date.now(),
     };
-    setShots((prevShots) => [...prevShots, newShot]);
+    shotList.add(newShot);
     const nextDefaults: ShotDefaults = {
       team: details.team,
       bodyPart: details.bodyPart,
@@ -132,24 +138,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
     console.log("Added shot:", newShot);
   };
 
-  const handleRemoveShot = useCallback(
-    (id: string) => {
-      setShots((prevShots) => prevShots.filter((shot) => shot.id !== id));
-      console.log("Removed shot with id:", id);
-    },
-    [setShots],
-  );
-
-  const handleClearAllShots = useCallback(() => {
-    if (
-      window.confirm(
-        "Are you sure you want to clear all shots? This cannot be undone.",
-      )
-    ) {
-      setShots([]);
-      console.log("Cleared all shots");
-    }
-  }, [setShots]);
+  const handleRemoveShot = shotList.remove;
+  const handleClearAllShots = shotList.clearAll;
 
   // Shot navigation handlers
   const handleNextShot = useCallback(() => {

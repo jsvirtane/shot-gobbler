@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Team } from "../types/common";
 import { Shot } from "../types/Shot";
+import { ToastProvider } from "../components/Toast";
 import ShotsView from "./ShotsView";
 
 // Initial values for the mocked URL state, adjustable per test
@@ -107,15 +108,12 @@ import React from "react";
 
 describe("ShotsView", () => {
   const mockSetShots = vi.fn();
-  const mockConfirm = vi.spyOn(window, "confirm");
 
   beforeEach(() => {
     // List view makes the Clear All button visible
     urlDefaults.view = "list";
     urlDefaults.filter = "all";
     mockSetShots.mockClear();
-    mockConfirm.mockClear();
-    mockConfirm.mockReturnValue(true);
   });
 
   describe("Clear All Shots", () => {
@@ -148,7 +146,7 @@ describe("ShotsView", () => {
       expect(screen.queryByText(/Clear All Shots/i)).toBeNull();
     });
 
-    it("should clear all shots when Clear All button is clicked and confirmed", () => {
+    it("should clear all shots without asking for confirmation", () => {
       const mockShots: Shot[] = [
         {
           id: "1",
@@ -176,48 +174,17 @@ describe("ShotsView", () => {
         },
       ];
 
-      mockConfirm.mockReturnValue(true);
+      const confirmSpy = vi.spyOn(window, "confirm");
       render(<ShotsView shots={mockShots} setShots={mockSetShots} />);
 
       const clearButton = screen.getByText(/Clear All Shots/i);
       fireEvent.click(clearButton);
 
-      // Confirmation dialog should be shown
-      expect(mockConfirm).toHaveBeenCalledWith(
-        "Are you sure you want to clear all shots? This cannot be undone.",
-      );
+      expect(confirmSpy).not.toHaveBeenCalled();
+      confirmSpy.mockRestore();
 
       // setShots should be called with empty array
       expect(mockSetShots).toHaveBeenCalledWith([]);
-    });
-
-    it("should not clear shots when Clear All is cancelled", () => {
-      const mockShots: Shot[] = [
-        {
-          id: "1",
-          x: 30,
-          y: 40,
-          isGoal: true,
-          result: "Goal",
-          bodyPart: "Foot",
-          shotType: "Open Play",
-          team: "home",
-          playerName: "Player 1",
-          timestamp: Date.now(),
-        },
-      ];
-
-      mockConfirm.mockReturnValue(false);
-      render(<ShotsView shots={mockShots} setShots={mockSetShots} />);
-
-      const clearButton = screen.getByText(/Clear All Shots/i);
-      fireEvent.click(clearButton);
-
-      // Confirmation dialog should be shown
-      expect(mockConfirm).toHaveBeenCalled();
-
-      // setShots should NOT be called
-      expect(mockSetShots).not.toHaveBeenCalled();
     });
   });
 
@@ -299,6 +266,76 @@ describe("ShotsView", () => {
       fireEvent.click(screen.getByText("Home Team"));
       fireEvent.click(screen.getByTestId("shot-map"));
       expect(screen.getByTestId("form-default-team").textContent).toBe("home");
+    });
+  });
+
+  describe("Undo", () => {
+    const makeShot = (id: string): Shot => ({
+      id,
+      x: 30,
+      y: 40,
+      isGoal: false,
+      result: "Miss",
+      bodyPart: "Foot",
+      shotType: "Open Play",
+      team: "home",
+      timestamp: 1,
+    });
+
+    // Real state, so the undo updates can be checked
+    const Harness: React.FC<{ initial: Shot[] }> = ({ initial }) => {
+      const [shots, setShots] = React.useState(initial);
+      return (
+        <ToastProvider>
+          <ShotsView shots={shots} setShots={setShots} />
+          <div data-testid="ids">{shots.map((s) => s.id).join(",")}</div>
+        </ToastProvider>
+      );
+    };
+    const ids = () => screen.getByTestId("ids").textContent;
+
+    it("clears all shots and restores them on Undo", () => {
+      render(<Harness initial={[makeShot("a"), makeShot("b")]} />);
+
+      fireEvent.click(screen.getByText(/Clear All Shots/i));
+      expect(ids()).toBe("");
+      expect(screen.getByRole("status").textContent).toContain(
+        "Cleared 2 shots",
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(ids()).toBe("a,b");
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("removes a shot and restores it at its original index on Undo", () => {
+      render(
+        <Harness initial={[makeShot("a"), makeShot("b"), makeShot("c")]} />,
+      );
+
+      fireEvent.click(
+        within(screen.getByTestId("shot-b")).getByRole("button", {
+          name: "Remove",
+        }),
+      );
+      expect(ids()).toBe("a,c");
+      expect(screen.getByRole("status").textContent).toContain("Shot removed");
+
+      fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(ids()).toBe("a,b,c");
+    });
+
+    it("removes an added shot on Undo, keeping other shots", () => {
+      urlDefaults.view = "pitch";
+      render(<Harness initial={[makeShot("a")]} />);
+
+      fireEvent.click(screen.getByTestId("shot-map"));
+      fireEvent.click(screen.getByText("Submit away shot"));
+      expect(ids()?.split(",")).toHaveLength(2);
+      expect(screen.getByRole("status").textContent).toContain("Shot added");
+
+      fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(ids()).toBe("a");
     });
   });
 });

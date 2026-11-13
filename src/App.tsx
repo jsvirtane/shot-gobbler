@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import NavBar from "./components/NavBar/NavBar";
 import ShareButton from "./components/ShareButton";
+import { ToastProvider } from "./components/Toast";
 import { PASS_CHAINS_TAB, SHOTS_TAB, TOUCHES_TAB } from "./config/dataTabs";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
 import { useUrlState } from "./hooks/useUrlState";
@@ -102,13 +103,14 @@ function App() {
         console.error("Error parsing JSON:", error);
         notify(
           "Failed to parse the imported file. Please ensure it's valid JSON.",
+          "error",
         );
         return;
       }
       activeDataTab.importData(parsed);
     };
     reader.onerror = () => {
-      notify("Error reading the file.");
+      notify("Error reading the file.", "error");
     };
     reader.readAsText(file);
     // Allow importing the same file again
@@ -132,42 +134,44 @@ function App() {
   }, []);
 
   return (
-    <div className="mx-auto flex h-screen flex-col">
-      <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="relative flex-grow">
-        {/* Floating Share Button - Hide on docs page */}
-        {activeDataTab && (
-          <div className="fixed top-20 right-4 z-20">
-            <ShareButton
-              title={activeDataTab.shareTitle}
-              className="rounded-full bg-white shadow-lg hover:shadow-xl"
-              hasData={activeDataTab.hasData}
-              onExportJSON={activeDataTab.exportData}
-              onImport={handleImport}
-              onBeforeShare={handleBeforeShare}
-            />
-          </div>
-        )}
-        <main
-          id="main-content"
-          className="flex h-full w-full flex-col bg-gray-100 p-5"
-        >
-          {activeTab === "docs" && <DocsView />}
-          {activeTab === "shots" && (
-            <ShotsView shots={shots} setShots={setShots} />
+    <ToastProvider>
+      <div className="mx-auto flex h-screen flex-col">
+        <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="relative flex-grow">
+          {/* Floating Share Button - Hide on docs page */}
+          {activeDataTab && (
+            <div className="fixed top-20 right-4 z-20">
+              <ShareButton
+                title={activeDataTab.shareTitle}
+                className="rounded-full bg-white shadow-lg hover:shadow-xl"
+                hasData={activeDataTab.hasData}
+                onExportJSON={activeDataTab.exportData}
+                onImport={handleImport}
+                onBeforeShare={handleBeforeShare}
+              />
+            </div>
           )}
-          {activeTab === "touches" && (
-            <TouchesView actions={actions} setActions={setActions} />
-          )}
-          {activeTab === "pass-chains" && (
-            <PassChainsView
-              passChains={passChains}
-              setPassChains={setPassChains}
-            />
-          )}
-        </main>
+          <main
+            id="main-content"
+            className="flex h-full w-full flex-col bg-gray-100 p-5"
+          >
+            {activeTab === "docs" && <DocsView />}
+            {activeTab === "shots" && (
+              <ShotsView shots={shots} setShots={setShots} />
+            )}
+            {activeTab === "touches" && (
+              <TouchesView actions={actions} setActions={setActions} />
+            )}
+            {activeTab === "pass-chains" && (
+              <PassChainsView
+                passChains={passChains}
+                setPassChains={setPassChains}
+              />
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }
 

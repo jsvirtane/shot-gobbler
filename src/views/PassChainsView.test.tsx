@@ -182,19 +182,12 @@ Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 });
 
-// Mock window.confirm
-const mockConfirm = vi.fn();
-Object.defineProperty(window, "confirm", {
-  value: mockConfirm,
-});
-
 describe("PassChainsView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
     // Reset localStorage.setItem to not throw errors by default
     localStorageMock.setItem.mockImplementation(() => {});
-    mockConfirm.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -448,8 +441,9 @@ describe("PassChainsView", () => {
   });
 
   describe("Pass Chain Management", () => {
-    it("should clear all pass chains with confirmation", () => {
-      renderPassChainsView();
+    it("should clear all pass chains without confirmation", () => {
+      const confirmSpy = vi.spyOn(window, "confirm");
+      const { mockSetPassChains } = renderPassChainsView();
 
       // Create and complete a pass chain first
       fireEvent.click(screen.getByTestId("pitch-click"));
@@ -460,27 +454,9 @@ describe("PassChainsView", () => {
       fireEvent.click(screen.getByTestId("switch-to-list"));
       fireEvent.click(screen.getByTestId("clear-all"));
 
-      expect(window.confirm).toHaveBeenCalledWith(
-        "Are you sure you want to clear all pass chains? This cannot be undone.",
-      );
-    });
-
-    it("should not clear pass chains if confirmation is cancelled", () => {
-      mockConfirm.mockReturnValue(false);
-      renderPassChainsView();
-
-      // Create and complete a pass chain first
-      fireEvent.click(screen.getByTestId("pitch-click"));
-      fireEvent.click(screen.getByTestId("end-chain"));
-      fireEvent.click(screen.getByTestId("submit-form"));
-
-      // Switch to list view and try to clear all
-      fireEvent.click(screen.getByTestId("switch-to-list"));
-      fireEvent.click(screen.getByTestId("clear-all"));
-
-      expect(window.confirm).toHaveBeenCalled();
-      // Since we're mocking the components, we can't easily test the actual state change
-      // but the confirm dialog should have been shown
+      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(mockSetPassChains).toHaveBeenLastCalledWith([]);
+      confirmSpy.mockRestore();
     });
 
     it("should remove individual pass chain", () => {

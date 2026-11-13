@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import ActionForm from "../components/ActionForm/ActionForm";
 import { ClearButton } from "../components/common";
 import { TouchList } from "../components/TouchList/TouchList";
 import TouchMap from "../components/TouchMap/TouchMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
 
@@ -23,6 +24,10 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
     "pitch",
     TOUCHES_VIEWS,
   );
+  const actionList = useUndoableList(actions, setActions, {
+    one: "Action",
+    many: "actions",
+  });
 
   const handlePitchClick = (x: number, y: number) => {
     setCurrentPosition({ x, y });
@@ -40,22 +45,11 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
       timestamp: Date.now(),
     };
 
-    setActions((prev) => [...prev, newAction]);
+    actionList.add(newAction);
   };
 
-  const handleRemoveAction = (id: string) => {
-    setActions((prev) => prev.filter((action) => action.id !== id));
-  };
-
-  const handleClearAllActions = useCallback(() => {
-    if (
-      window.confirm(
-        "Are you sure you want to clear all actions? This cannot be undone.",
-      )
-    ) {
-      setActions([]);
-    }
-  }, [setActions]);
+  const handleRemoveAction = actionList.remove;
+  const handleClearAllActions = actionList.clearAll;
 
   const viewOptions = [
     { id: "pitch", label: "Pitch View", icon: "⚽️" },
