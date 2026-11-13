@@ -21,7 +21,12 @@ export const ShotMap: React.FC<ShotMapProps> = ({
     variant === "half-top" ? shots.map(mirrorToTopHalf) : shots;
 
   return (
-    <PitchContainer onCoordinateClick={onPitchClick} variant={variant}>
+    // Reserved height includes the Shots view's quick entry toggle row
+    <PitchContainer
+      onCoordinateClick={onPitchClick}
+      variant={variant}
+      reservedHeight="17.5rem"
+    >
       {displayedShots.map((shot) => (
         <ShotMarker key={shot.id} shot={shot} />
       ))}

@@ -7,8 +7,16 @@ import ShotList from "../components/ShotList/ShotList";
 import ShotMap from "../components/ShotMap/ShotMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUrlState } from "../hooks/useUrlState";
+import QuickShotSheet from "../components/QuickShotSheet/QuickShotSheet";
 import { Team } from "../types/common";
-import { Shot } from "../types/Shot";
+import { Shot, ShotResult } from "../types/Shot";
+import {
+  loadQuickMode,
+  loadShotDefaults,
+  saveQuickMode,
+  saveShotDefaults,
+  ShotDefaults,
+} from "../utils/shotEntryPrefs";
 
 const DISPLAY_FILTERS = ["all", "home", "away"] as const;
 type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
@@ -23,8 +31,11 @@ interface ShotsViewProps {
 }
 
 const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
-  // Team last used in the form; sticky regardless of the display filter
-  const [lastUsedTeam, setLastUsedTeam] = useState<Team>("home");
+  // Choices last used in the form (team, body part, type, player); sticky
+  // regardless of the display filter and remembered across reloads
+  const [shotDefaults, setShotDefaults] =
+    useState<ShotDefaults>(loadShotDefaults);
+  const [isQuickMode, setIsQuickMode] = useState<boolean>(loadQuickMode);
 
   const [shotsView, setShotsView] = useUrlState<ShotsView>(
     "view",
@@ -45,6 +56,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQuickSheetOpen, setIsQuickSheetOpen] = useState(false);
   const [currentShotCoords, setCurrentShotCoords] = useState<{
     x: number;
     y: number;
@@ -52,7 +64,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
 
   // A Home/Away filter pre-selects that team; "All" keeps the last-used team
   const formDefaultTeam: Team =
-    shotDisplayFilter === "all" ? lastUsedTeam : shotDisplayFilter;
+    shotDisplayFilter === "all" ? shotDefaults.team : shotDisplayFilter;
 
   // Shot filtering
   const filteredShots = shots.filter((shot) => {
@@ -64,11 +76,41 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   const handlePitchClick = (x: number, y: number) => {
     console.log(`Pitch clicked at: x=${x}, y=${y}`);
     setCurrentShotCoords({ x, y });
-    setIsModalOpen(true);
+    if (isQuickMode) {
+      setIsQuickSheetOpen(true);
+    } else {
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+  };
+
+  const handleToggleQuickMode = () => {
+    const next = !isQuickMode;
+    setIsQuickMode(next);
+    saveQuickMode(next);
+  };
+
+  // Quick mode: one tap on a result saves the shot with the remembered choices
+  const handleQuickResult = (result: ShotResult) => {
+    handleAddShot({
+      x: currentShotCoords.x,
+      y: currentShotCoords.y,
+      isGoal: result === "Goal",
+      result,
+      bodyPart: shotDefaults.bodyPart,
+      shotType: shotDefaults.shotType,
+      team: formDefaultTeam,
+      playerName: shotDefaults.playerName.trim() || undefined,
+    });
+    setIsQuickSheetOpen(false);
+  };
+
+  const handleQuickMoreDetails = () => {
+    setIsQuickSheetOpen(false);
+    setIsModalOpen(true);
   };
 
   // Shot "CRUD" operations
@@ -79,7 +121,14 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
       timestamp: Date.now(),
     };
     setShots((prevShots) => [...prevShots, newShot]);
-    setLastUsedTeam(details.team);
+    const nextDefaults: ShotDefaults = {
+      team: details.team,
+      bodyPart: details.bodyPart,
+      shotType: details.shotType,
+      playerName: details.playerName ?? "",
+    };
+    setShotDefaults(nextDefaults);
+    saveShotDefaults(nextDefaults);
     console.log("Added shot:", newShot);
   };
 
@@ -165,6 +214,34 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
     </div>
   );
 
+  // Its own short row: the filter row has no room left at phone width.
+  // ShotMap reserves the extra height so the pitch still fits on screen.
+  const quickEntryToggleUI = (
+    <div className="-mt-2 mb-2 flex h-6 justify-center">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isQuickMode}
+        onClick={handleToggleQuickMode}
+        className="flex items-center gap-2 rounded-full px-2 text-sm font-medium text-gray-800"
+      >
+        <span
+          aria-hidden="true"
+          className={`relative inline-block h-4 w-7 rounded-full transition-colors ${
+            isQuickMode ? "bg-green-600" : "bg-gray-300"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
+              isQuickMode ? "translate-x-3" : ""
+            }`}
+          />
+        </span>
+        ⚡ Quick entry
+      </button>
+    </div>
+  );
+
   const viewOptions = [
     { id: "pitch", label: "Pitch View", icon: "⚽" },
     { id: "list", label: "List View", icon: "📋" },
@@ -179,6 +256,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         className="mb-4"
       />
       {filterButtonsUI}
+      {shotsView === "pitch" && quickEntryToggleUI}
 
       {shotsView === "pitch" ? (
         <>
@@ -250,6 +328,16 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         onSubmit={handleAddShot}
         initialCoords={currentShotCoords}
         defaultTeam={formDefaultTeam}
+        defaultBodyPart={shotDefaults.bodyPart}
+        defaultShotType={shotDefaults.shotType}
+        defaultPlayerName={shotDefaults.playerName}
+      />
+      <QuickShotSheet
+        isOpen={isQuickSheetOpen}
+        onClose={() => setIsQuickSheetOpen(false)}
+        onSelectResult={handleQuickResult}
+        onMoreDetails={handleQuickMoreDetails}
+        defaults={{ ...shotDefaults, team: formDefaultTeam }}
       />
     </>
   );

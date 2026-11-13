@@ -14,6 +14,10 @@ interface ShotFormProps {
   onSubmit: (details: Omit<Shot, "id" | "timestamp">) => void;
   initialCoords: { x: number; y: number };
   defaultTeam?: Team;
+  /** Remembered choices pre-selected when the form opens. */
+  defaultBodyPart?: BodyPart;
+  defaultShotType?: ShotType;
+  defaultPlayerName?: string;
 }
 
 const ShotForm: React.FC<ShotFormProps> = ({
@@ -22,24 +26,35 @@ const ShotForm: React.FC<ShotFormProps> = ({
   onSubmit,
   initialCoords,
   defaultTeam = "home",
+  defaultBodyPart = "Foot",
+  defaultShotType = "Open Play",
+  defaultPlayerName = "",
 }) => {
   const [result, setResult] = useState<ShotResult>("Miss");
-  const [bodyPart, setBodyPart] = useState<BodyPart>("Foot");
-  const [shotType, setShotType] = useState<ShotType>("Open Play");
-  const [playerName, setPlayerName] = useState<string>("");
+  const [bodyPart, setBodyPart] = useState<BodyPart>(defaultBodyPart);
+  const [shotType, setShotType] = useState<ShotType>(defaultShotType);
+  const [playerName, setPlayerName] = useState<string>(defaultPlayerName);
   const [team, setTeam] = useState<Team>(defaultTeam);
   const isGoal = result === "Goal";
 
-  // Reset form when it opens with new coordinates
+  // Reset form when it opens with new coordinates: the result goes back to
+  // Miss (it differs every shot), the rest starts from the remembered choices
   useEffect(() => {
     if (isOpen) {
       setResult("Miss");
-      setBodyPart("Foot");
-      setShotType("Open Play");
-      setPlayerName("");
+      setBodyPart(defaultBodyPart);
+      setShotType(defaultShotType);
+      setPlayerName(defaultPlayerName);
       setTeam(defaultTeam);
     }
-  }, [isOpen, initialCoords, defaultTeam]); // Depend on isOpen, coords, and defaultTeam
+  }, [
+    isOpen,
+    initialCoords,
+    defaultTeam,
+    defaultBodyPart,
+    defaultShotType,
+    defaultPlayerName,
+  ]);
 
   if (!isOpen) {
     return null;
