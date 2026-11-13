@@ -34,7 +34,7 @@ type AttackingActionOutcome =
 
 // Defensive action outcomes
 type TackleOutcome = "won" | "lost";
-type BlockOutcome = "posession-won" | "unsuccessful";
+type BlockOutcome = "possession-won" | "unsuccessful";
 type InterceptionOutcome = "successful";
 type ClearanceOutcome = "cleared" | "unsuccessful";
 
