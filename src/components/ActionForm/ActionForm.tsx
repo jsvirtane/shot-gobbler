@@ -5,13 +5,114 @@ import {
   ActionOutcome,
   ActionType,
 } from "../../types/Action";
+import { ActionFormColors } from "../../constants/actionFormColors";
 import {
-  getActionFormButtonStyle,
   getCancelButtonStyle,
-  getOutcomeButtonStyle,
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
 import Modal from "../Modal";
+import SegmentedControl, { SegmentedOption } from "../SegmentedControl";
+
+const CATEGORY_OPTIONS: SegmentedOption<ActionCategory>[] = (
+  ["attacking", "defensive", "duel"] as const
+).map((category) => ({
+  value: category,
+  label: category[0].toUpperCase() + category.slice(1),
+  activeClassName: ActionFormColors.category[category].active,
+}));
+
+/** Action types per category; the first one is selected by default. */
+const ACTION_TYPES: Record<ActionCategory, SegmentedOption<ActionType>[]> = {
+  attacking: [
+    { value: "pass", label: "Pass" },
+    { value: "cross", label: "Cross" },
+    { value: "dribble", label: "Dribble" },
+    { value: "shot", label: "Shot" },
+    { value: "throw-in", label: "Throw-in" },
+  ],
+  defensive: [
+    { value: "tackle", label: "Tackle" },
+    { value: "block", label: "Block" },
+    { value: "interception", label: "Interception" },
+    { value: "clearance", label: "Clearance" },
+    { value: "other", label: "Other" },
+  ],
+  duel: [
+    { value: "aerial", label: "Aerial Duel" },
+    { value: "ground", label: "Ground Duel" },
+  ],
+};
+
+const outcome = (
+  value: ActionOutcome,
+  label: string,
+  icon: string,
+  successful = true,
+): SegmentedOption<ActionOutcome> => ({
+  value,
+  label,
+  icon,
+  activeClassName: successful
+    ? ActionFormColors.outcome.active.successful
+    : ActionFormColors.outcome.active.unsuccessful,
+});
+
+const SUCCESSFUL = outcome("successful", "Successful", "✅");
+const UNSUCCESSFUL = outcome("unsuccessful", "Unsuccessful", "❌", false);
+type OutcomeGroup = {
+  options: SegmentedOption<ActionOutcome>[];
+  columns: 1 | 2 | 3;
+};
+
+const SUCCESS_OR_NOT: OutcomeGroup = {
+  options: [SUCCESSFUL, UNSUCCESSFUL],
+  columns: 2,
+};
+const PASS_OUTCOMES: OutcomeGroup = {
+  options: [
+    SUCCESSFUL,
+    UNSUCCESSFUL,
+    outcome("assist", "Assist", "🅰️"),
+    outcome("key-pass", "Key Pass", "🔑"),
+  ],
+  columns: 2,
+};
+
+/** Outcomes per action type; the first one is selected by default. */
+const OUTCOMES: Record<ActionType, OutcomeGroup> = {
+  pass: PASS_OUTCOMES,
+  cross: PASS_OUTCOMES,
+  dribble: SUCCESS_OR_NOT,
+  shot: {
+    options: [
+      outcome("goal", "Goal", "⚽"),
+      outcome("on-target", "On Target", "🎯"),
+      outcome("off-target", "Off Target", "↪️", false),
+      outcome("blocked", "Blocked", "🛑", false),
+    ],
+    columns: 3,
+  },
+  "throw-in": SUCCESS_OR_NOT,
+  tackle: {
+    options: [
+      outcome("won", "Won", "✅"),
+      outcome("lost", "Lost", "❌", false),
+    ],
+    columns: 2,
+  },
+  block: {
+    options: [outcome("possession-won", "Possession Won", "🔄"), UNSUCCESSFUL],
+    columns: 2,
+  },
+  interception: { options: [SUCCESSFUL], columns: 1 },
+  clearance: {
+    options: [outcome("cleared", "Cleared", "🧹"), UNSUCCESSFUL],
+    columns: 2,
+  },
+  other: SUCCESS_OR_NOT,
+  aerial: SUCCESS_OR_NOT,
+  ground: SUCCESS_OR_NOT,
+};
 
 type ActionFormProps = {
   isOpen: boolean;
@@ -41,44 +142,20 @@ const ActionForm: React.FC<ActionFormProps> = ({
     }
   }, [isOpen, initialCoords]);
 
-  // Update outcome when action type changes
-  useEffect(() => {
-    // Set default outcome based on action type
-    switch (selectedAction) {
-      case "shot":
-        setSelectedOutcome("goal");
-        break;
-      case "tackle":
-        setSelectedOutcome("won");
-        break;
-      case "block":
-        setSelectedOutcome("possession-won");
-        break;
-      case "clearance":
-        setSelectedOutcome("cleared");
-        break;
-      default:
-        setSelectedOutcome("successful");
-    }
-  }, [selectedAction]);
-
   if (!isOpen) {
     return null;
   }
 
+  // Changing the action type picks its first (default) outcome
+  const handleActionChange = (action: ActionType) => {
+    setSelectedAction(action);
+    setSelectedOutcome(OUTCOMES[action].options[0].value);
+  };
+
+  // Changing the category picks its first action type
   const handleCategoryChange = (category: ActionCategory) => {
     setSelectedCategory(category);
-    switch (category) {
-      case "attacking":
-        setSelectedAction("pass");
-        break;
-      case "defensive":
-        setSelectedAction("tackle");
-        break;
-      case "duel":
-        setSelectedAction("aerial");
-        break;
-    }
+    handleActionChange(ACTION_TYPES[category][0].value);
   };
 
   const handleActionSubmit = (e: React.FormEvent) => {
@@ -93,223 +170,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
     onClose();
   };
 
-  // Helper to render outcome buttons based on action type
-  const renderOutcomeButtons = () => {
-    switch (selectedAction) {
-      case "pass":
-      case "cross": // Pass & cross have currently the same outcome options, so they fall through to the same logic
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("assist")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "assist")}`}
-            >
-              🅰️ Assist
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("key-pass")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "key-pass")}`}
-            >
-              🔑 Key Pass
-            </button>
-          </div>
-        );
-      case "dribble":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-      case "shot":
-        return (
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("goal")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "goal")}`}
-            >
-              ⚽ Goal
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("on-target")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "on-target")}`}
-            >
-              🎯 On Target
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("off-target")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "off-target", true)}`}
-            >
-              ↪️ Off Target
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("blocked")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "blocked", true)}`}
-            >
-              🛑 Blocked
-            </button>
-          </div>
-        );
-      case "throw-in":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-      case "tackle":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("won")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "won")}`}
-            >
-              ✅ Won
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("lost")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "lost", true)}`}
-            >
-              ❌ Lost
-            </button>
-          </div>
-        );
-      case "block":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("possession-won")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "possession-won")}`}
-            >
-              🔄 Possession Won
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-      case "interception":
-        return (
-          <div className="grid grid-cols-1 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-          </div>
-        );
-      case "clearance":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("cleared")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "cleared")}`}
-            >
-              🧹 Cleared
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-      case "other":
-        return (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-      default:
-        return (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("successful")}
-              className={`flex flex-1 items-center justify-center rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "successful")}`}
-            >
-              ✅ Successful
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedOutcome("unsuccessful")}
-              className={`flex flex-1 items-center justify-center rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "unsuccessful", true)}`}
-            >
-              ❌ Unsuccessful
-            </button>
-          </div>
-        );
-    }
-  };
+  const outcomes = OUTCOMES[selectedAction];
 
   return (
     <Modal isOpen={isOpen} title="Record Player Action" onClose={onClose}>
@@ -324,142 +185,46 @@ const ActionForm: React.FC<ActionFormProps> = ({
           <label className="mb-2 block text-sm font-medium">
             Action Category
           </label>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedCategory === "attacking")}`}
-              onClick={() => handleCategoryChange("attacking")}
-            >
-              Attacking
-            </button>
-            <button
-              type="button"
-              className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedCategory === "defensive")}`}
-              onClick={() => handleCategoryChange("defensive")}
-            >
-              Defensive
-            </button>
-            <button
-              type="button"
-              className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedCategory === "duel")}`}
-              onClick={() => handleCategoryChange("duel")}
-            >
-              Duel
-            </button>
-          </div>
+          <SegmentedControl
+            ariaLabel="Action category"
+            options={CATEGORY_OPTIONS}
+            value={selectedCategory}
+            onChange={handleCategoryChange}
+            columns={3}
+            size="sm"
+            inactiveClassName={ActionFormColors.category.attacking.inactive}
+          />
         </div>
 
         {/* Action Type Selection */}
         <div className="mb-4">
           <label className="mb-2 block text-sm font-medium">Action Type</label>
-
-          {/* Attacking action buttons */}
-          {selectedCategory === "attacking" && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedAction("pass")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "pass")}`}
-              >
-                Pass
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("cross")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "cross")}`}
-              >
-                Cross
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("dribble")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "dribble")}`}
-              >
-                Dribble
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("shot")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "shot")}`}
-              >
-                Shot
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("throw-in")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "throw-in")}`}
-              >
-                Throw-in
-              </button>
-            </div>
-          )}
-
-          {/* Defensive action buttons */}
-          {selectedCategory === "defensive" && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedAction("tackle")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "tackle")}`}
-              >
-                Tackle
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("block")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "block")}`}
-              >
-                Block
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("interception")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "interception")}`}
-              >
-                Interception
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("clearance")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "clearance")}`}
-              >
-                Clearance
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("other")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "other")}`}
-              >
-                Other
-              </button>
-            </div>
-          )}
-
-          {/* Duel action buttons */}
-          {selectedCategory === "duel" && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedAction("aerial")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "aerial")}`}
-              >
-                Aerial Duel
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedAction("ground")}
-                className={`rounded px-4 py-2 text-sm ${getActionFormButtonStyle(selectedCategory, selectedAction === "ground")}`}
-              >
-                Ground Duel
-              </button>
-            </div>
-          )}
+          <SegmentedControl
+            ariaLabel="Action type"
+            options={ACTION_TYPES[selectedCategory]}
+            value={selectedAction}
+            onChange={handleActionChange}
+            columns={2}
+            size="sm"
+            activeClassName={ActionFormColors.category[selectedCategory].active}
+            inactiveClassName={
+              ActionFormColors.category[selectedCategory].inactive
+            }
+          />
         </div>
 
         {/* Outcome Selection */}
         <div className="mb-4">
           <label className="mb-2 block text-sm font-medium">Outcome</label>
-          {renderOutcomeButtons()}
+          <SegmentedControl
+            ariaLabel="Outcome"
+            options={outcomes.options}
+            value={selectedOutcome}
+            onChange={setSelectedOutcome}
+            columns={outcomes.columns}
+            size="sm"
+            inactiveClassName={ActionFormColors.outcome.inactive}
+          />
         </div>
 
         {/* Submit Buttons */}

@@ -3,10 +3,30 @@ import { Team } from "../../types/common";
 import { BodyPart, Shot, ShotResult, ShotType } from "../../types/Shot";
 import {
   getCancelButtonStyle,
-  getShotFormButtonStyle,
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
+import { getTeamOptions } from "../../utils/teamLabels";
 import Modal from "../Modal";
+import SegmentedControl, { SegmentedOption } from "../SegmentedControl";
+
+const RESULT_OPTIONS: SegmentedOption<ShotResult>[] = [
+  { value: "Miss", label: "Miss", icon: "❌" },
+  { value: "Saved", label: "Saved", icon: "🧤" },
+  { value: "Blocked", label: "Blocked", icon: "🛑" },
+  { value: "Goal", label: "Goal", icon: "⚽" },
+];
+
+const BODY_PART_OPTIONS: SegmentedOption<BodyPart>[] = [
+  { value: "Foot", label: "Foot", icon: "👟" },
+  { value: "Head", label: "Head", icon: "👤" },
+  { value: "Other", label: "Other", icon: "🦵" },
+];
+
+const SHOT_TYPE_OPTIONS: SegmentedOption<ShotType>[] = [
+  { value: "Open Play", label: "Open Play" },
+  { value: "Set Piece", label: "Set Piece" },
+  { value: "Penalty", label: "Penalty" },
+];
 
 interface ShotFormProps {
   isOpen: boolean;
@@ -60,6 +80,8 @@ const ShotForm: React.FC<ShotFormProps> = ({
     return null;
   }
 
+  const teamOptions = getTeamOptions();
+
   // Create a safer wrapper function that handles the iOS Safari issue
   const handleShotAdd = () => {
     onSubmit({
@@ -80,114 +102,47 @@ const ShotForm: React.FC<ShotFormProps> = ({
       <form>
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">Team:</label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTeam("home")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(team === "home")}`}
-            >
-              🏠 Home
-            </button>
-            <button
-              type="button"
-              onClick={() => setTeam("away")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(team === "away")}`}
-            >
-              🚌 Away
-            </button>
-          </div>
+          <SegmentedControl
+            ariaLabel="Team"
+            options={teamOptions}
+            value={team}
+            onChange={setTeam}
+          />
         </div>
 
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">Result:</label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setResult("Miss")}
-              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Miss")}`}
-            >
-              ❌ Miss
-            </button>
-            <button
-              type="button"
-              onClick={() => setResult("Saved")}
-              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Saved")}`}
-            >
-              🧤 Saved
-            </button>
-            <button
-              type="button"
-              onClick={() => setResult("Blocked")}
-              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Blocked")}`}
-            >
-              🛑 Blocked
-            </button>
-            <button
-              type="button"
-              onClick={() => setResult("Goal")}
-              className={`flex flex-1/3 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(result === "Goal")}`}
-            >
-              ⚽ Goal
-            </button>
-          </div>
+          <SegmentedControl
+            ariaLabel="Result"
+            options={RESULT_OPTIONS}
+            value={result}
+            onChange={setResult}
+            columns={2}
+          />
         </div>
 
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">
             Body Part:
           </label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setBodyPart("Foot")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(bodyPart === "Foot")}`}
-            >
-              👟 Foot
-            </button>
-            <button
-              type="button"
-              onClick={() => setBodyPart("Head")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(bodyPart === "Head")}`}
-            >
-              👤 Head
-            </button>
-            <button
-              type="button"
-              onClick={() => setBodyPart("Other")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(bodyPart === "Other")}`}
-            >
-              🦵 Other
-            </button>
-          </div>
+          <SegmentedControl
+            ariaLabel="Body part"
+            options={BODY_PART_OPTIONS}
+            value={bodyPart}
+            onChange={setBodyPart}
+          />
         </div>
 
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">
             Shot Type:
           </label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setShotType("Open Play")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(shotType === "Open Play")}`}
-            >
-              Open Play
-            </button>
-            <button
-              type="button"
-              onClick={() => setShotType("Set Piece")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(shotType === "Set Piece")}`}
-            >
-              Set Piece
-            </button>
-            <button
-              type="button"
-              onClick={() => setShotType("Penalty")}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-base transition-colors ${getShotFormButtonStyle(shotType === "Penalty")}`}
-            >
-              Penalty
-            </button>
-          </div>
+          <SegmentedControl
+            ariaLabel="Shot type"
+            options={SHOT_TYPE_OPTIONS}
+            value={shotType}
+            onChange={setShotType}
+          />
         </div>
 
         <div className="mb-4">
