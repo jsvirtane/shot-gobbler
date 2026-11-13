@@ -559,11 +559,10 @@ describe("App - Import", () => {
       },
     ]);
 
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith(
-        expect.stringContaining("Touches tab"),
-      ),
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Touches tab",
     );
+    expect(window.alert).not.toHaveBeenCalled();
     expect(storedShots()).toEqual([existingShot]);
   });
 });

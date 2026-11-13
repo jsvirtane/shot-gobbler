@@ -1,10 +1,11 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { ClearButton } from "../components/common";
 import Modal from "../components/Modal/Modal";
 import PassChainForm from "../components/PassChainForm/PassChainForm";
 import PassChainsListView from "../components/PassChainsListView/PassChainsListView";
 import PassChainsPitchView from "../components/PassChainsPitchView/PassChainsPitchView";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import {
   ChainAction,
@@ -41,6 +42,11 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   );
   const [selectedActionType, setSelectedActionType] =
     useState<ChainActionType>("start");
+
+  const chainList = useUndoableList(passChains, setPassChains, {
+    one: "Pass chain",
+    many: "pass chains",
+  });
 
   const [currentPassChain, setCurrentPassChain] = useState<ChainAction[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,7 +94,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
         zones: getZonesFromPassChain(currentPassChain),
       };
 
-      setPassChains((prevChains) => [...prevChains, newChain]);
+      chainList.add(newChain);
       setCurrentPassChain([]);
       setIsModalOpen(false);
       setSelectedActionType("start"); // Reset
@@ -104,25 +110,8 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
     setCurrentPassChain((prevChain) => prevChain.slice(0, -1));
   };
 
-  const handleClearAllPassChains = useCallback(() => {
-    if (
-      window.confirm(
-        "Are you sure you want to clear all pass chains? This cannot be undone.",
-      )
-    ) {
-      setPassChains([]);
-      console.log("Cleared all pass chains");
-    }
-  }, [setPassChains]);
-
-  const handleRemovePassChain = useCallback(
-    (chainId: string) => {
-      setPassChains((prevChains) =>
-        prevChains.filter((chain) => chain.id !== chainId),
-      );
-    },
-    [setPassChains],
-  );
+  const handleClearAllPassChains = chainList.clearAll;
+  const handleRemovePassChain = chainList.remove;
 
   return (
     <>

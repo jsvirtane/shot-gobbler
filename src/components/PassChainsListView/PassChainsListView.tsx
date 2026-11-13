@@ -23,12 +23,6 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
     return actionType.charAt(0).toUpperCase() + actionType.slice(1);
   };
 
-  const handleRemoveChain = (chainId: string) => {
-    if (confirm("Are you sure you want to remove this pass chain?")) {
-      onRemovePassChain(chainId);
-    }
-  };
-
   if (passChains.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
@@ -72,7 +66,7 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
                   {chain.isCompleted ? "Completed" : "In Progress"}
                 </span>
                 <RemoveItemButton
-                  onClick={() => handleRemoveChain(chain.id)}
+                  onClick={() => onRemovePassChain(chain.id)}
                   title="Remove this pass chain"
                 />
               </div>

@@ -56,12 +56,9 @@ import React from "react";
 
 describe("TouchesView", () => {
   const mockSetActions = vi.fn();
-  const mockConfirm = vi.spyOn(window, "confirm");
 
   beforeEach(() => {
     mockSetActions.mockClear();
-    mockConfirm.mockClear();
-    mockConfirm.mockReturnValue(true);
   });
 
   describe("Clear All Actions", () => {
@@ -91,7 +88,7 @@ describe("TouchesView", () => {
       expect(screen.queryByText(/Clear All/i)).toBeNull();
     });
 
-    it("should clear all actions when Clear All button is clicked and confirmed", () => {
+    it("should clear all actions without asking for confirmation", () => {
       const mockActions: Action[] = [
         {
           id: "1",
@@ -113,45 +110,17 @@ describe("TouchesView", () => {
         },
       ];
 
-      mockConfirm.mockReturnValue(true);
+      const confirmSpy = vi.spyOn(window, "confirm");
       render(<TouchesView actions={mockActions} setActions={mockSetActions} />);
 
       const clearButton = screen.getByText(/Clear All/i);
       fireEvent.click(clearButton);
 
-      // Confirmation dialog should be shown
-      expect(mockConfirm).toHaveBeenCalledWith(
-        "Are you sure you want to clear all actions? This cannot be undone.",
-      );
+      expect(confirmSpy).not.toHaveBeenCalled();
+      confirmSpy.mockRestore();
 
       // setActions should be called with empty array
       expect(mockSetActions).toHaveBeenCalledWith([]);
-    });
-
-    it("should not clear actions when Clear All is cancelled", () => {
-      const mockActions: Action[] = [
-        {
-          id: "1",
-          x: 30,
-          y: 40,
-          category: "attacking",
-          actionType: "pass",
-          outcome: "successful",
-          timestamp: Date.now(),
-        },
-      ];
-
-      mockConfirm.mockReturnValue(false);
-      render(<TouchesView actions={mockActions} setActions={mockSetActions} />);
-
-      const clearButton = screen.getByText(/Clear All/i);
-      fireEvent.click(clearButton);
-
-      // Confirmation dialog should be shown
-      expect(mockConfirm).toHaveBeenCalled();
-
-      // setActions should NOT be called
-      expect(mockSetActions).not.toHaveBeenCalled();
     });
   });
 
