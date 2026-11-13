@@ -189,7 +189,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
         : "Matches";
 
   return (
-    <div className="mb-3 flex h-10 shrink-0 items-center gap-2 pr-12">
+    <div className="mb-3 flex h-10 shrink-0 items-center gap-2">
       <button
         type="button"
         onClick={() => setMode({ kind: "list" })}
