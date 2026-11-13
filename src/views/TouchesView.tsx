@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import ActionForm from "../components/ActionForm/ActionForm";
 import { ClearButton } from "../components/common";
+import TouchStatsPanel from "../components/Stats/TouchStatsPanel";
+import { TouchesSummaryBar } from "../components/Stats/SummaryBar";
 import { TouchList } from "../components/TouchList/TouchList";
 import TouchMap from "../components/TouchMap/TouchMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
@@ -9,7 +11,7 @@ import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
 
-const TOUCHES_VIEWS = ["pitch", "list"] as const;
+const TOUCHES_VIEWS = ["pitch", "list", "stats"] as const;
 type TouchesView = (typeof TOUCHES_VIEWS)[number];
 
 interface TouchesViewProps {
@@ -93,6 +95,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   const viewOptions = [
     { id: "pitch", label: "Pitch View", icon: "⚽️" },
     { id: "list", label: "List View", icon: "📋" },
+    { id: "stats", label: "Stats", icon: "📊" },
   ];
 
   return (
@@ -116,8 +119,14 @@ const TouchesView: React.FC<TouchesViewProps> = ({
             onActionMove={handleActionMove}
           />
         </>
+      ) : currentView === "stats" ? (
+        <>
+          <TouchesSummaryBar actions={actions} />
+          <TouchStatsPanel actions={actions} />
+        </>
       ) : (
         <div className="flex flex-col gap-4">
+          <TouchesSummaryBar actions={actions} />
           <TouchList actions={actions} onRemoveAction={handleRemoveAction} />
           {actions.length > 0 && (
             <ClearButton onClick={handleClearAllActions}>Clear All</ClearButton>
