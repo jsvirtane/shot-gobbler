@@ -325,12 +325,16 @@ const ShotsView: React.FC<ShotsViewProps> = ({
             onShotClick={handleShotClick}
             onShotMove={handleShotMove}
             teamLabels={teamNames}
+            hint={shots.length === 0 && "Tap where the shot was taken"}
+            // Right under the pitch, above the legend
+            belowPitch={
+              pitchView === "full" && (
+                <p className="w-full truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
+                  {teamNames.away}
+                </p>
+              )
+            }
           />
-          {pitchView === "full" && (
-            <p className="truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
-              {teamNames.away}
-            </p>
-          )}
         </>
       ) : shotsView === "stats" ? (
         <ShotStatsPanel
