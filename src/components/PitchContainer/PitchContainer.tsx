@@ -1,65 +1,98 @@
 import React, { forwardRef, useRef } from "react";
 import football_pitch from "../../assets/football_pitch.svg";
+import { PitchVariant } from "../../utils/pitchView";
+
+/** Width:height ratio of the full pitch image. */
+const PITCH_RATIO = 74 / 110;
+
+/** Share of the full pitch height shown by each variant. */
+const VISIBLE_HEIGHT: Record<PitchVariant, number> = {
+  full: 1,
+  "half-top": 0.5,
+};
+
+/**
+ * Default vertical space (nav bar, page padding, view controls and labels)
+ * reserved outside the pitch so that the whole pitch fits in the viewport.
+ */
+const DEFAULT_RESERVED_HEIGHT = "16rem";
 
 interface PitchContainerProps {
+  /** Called with full-pitch % coordinates (0-100) of the clicked point. */
   onCoordinateClick: (x: number, y: number) => void;
+  /**
+   * "full" shows the whole pitch. "half-top" crops to the top half (y 0-50),
+   * zoomed to fill the width. Coordinates (clicks and child positions) are
+   * always in full-pitch % in both variants.
+   */
+  variant?: PitchVariant;
+  /** CSS length of the viewport height not available to the pitch. */
+  reservedHeight?: string;
+  /** Markers positioned with `left: x%` / `top: y%` of the full pitch. */
   children?: React.ReactNode;
 }
 
 export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
-  ({ onCoordinateClick, children }, ref) => {
+  (
+    {
+      onCoordinateClick,
+      variant = "full",
+      reservedHeight = DEFAULT_RESERVED_HEIGHT,
+      children,
+    },
+    ref,
+  ) => {
     const localRef = useRef<HTMLDivElement>(null);
     const pitchRef = (ref || localRef) as React.RefObject<HTMLDivElement>;
 
-    // Convert absolute pixel coordinates to relative coordinates (0-100%)
-    const toRelativeCoordinates = (
-      x: number,
-      y: number,
-      width: number,
-      height: number,
-    ) => {
-      return {
-        x: (x / width) * 100,
-        y: (y / height) * 100,
-      };
-    };
+    const visibleHeight = VISIBLE_HEIGHT[variant];
+    const aspectRatio = PITCH_RATIO / visibleHeight;
 
     const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
       if (!pitchRef.current) return;
 
-      // Get pitch element's position relative to the viewport
+      // The bounding rect is the visible (possibly cropped) area
       const rect = pitchRef.current.getBoundingClientRect();
-
-      // Calculate coordinates relative to the pitch element
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      // Basic boundary check
       if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-        // Convert to relative coordinates before passing to parent
-        const relativeCoords = toRelativeCoordinates(
-          x,
-          y,
-          rect.width,
-          rect.height,
+        // Visible area starts at the top goal line, so scaling by the visible
+        // share gives full-pitch % coordinates
+        onCoordinateClick(
+          (x / rect.width) * 100,
+          (y / rect.height) * 100 * visibleHeight,
         );
-        onCoordinateClick(relativeCoords.x, relativeCoords.y);
       }
     };
 
     return (
-      <div
-        id="share-pitch"
-        ref={pitchRef}
-        className="relative flex w-full cursor-crosshair items-center justify-center overflow-hidden"
-        onClick={handleClick}
-      >
-        <img
-          src={football_pitch}
-          alt="Football Pitch"
-          className="block aspect-[74/110] h-auto w-full bg-green-700"
-        />
-        {children}
+      <div className="flex w-full justify-center">
+        <div
+          id="share-pitch"
+          ref={pitchRef}
+          data-variant={variant}
+          className="relative cursor-crosshair overflow-hidden"
+          style={{
+            aspectRatio,
+            // Shrink the width when the height would overflow the viewport
+            width: `min(100%, calc((100dvh - ${reservedHeight}) * ${aspectRatio}))`,
+          }}
+          onClick={handleClick}
+        >
+          {/* Full pitch; taller than the visible area when cropped */}
+          <div
+            className="absolute inset-x-0 top-0"
+            style={{ height: `${100 / visibleHeight}%` }}
+          >
+            <img
+              src={football_pitch}
+              alt="Football Pitch"
+              className="block h-full w-full bg-green-700"
+            />
+            {children}
+          </div>
+        </div>
       </div>
     );
   },

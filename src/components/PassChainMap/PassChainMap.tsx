@@ -16,7 +16,7 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
   const hasActiveCurrentChain = currentPassChain && currentPassChain.length > 0;
 
   return (
-    <PitchContainer onCoordinateClick={onPitchClick}>
+    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="19rem">
       {/* Render completed pass chains */}
       {passChains.map((chain) => (
         <PassChainVisualization

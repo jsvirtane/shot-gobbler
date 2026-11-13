@@ -14,6 +14,8 @@ const DISPLAY_FILTERS = ["all", "home", "away"] as const;
 type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
 const SHOTS_VIEWS = ["pitch", "list"] as const;
 type ShotsView = (typeof SHOTS_VIEWS)[number];
+const PITCH_VIEWS = ["full", "half"] as const;
+type PitchView = (typeof PITCH_VIEWS)[number];
 
 interface ShotsViewProps {
   shots: Shot[];
@@ -32,6 +34,11 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
     "filter",
     "all",
     DISPLAY_FILTERS,
+  );
+  const [pitchView, setPitchView] = useUrlState<PitchView>(
+    "pitch",
+    "full",
+    PITCH_VIEWS,
   );
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
@@ -178,13 +185,35 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
 
       {shotsView === "pitch" ? (
         <>
-          <p className="text-center text-base text-black md:text-lg lg:text-xl">
-            HOME
-          </p>
-          <ShotMap onPitchClick={handlePitchClick} shots={filteredShots} />
-          <p className="text-center text-base text-black md:text-lg lg:text-xl">
-            AWAY
-          </p>
+          {/* In half view both teams attack the top goal, so the HOME/AWAY
+              labels are hidden. Taps there are stored as top-half (y 0-50)
+              coordinates regardless of the selected team. */}
+          <div className="relative flex min-h-6 items-end justify-center">
+            {pitchView === "full" && (
+              <p className="text-center text-base text-black md:text-lg lg:text-xl">
+                HOME
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                setPitchView(pitchView === "full" ? "half" : "full")
+              }
+              className="absolute right-0 bottom-0 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-900 hover:bg-gray-100"
+            >
+              {pitchView === "full" ? "Half pitch" : "Full pitch"}
+            </button>
+          </div>
+          <ShotMap
+            onPitchClick={handlePitchClick}
+            shots={filteredShots}
+            variant={pitchView === "half" ? "half-top" : "full"}
+          />
+          {pitchView === "full" && (
+            <p className="text-center text-base text-black md:text-lg lg:text-xl">
+              AWAY
+            </p>
+          )}
         </>
       ) : (
         <div className="flex flex-col gap-4">
