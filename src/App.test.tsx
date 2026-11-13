@@ -53,15 +53,27 @@ vi.mock("./components/NavBar/NavBar", () => ({
 vi.mock("./components/ShareButton", () => ({
   default: ({
     onImport,
+    onExportJSON,
   }: {
     onImport?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onExportJSON?: () => void;
   }) => (
     <div data-testid="share-button">
       Share
       <input data-testid="import-input" type="file" onChange={onImport} />
+      <button data-testid="export-json" onClick={onExportJSON}>
+        Export
+      </button>
     </div>
   ),
 }));
+
+/** Parses a stored envelope and returns it (throws if the key is empty). */
+const readEnvelope = (key: string) => {
+  const raw = window.localStorage.getItem(key);
+  expect(raw).not.toBeNull();
+  return JSON.parse(raw!);
+};
 
 describe("App - URL State Management", () => {
   beforeEach(() => {
@@ -270,14 +282,20 @@ describe("App - LocalStorage Persistence", () => {
     window.history.replaceState({}, "", "/");
   });
 
-  it("should initialize with empty arrays when localStorage is empty", () => {
+  it("should initialize with empty envelopes when localStorage is empty", () => {
     render(<App />);
 
-    // After initialization, empty arrays are saved to localStorage
-    // This is expected behavior - the app initializes with empty state and persists it
-    expect(localStorageMock.getItem("shot-gobbler-data")).toBe("[]");
-    expect(localStorageMock.getItem("shot-gobbler-touches-data")).toBe("[]");
-    expect(localStorageMock.getItem("shot-gobbler-pass-chains")).toBe("[]");
+    // After initialization, empty data is saved to localStorage in a
+    // versioned envelope
+    for (const [key, type] of [
+      ["shot-gobbler-data", "shots"],
+      ["shot-gobbler-touches-data", "touches"],
+      ["shot-gobbler-pass-chains", "pass-chains"],
+    ]) {
+      const envelope = readEnvelope(key);
+      expect(envelope).toMatchObject({ app: "shot-gobbler", type, data: [] });
+      expect(typeof envelope.version).toBe("number");
+    }
   });
 
   it("should load shots from localStorage on initialization", () => {
@@ -301,9 +319,8 @@ describe("App - LocalStorage Persistence", () => {
     render(<App />);
 
     // Verify data was loaded (localStorage should still contain the data)
-    const storedData = localStorageMock.getItem("shot-gobbler-data");
-    expect(storedData).not.toBeNull();
-    expect(JSON.parse(storedData!)).toEqual(mockShots);
+    // Old bare-array data is loaded and re-saved in an envelope, unchanged
+    expect(readEnvelope("shot-gobbler-data").data).toEqual(mockShots);
   });
 
   it("should load actions from localStorage on initialization", () => {
@@ -326,9 +343,8 @@ describe("App - LocalStorage Persistence", () => {
 
     render(<App />);
 
-    const storedData = localStorageMock.getItem("shot-gobbler-touches-data");
-    expect(storedData).not.toBeNull();
-    expect(JSON.parse(storedData!)).toEqual(mockActions);
+    // Old bare-array data is loaded and re-saved in an envelope, unchanged
+    expect(readEnvelope("shot-gobbler-touches-data").data).toEqual(mockActions);
   });
 
   it("should load pass chains from localStorage on initialization", () => {
@@ -356,9 +372,10 @@ describe("App - LocalStorage Persistence", () => {
 
     render(<App />);
 
-    const storedData = localStorageMock.getItem("shot-gobbler-pass-chains");
-    expect(storedData).not.toBeNull();
-    expect(JSON.parse(storedData!)).toEqual(mockPassChains);
+    // Old bare-array data is loaded and re-saved in an envelope, unchanged
+    expect(readEnvelope("shot-gobbler-pass-chains").data).toEqual(
+      mockPassChains,
+    );
   });
 
   it("should not overwrite localStorage with empty arrays on initialization", () => {
@@ -414,35 +431,30 @@ describe("App - LocalStorage Persistence", () => {
       JSON.stringify(mockPassChains),
     );
 
-    // Store original data for comparison
-    const originalShots = localStorageMock.getItem("shot-gobbler-data");
-    const originalActions = localStorageMock.getItem(
-      "shot-gobbler-touches-data",
-    );
-    const originalChains = localStorageMock.getItem("shot-gobbler-pass-chains");
-
     // Render the app
     render(<App />);
 
-    // Verify localStorage data was NOT overwritten with empty arrays
-    expect(localStorageMock.getItem("shot-gobbler-data")).toBe(originalShots);
-    expect(localStorageMock.getItem("shot-gobbler-touches-data")).toBe(
-      originalActions,
+    // Verify localStorage data was NOT overwritten with empty arrays: the
+    // same items are still there, now wrapped in an envelope
+    expect(readEnvelope("shot-gobbler-data").data).toEqual(mockShots);
+    expect(readEnvelope("shot-gobbler-touches-data").data).toEqual(mockActions);
+    expect(readEnvelope("shot-gobbler-pass-chains").data).toEqual(
+      mockPassChains,
     );
-    expect(localStorageMock.getItem("shot-gobbler-pass-chains")).toBe(
-      originalChains,
-    );
+  });
 
-    // Verify the data is still intact
-    expect(JSON.parse(localStorageMock.getItem("shot-gobbler-data")!)).toEqual(
-      mockShots,
-    );
-    expect(
-      JSON.parse(localStorageMock.getItem("shot-gobbler-touches-data")!),
-    ).toEqual(mockActions);
-    expect(
-      JSON.parse(localStorageMock.getItem("shot-gobbler-pass-chains")!),
-    ).toEqual(mockPassChains);
+  it("should load data already stored in an envelope", () => {
+    const envelope = {
+      app: "shot-gobbler",
+      type: "shots",
+      version: 1,
+      data: [{ id: "test-1", x: 50, y: 25 }],
+    };
+    localStorageMock.setItem("shot-gobbler-data", JSON.stringify(envelope));
+
+    render(<App />);
+
+    expect(readEnvelope("shot-gobbler-data").data).toEqual(envelope.data);
   });
 
   it("should handle corrupted localStorage data gracefully", () => {
@@ -453,10 +465,10 @@ describe("App - LocalStorage Persistence", () => {
     // Should not throw an error
     expect(() => render(<App />)).not.toThrow();
 
-    // Should initialize with empty arrays when data is corrupted
-    // The save effect will overwrite the corrupted data with valid empty arrays
-    expect(localStorageMock.getItem("shot-gobbler-data")).toBe("[]");
-    expect(localStorageMock.getItem("shot-gobbler-touches-data")).toBe("[]");
+    // Should initialize with empty data when data is corrupted
+    // The save effect will overwrite the corrupted data with valid empty data
+    expect(readEnvelope("shot-gobbler-data").data).toEqual([]);
+    expect(readEnvelope("shot-gobbler-touches-data").data).toEqual([]);
   });
 });
 
@@ -482,8 +494,10 @@ describe("App - Import", () => {
     });
   };
 
-  const storedShots = () =>
-    JSON.parse(window.localStorage.getItem("shot-gobbler-data") ?? "[]");
+  const storedShots = () => {
+    const raw = window.localStorage.getItem("shot-gobbler-data");
+    return raw ? JSON.parse(raw).data : [];
+  };
 
   beforeEach(() => {
     window.localStorage.clear();
@@ -540,5 +554,45 @@ describe("App - Import", () => {
       ),
     );
     expect(storedShots()).toEqual([existingShot]);
+  });
+});
+
+describe("App - Export", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+  });
+
+  it("exports data in an envelope with type and version", () => {
+    const shot = {
+      id: "s1",
+      x: 50,
+      y: 25,
+      isGoal: true,
+      result: "Goal",
+      bodyPart: "Foot",
+      shotType: "Open Play",
+      team: "home",
+      timestamp: 1700000000000,
+    };
+    window.localStorage.setItem("shot-gobbler-data", JSON.stringify([shot]));
+    window.history.replaceState({}, "", "/?tab=shots");
+    let href = "";
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        href = this.href;
+      });
+
+    render(<App />);
+    fireEvent.click(screen.getByTestId("export-json"));
+
+    expect(click).toHaveBeenCalled();
+    const json = decodeURIComponent(href.slice(href.indexOf(",") + 1));
+    const exported = JSON.parse(json);
+    expect(exported).toMatchObject({ app: "shot-gobbler", type: "shots" });
+    expect(typeof exported.version).toBe("number");
+    expect(exported.data).toEqual([shot]);
+    click.mockRestore();
   });
 });

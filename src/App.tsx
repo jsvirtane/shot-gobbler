@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import NavBar from "./components/NavBar/NavBar";
 import ShareButton from "./components/ShareButton";
 import { useUrlState } from "./hooks/useUrlState";
+import {
+  createEnvelope,
+  parseStored,
+  serializeForStorage,
+} from "./utils/dataSchema";
 import { validateImport } from "./utils/importValidation";
 import { Action } from "./types/Action";
 import { PassChain } from "./types/PassChain";
@@ -28,8 +33,11 @@ function App() {
   // Track data for each view - initialize from localStorage
   const [shots, setShots] = useState<Shot[]>(() => {
     try {
-      const savedShots = localStorage.getItem(SHOTS_STORAGE_KEY);
-      return savedShots ? JSON.parse(savedShots) : [];
+      const stored = parseStored(
+        localStorage.getItem(SHOTS_STORAGE_KEY),
+        "shots",
+      );
+      return (stored as Shot[] | null) ?? [];
     } catch (error) {
       console.error("Error loading shots from localStorage:", error);
       return [];
@@ -38,8 +46,11 @@ function App() {
 
   const [actions, setActions] = useState<Action[]>(() => {
     try {
-      const savedActions = localStorage.getItem(TOUCHES_STORAGE_KEY);
-      return savedActions ? JSON.parse(savedActions) : [];
+      const stored = parseStored(
+        localStorage.getItem(TOUCHES_STORAGE_KEY),
+        "touches",
+      );
+      return (stored as Action[] | null) ?? [];
     } catch (error) {
       console.error("Error loading actions from localStorage:", error);
       return [];
@@ -48,8 +59,11 @@ function App() {
 
   const [passChains, setPassChains] = useState<PassChain[]>(() => {
     try {
-      const savedPassChains = localStorage.getItem(PASS_CHAINS_STORAGE_KEY);
-      return savedPassChains ? JSON.parse(savedPassChains) : [];
+      const stored = parseStored(
+        localStorage.getItem(PASS_CHAINS_STORAGE_KEY),
+        "pass-chains",
+      );
+      return (stored as PassChain[] | null) ?? [];
     } catch (error) {
       console.error("Error loading pass chains from localStorage:", error);
       return [];
@@ -59,7 +73,10 @@ function App() {
   // Save shots to localStorage whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(SHOTS_STORAGE_KEY, JSON.stringify(shots));
+      localStorage.setItem(
+        SHOTS_STORAGE_KEY,
+        serializeForStorage("shots", shots),
+      );
     } catch (error) {
       console.error("Error saving shots to localStorage:", error);
     }
@@ -68,7 +85,10 @@ function App() {
   // Save actions to localStorage whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(TOUCHES_STORAGE_KEY, JSON.stringify(actions));
+      localStorage.setItem(
+        TOUCHES_STORAGE_KEY,
+        serializeForStorage("touches", actions),
+      );
     } catch (error) {
       console.error("Error saving actions to localStorage:", error);
     }
@@ -77,7 +97,10 @@ function App() {
   // Save pass chains to localStorage whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(PASS_CHAINS_STORAGE_KEY, JSON.stringify(passChains));
+      localStorage.setItem(
+        PASS_CHAINS_STORAGE_KEY,
+        serializeForStorage("pass-chains", passChains),
+      );
     } catch (error) {
       console.error("Error saving pass chains to localStorage:", error);
     }
@@ -167,7 +190,7 @@ function App() {
     }
 
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(dataToExport, null, 2),
+      JSON.stringify(createEnvelope<unknown>(activeTab, dataToExport), null, 2),
     )}`;
     const link = document.createElement("a");
     link.href = jsonString;
