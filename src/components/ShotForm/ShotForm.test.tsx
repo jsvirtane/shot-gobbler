@@ -213,6 +213,28 @@ describe("ShotForm Component", () => {
     expect(playerNameInput.value).toBe("");
   });
 
+  it("pre-selects remembered choices but always starts the result at Miss", () => {
+    const { rerender } = render(<ShotForm {...defaultProps} isOpen={false} />);
+    rerender(
+      <ShotForm
+        {...defaultProps}
+        defaultTeam="away"
+        defaultBodyPart="Head"
+        defaultShotType="Penalty"
+        defaultPlayerName="10"
+      />,
+    );
+
+    expect(screen.getByText("🚌 Away").className).toContain("bg-blue-600");
+    expect(screen.getByText("👤 Head").className).toContain("bg-blue-600");
+    expect(screen.getByText("Penalty").className).toContain("bg-blue-600");
+    expect(screen.getByText("❌ Miss").className).toContain("bg-blue-600");
+    expect(
+      (screen.getByPlaceholderText("e.g., Ronaldo or 7") as HTMLInputElement)
+        .value,
+    ).toBe("10");
+  });
+
   it("uses defaultTeam prop for initial team value", () => {
     render(<ShotForm {...defaultProps} defaultTeam="away" />);
 
