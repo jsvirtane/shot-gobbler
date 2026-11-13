@@ -6,6 +6,8 @@ import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import XgTotals from "../components/ShotList/XgTotals";
 import ShotMap from "../components/ShotMap/ShotMap";
+import ShotStatsPanel from "../components/Stats/ShotStatsPanel";
+import { ShotsSummaryBar } from "../components/Stats/SummaryBar";
 import SegmentedControl, {
   SegmentedOption,
 } from "../components/SegmentedControl";
@@ -23,11 +25,15 @@ import {
   saveShotDefaults,
   ShotDefaults,
 } from "../utils/shotEntryPrefs";
-import { DEFAULT_TEAM_LABELS, getTeamOptions } from "../utils/teamLabels";
+import {
+  DEFAULT_TEAM_LABELS,
+  getTeamOptions,
+  TEAMS,
+} from "../utils/teamLabels";
 
 const DISPLAY_FILTERS = ["all", "home", "away"] as const;
 type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
-const SHOTS_VIEWS = ["pitch", "list"] as const;
+const SHOTS_VIEWS = ["pitch", "list", "stats"] as const;
 type ShotsView = (typeof SHOTS_VIEWS)[number];
 const PITCH_VIEWS = ["full", "half"] as const;
 type PitchView = (typeof PITCH_VIEWS)[number];
@@ -266,7 +272,11 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   const viewOptions = [
     { id: "pitch", label: "Pitch View", icon: "⚽" },
     { id: "list", label: "List View", icon: "📋" },
+    { id: "stats", label: "Stats", icon: "📊" },
   ];
+
+  // Teams shown by the filter
+  const shownTeams = shotDisplayFilter === "all" ? TEAMS : [shotDisplayFilter];
 
   return (
     <>
@@ -278,6 +288,14 @@ const ShotsView: React.FC<ShotsViewProps> = ({
       />
       {filterButtonsUI}
       {shotsView === "pitch" && quickEntryToggleUI}
+      {/* Not on the pitch view: the pitch has no vertical room to spare */}
+      {shotsView !== "pitch" && (
+        <ShotsSummaryBar
+          shots={filteredShots}
+          teamNames={teamNames}
+          teams={shownTeams}
+        />
+      )}
 
       {shotsView === "pitch" ? (
         <>
@@ -314,6 +332,12 @@ const ShotsView: React.FC<ShotsViewProps> = ({
             </p>
           )}
         </>
+      ) : shotsView === "stats" ? (
+        <ShotStatsPanel
+          shots={filteredShots}
+          teamNames={teamNames}
+          teams={shownTeams}
+        />
       ) : (
         <div className="flex flex-col gap-4">
           <XgTotals shots={filteredShots} teamNames={teamNames} />

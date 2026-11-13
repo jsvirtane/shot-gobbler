@@ -4,6 +4,8 @@ import Modal from "../components/Modal/Modal";
 import PassChainForm from "../components/PassChainForm/PassChainForm";
 import PassChainsListView from "../components/PassChainsListView/PassChainsListView";
 import PassChainsPitchView from "../components/PassChainsPitchView/PassChainsPitchView";
+import PassChainStatsPanel from "../components/Stats/PassChainStatsPanel";
+import { ChainsSummaryBar } from "../components/Stats/SummaryBar";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
@@ -19,12 +21,13 @@ import {
   getZonesFromPassChain,
 } from "../utils/pitchZones";
 
-const PASS_CHAINS_VIEWS = ["pitch", "list"] as const;
+const PASS_CHAINS_VIEWS = ["pitch", "list", "stats"] as const;
 type PassChainsView = (typeof PASS_CHAINS_VIEWS)[number];
 
 const viewOptions = [
   { id: "pitch", label: "Pitch View", icon: "⚽️" },
   { id: "list", label: "List View", icon: "📋" },
+  { id: "stats", label: "Stats", icon: "📊" },
 ];
 
 interface PassChainsViewProps {
@@ -164,8 +167,14 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
           onDeleteSelectedChain={handleDeleteSelectedChain}
           onCloseSelection={() => setSelectedChainId(null)}
         />
+      ) : currentView === "stats" ? (
+        <>
+          <ChainsSummaryBar passChains={passChains} />
+          <PassChainStatsPanel passChains={passChains} />
+        </>
       ) : (
         <div className="flex flex-col gap-4">
+          <ChainsSummaryBar passChains={passChains} />
           <PassChainsListView
             passChains={passChains}
             onRemovePassChain={handleRemovePassChain}
