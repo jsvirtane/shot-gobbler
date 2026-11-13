@@ -14,6 +14,7 @@ import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import QuickShotSheet from "../components/QuickShotSheet/QuickShotSheet";
 import { Team } from "../types/common";
+import { DEFAULT_MATCH_ID, EventStamp, TeamNames } from "../types/Match";
 import { Shot, ShotResult } from "../types/Shot";
 import {
   loadQuickMode,
@@ -22,7 +23,7 @@ import {
   saveShotDefaults,
   ShotDefaults,
 } from "../utils/shotEntryPrefs";
-import { getTeamOptions } from "../utils/teamLabels";
+import { DEFAULT_TEAM_LABELS, getTeamOptions } from "../utils/teamLabels";
 
 const DISPLAY_FILTERS = ["all", "home", "away"] as const;
 type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
@@ -34,9 +35,20 @@ type PitchView = (typeof PITCH_VIEWS)[number];
 interface ShotsViewProps {
   shots: Shot[];
   setShots: React.Dispatch<React.SetStateAction<Shot[]>>;
+  /** Names shown instead of Home / Away. */
+  teamNames?: TeamNames;
+  /** Match fields stamped on each new shot. */
+  getEventStamp?: () => EventStamp;
 }
 
-const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
+const defaultEventStamp = (): EventStamp => ({ matchId: DEFAULT_MATCH_ID });
+
+const ShotsView: React.FC<ShotsViewProps> = ({
+  shots,
+  setShots,
+  teamNames = DEFAULT_TEAM_LABELS,
+  getEventStamp = defaultEventStamp,
+}) => {
   // Choices last used in the form (team, body part, type, player); sticky
   // regardless of the display filter and remembered across reloads
   const [shotDefaults, setShotDefaults] =
@@ -155,6 +167,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   // Shot "CRUD" operations
   const handleAddShot = (details: Omit<Shot, "id" | "timestamp">) => {
     const newShot: Shot = {
+      ...getEventStamp(),
       ...details,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: Date.now(),
@@ -199,9 +212,10 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   // UI components
   const filterOptions: SegmentedOption<DisplayFilter>[] = [
     { value: "all", label: "All Shots" },
-    ...getTeamOptions().map(({ value, label }) => ({
+    // The match's team names (or Home / Away)
+    ...getTeamOptions(teamNames).map(({ value, label }) => ({
       value,
-      label: `${label} Team`,
+      label,
     })),
   ];
   const filterButtonsUI = (
@@ -264,13 +278,13 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
 
       {shotsView === "pitch" ? (
         <>
-          {/* In half view both teams attack the top goal, so the HOME/AWAY
+          {/* In half view both teams attack the top goal, so the team name
               labels are hidden. Taps there are stored as top-half (y 0-50)
               coordinates regardless of the selected team. */}
           <div className="relative flex min-h-6 items-end justify-center">
             {pitchView === "full" && (
-              <p className="text-center text-base text-black md:text-lg lg:text-xl">
-                HOME
+              <p className="max-w-[60%] truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
+                {teamNames.home}
               </p>
             )}
             <button
@@ -291,14 +305,14 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
             onShotMove={handleShotMove}
           />
           {pitchView === "full" && (
-            <p className="text-center text-base text-black md:text-lg lg:text-xl">
-              AWAY
+            <p className="truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
+              {teamNames.away}
             </p>
           )}
         </>
       ) : (
         <div className="flex flex-col gap-4">
-          <XgTotals shots={filteredShots} />
+          <XgTotals shots={filteredShots} teamNames={teamNames} />
           {filteredShots.length > 0 && (
             <Accordion
               header={<h3 className="text-lg font-semibold">Shot details</h3>}
@@ -340,6 +354,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         defaultPlayerName={shotDefaults.playerName}
         shot={editingShot ?? undefined}
         onDelete={handleDeleteEditingShot}
+        teamNames={teamNames}
       />
       <QuickShotSheet
         isOpen={isQuickSheetOpen}
@@ -347,6 +362,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         onSelectResult={handleQuickResult}
         onMoreDetails={handleQuickMoreDetails}
         defaults={{ ...shotDefaults, team: formDefaultTeam }}
+        teamNames={teamNames}
       />
     </>
   );

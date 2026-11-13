@@ -11,10 +11,11 @@ import {
   PassChain,
 } from "../types/PassChain";
 import { BodyPart, Shot, ShotResult, ShotType } from "../types/Shot";
-import { DataType, migrate, unwrapAndMigrate } from "./dataSchema";
+import { DataTab } from "../types/Tab";
+import { migrate, unwrapAndMigrate } from "./dataSchema";
 import { getZoneFromCoordinates, getZonesFromPassChain } from "./pitchZones";
 
-export type ImportDataType = DataType;
+export type ImportDataType = DataTab;
 
 const DATA_TYPE_LABELS: Record<ImportDataType, string> = {
   shots: "shots",
@@ -244,7 +245,11 @@ export const validateImport = <T extends ImportDataType>(
   expectedType: T,
 ): ImportResult<T> => {
   const unwrapped = unwrapAndMigrate(data, expectedType);
-  if (!unwrapped.ok && unwrapped.reason === "wrong-type") {
+  if (
+    !unwrapped.ok &&
+    unwrapped.reason === "wrong-type" &&
+    unwrapped.actualType !== "matches"
+  ) {
     return {
       ok: false,
       error: wrongTabError(unwrapped.actualType, expectedType),

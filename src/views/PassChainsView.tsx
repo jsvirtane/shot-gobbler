@@ -7,6 +7,7 @@ import PassChainsPitchView from "../components/PassChainsPitchView/PassChainsPit
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
+import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
 import {
   ChainAction,
   ChainActionType,
@@ -29,11 +30,16 @@ const viewOptions = [
 interface PassChainsViewProps {
   passChains: PassChain[];
   setPassChains: React.Dispatch<React.SetStateAction<PassChain[]>>;
+  /** Match fields stamped on each new chain. */
+  getEventStamp?: () => EventStamp;
 }
+
+const defaultEventStamp = (): EventStamp => ({ matchId: DEFAULT_MATCH_ID });
 
 const PassChainsView: React.FC<PassChainsViewProps> = ({
   passChains,
   setPassChains,
+  getEventStamp = defaultEventStamp,
 }) => {
   const [currentView, setCurrentView] = useUrlState<PassChainsView>(
     "view",
@@ -95,6 +101,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   }) => {
     if (currentPassChain.length > 0) {
       const newChain: PassChain = {
+        ...getEventStamp(),
         id: `chain-${Date.now()}`,
         actions: currentPassChain,
         terminationReason: data.terminationReason,

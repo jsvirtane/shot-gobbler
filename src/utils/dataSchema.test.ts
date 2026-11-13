@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_MATCH_ID } from "../types/Match";
 import {
   APP_ID,
   CURRENT_VERSION,
@@ -13,6 +14,8 @@ import {
 } from "./dataSchema";
 
 const items = [{ id: "1", x: 10, y: 20 }];
+/** `items` after the migration that assigns old data to the default match. */
+const inDefaultMatch = [{ ...items[0], matchId: DEFAULT_MATCH_ID }];
 
 describe("dataSchema", () => {
   describe("migrations", () => {
@@ -46,7 +49,9 @@ describe("dataSchema", () => {
       });
 
       it("is applied to old bare-array storage and v1 envelopes", () => {
-        const fixed = [{ ...oldBlock, outcome: "possession-won" }];
+        const fixed = [
+          { ...oldBlock, outcome: "possession-won", matchId: DEFAULT_MATCH_ID },
+        ];
         expect(parseStored(JSON.stringify([oldBlock]), "touches")).toEqual(
           fixed,
         );
@@ -58,9 +63,34 @@ describe("dataSchema", () => {
         ).toEqual({ ok: true, data: fixed });
       });
 
-      it("is not applied again to current data", () => {
-        expect(CURRENT_VERSION.touches).toBe(2);
-        expect(migrate("touches", [oldBlock], 2)).toEqual([oldBlock]);
+      it("is not applied again to later data", () => {
+        expect(migrate("touches", [oldBlock], 2)).toEqual([
+          { ...oldBlock, matchId: DEFAULT_MATCH_ID },
+        ]);
+        expect(migrate("touches", [oldBlock], 3)).toEqual([oldBlock]);
+      });
+    });
+
+    describe("default match", () => {
+      it("bumps shots to v2, touches to v3 and pass chains to v2", () => {
+        expect(CURRENT_VERSION.shots).toBe(2);
+        expect(CURRENT_VERSION.touches).toBe(3);
+        expect(CURRENT_VERSION["pass-chains"]).toBe(2);
+      });
+
+      it.each(["shots", "touches", "pass-chains"] as const)(
+        "assigns old %s to the default match",
+        (type) => {
+          expect(migrate(type, items, 1)).toEqual(inDefaultMatch);
+          expect(parseStored(JSON.stringify(items), type)).toEqual(
+            inDefaultMatch,
+          );
+        },
+      );
+
+      it("keeps a match that is already set", () => {
+        const own = [{ id: "2", matchId: "m1" }];
+        expect(migrate("shots", own, 0)).toEqual(own);
       });
     });
   });
@@ -97,7 +127,7 @@ describe("dataSchema", () => {
     it("treats a bare array as version 0", () => {
       expect(unwrapAndMigrate(items, "shots")).toEqual({
         ok: true,
-        data: items,
+        data: inDefaultMatch,
       });
     });
 
@@ -122,8 +152,10 @@ describe("dataSchema", () => {
   });
 
   describe("storage", () => {
-    it("loads old bare-array storage with the same content", () => {
-      expect(parseStored(JSON.stringify(items), "pass-chains")).toEqual(items);
+    it("loads old bare-array storage, assigned to the default match", () => {
+      expect(parseStored(JSON.stringify(items), "pass-chains")).toEqual(
+        inDefaultMatch,
+      );
     });
 
     it("round-trips data through an envelope", () => {

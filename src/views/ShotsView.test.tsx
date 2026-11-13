@@ -245,7 +245,7 @@ describe("ShotsView", () => {
       render(<ShotsView shots={[]} setShots={mockSetShots} />);
 
       // Record an away shot while filtering by Away
-      fireEvent.click(screen.getByText("Away Team"));
+      fireEvent.click(screen.getByRole("radio", { name: "Away" }));
       fireEvent.click(screen.getByTestId("shot-map"));
       expect(screen.getByTestId("form-default-team").textContent).toBe("away");
       fireEvent.click(screen.getByText("Submit away shot"));
@@ -259,11 +259,11 @@ describe("ShotsView", () => {
     it("pre-selects the filtered team when filtering by Home or Away", () => {
       render(<ShotsView shots={[]} setShots={mockSetShots} />);
 
-      fireEvent.click(screen.getByText("Away Team"));
+      fireEvent.click(screen.getByRole("radio", { name: "Away" }));
       fireEvent.click(screen.getByTestId("shot-map"));
       fireEvent.click(screen.getByText("Submit away shot"));
 
-      fireEvent.click(screen.getByText("Home Team"));
+      fireEvent.click(screen.getByRole("radio", { name: "Home" }));
       fireEvent.click(screen.getByTestId("shot-map"));
       expect(screen.getByTestId("form-default-team").textContent).toBe("home");
     });

@@ -1,4 +1,4 @@
-import { Coordinates } from "./common";
+import { Coordinates, EventMeta } from "./common";
 
 // Action categories
 export type ActionCategory = "attacking" | "defensive" | "duel";
@@ -59,7 +59,7 @@ export type Action = Coordinates & {
   actionType: ActionType;
   outcome: ActionOutcome;
   timestamp: number;
-};
+} & EventMeta;
 
 export const unsuccessfullOutcomes = [
   "unsuccessful",

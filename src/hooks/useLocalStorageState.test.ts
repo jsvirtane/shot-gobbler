@@ -46,9 +46,11 @@ describe("useLocalStorageState", () => {
       const { result } = renderHook(() =>
         useLocalStorageState(KEY, initial, shotsCodec),
       );
-      expect(result.current[0]).toEqual([{ id: "1" }]);
+      // Old data is assigned to the default match by the migration
+      const migrated = [{ id: "1", matchId: "default-match" }];
+      expect(result.current[0]).toEqual(migrated);
       expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual(
-        createEnvelope("shots", [{ id: "1" }]),
+        createEnvelope("shots", migrated),
       );
     });
 

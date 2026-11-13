@@ -1,51 +1,44 @@
 import { useCallback } from "react";
+import MatchBar from "./components/MatchBar";
 import NavBar from "./components/NavBar/NavBar";
 import ShareButton from "./components/ShareButton";
 import { ToastProvider } from "./components/Toast";
 import { PASS_CHAINS_TAB, SHOTS_TAB, TOUCHES_TAB } from "./config/dataTabs";
-import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import { useMatchData } from "./hooks/useMatchData";
 import { useUrlState } from "./hooks/useUrlState";
-import { Action } from "./types/Action";
-import { PassChain } from "./types/PassChain";
-import { Shot } from "./types/Shot";
 import { DataTab, Tab, TABS } from "./types/Tab";
 import { DataTabHandle, toDataTabHandle } from "./utils/dataTransfer";
+import { getTeamNames, isMatchExport } from "./utils/matches";
 import { notify } from "./utils/notify";
 import DocsView from "./views/DocsView";
 import PassChainsView from "./views/PassChainsView";
 import ShotsView from "./views/ShotsView";
 import TouchesView from "./views/TouchesView";
 
-const NO_SHOTS: Shot[] = [];
-const NO_ACTIONS: Action[] = [];
-const NO_PASS_CHAINS: PassChain[] = [];
-
 /** URL parameters that belong to one tab and are cleared when switching. */
 const TAB_SPECIFIC_PARAMS = ["view", "filter", "pitch"] as const;
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTabInternal] = useUrlState<Tab>(
     "tab",
     "docs",
     TABS,
   );
 
-  // Data for each tab, loaded from and saved to localStorage
-  const [shots, setShots] = useLocalStorageState(
-    SHOTS_TAB.storageKey,
-    NO_SHOTS,
-    SHOTS_TAB.codec,
-  );
-  const [actions, setActions] = useLocalStorageState(
-    TOUCHES_TAB.storageKey,
-    NO_ACTIONS,
-    TOUCHES_TAB.codec,
-  );
-  const [passChains, setPassChains] = useLocalStorageState(
-    PASS_CHAINS_TAB.storageKey,
-    NO_PASS_CHAINS,
-    PASS_CHAINS_TAB.codec,
-  );
+  // Matches and each tab's data for the current match, loaded from and
+  // saved to localStorage
+  const matchData = useMatchData();
+  const {
+    currentMatch,
+    shots,
+    setShots,
+    actions,
+    setActions,
+    passChains,
+    setPassChains,
+    getEventStamp,
+  } = matchData;
+  const teamNames = getTeamNames(currentMatch);
 
   const dataTabs: Record<DataTab, DataTabHandle> = {
     shots: toDataTabHandle({ ...SHOTS_TAB, data: shots, setData: setShots }),
@@ -107,7 +100,12 @@ function App() {
         );
         return;
       }
-      activeDataTab.importData(parsed);
+      // A match file is accepted on any tab and becomes a new match
+      if (isMatchExport(parsed)) {
+        matchData.importMatch(parsed);
+      } else {
+        activeDataTab.importData(parsed);
+      }
     };
     reader.onerror = () => {
       notify("Error reading the file.", "error");
@@ -134,7 +132,7 @@ function App() {
   }, []);
 
   return (
-    <ToastProvider>
+    <>
       <div className="mx-auto flex h-screen flex-col">
         <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="relative flex-grow">
@@ -155,22 +153,52 @@ function App() {
             id="main-content"
             className="flex h-full w-full flex-col bg-gray-100 p-5"
           >
+            {activeDataTab && (
+              <MatchBar
+                matches={matchData.matches}
+                currentMatch={currentMatch}
+                onSelect={matchData.selectMatch}
+                onCreate={matchData.addMatch}
+                onUpdate={matchData.updateMatch}
+                onDuplicate={matchData.duplicateMatch}
+                onDelete={matchData.deleteMatch}
+                onExport={matchData.exportMatch}
+              />
+            )}
             {activeTab === "docs" && <DocsView />}
             {activeTab === "shots" && (
-              <ShotsView shots={shots} setShots={setShots} />
+              <ShotsView
+                shots={shots}
+                setShots={setShots}
+                teamNames={teamNames}
+                getEventStamp={getEventStamp}
+              />
             )}
             {activeTab === "touches" && (
-              <TouchesView actions={actions} setActions={setActions} />
+              <TouchesView
+                actions={actions}
+                setActions={setActions}
+                getEventStamp={getEventStamp}
+              />
             )}
             {activeTab === "pass-chains" && (
               <PassChainsView
                 passChains={passChains}
                 setPassChains={setPassChains}
+                getEventStamp={getEventStamp}
               />
             )}
           </main>
         </div>
       </div>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
     </ToastProvider>
   );
 }

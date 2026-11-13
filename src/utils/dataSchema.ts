@@ -5,16 +5,19 @@
  * before envelopes existed) is version 0.
  */
 
+import { DEFAULT_MATCH_ID } from "../types/Match";
 import { DataTab } from "../types/Tab";
 
 export const APP_ID = "shot-gobbler";
 
-export type DataType = DataTab;
+/** Data tabs plus the stored list of matches. */
+export type DataType = DataTab | "matches";
 
 export const DATA_TYPES: readonly DataType[] = [
   "shots",
   "touches",
   "pass-chains",
+  "matches",
 ];
 
 export type DataEnvelope<T = unknown> = {
@@ -39,16 +42,31 @@ export const fixPossessionWonTypo: Migration = (data) =>
       : item,
   );
 
+/**
+ * Shots v1 → v2, touches v2 → v3, pass chains v1 → v2: items recorded before
+ * matches existed are assigned to the default match.
+ */
+export const assignDefaultMatch: Migration = (data) =>
+  data.map((item) =>
+    typeof item === "object" &&
+    item !== null &&
+    typeof (item as Record<string, unknown>).matchId !== "string"
+      ? { ...item, matchId: DEFAULT_MATCH_ID }
+      : item,
+  );
+
 export const MIGRATIONS: Record<DataType, readonly Migration[]> = {
-  shots: [wrapInEnvelope],
-  touches: [wrapInEnvelope, fixPossessionWonTypo],
-  "pass-chains": [wrapInEnvelope],
+  shots: [wrapInEnvelope, assignDefaultMatch],
+  touches: [wrapInEnvelope, fixPossessionWonTypo, assignDefaultMatch],
+  "pass-chains": [wrapInEnvelope, assignDefaultMatch],
+  matches: [wrapInEnvelope],
 };
 
 export const CURRENT_VERSION: Record<DataType, number> = {
   shots: MIGRATIONS.shots.length,
   touches: MIGRATIONS.touches.length,
   "pass-chains": MIGRATIONS["pass-chains"].length,
+  matches: MIGRATIONS.matches.length,
 };
 
 export const isDataType = (value: unknown): value is DataType =>

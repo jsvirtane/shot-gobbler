@@ -24,7 +24,7 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
     !!selectedChainId && passChains.some((c) => c.id === selectedChainId);
 
   return (
-    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="19rem">
+    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="22.25rem">
       {/* Render completed pass chains */}
       {passChains.map((chain) => {
         const isSelected = hasSelection && chain.id === selectedChainId;

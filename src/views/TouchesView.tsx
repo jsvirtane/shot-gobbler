@@ -7,6 +7,7 @@ import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
+import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
 
 const TOUCHES_VIEWS = ["pitch", "list"] as const;
 type TouchesView = (typeof TOUCHES_VIEWS)[number];
@@ -14,9 +15,17 @@ type TouchesView = (typeof TOUCHES_VIEWS)[number];
 interface TouchesViewProps {
   actions: Action[];
   setActions: React.Dispatch<React.SetStateAction<Action[]>>;
+  /** Match fields stamped on each new action. */
+  getEventStamp?: () => EventStamp;
 }
 
-const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
+const defaultEventStamp = (): EventStamp => ({ matchId: DEFAULT_MATCH_ID });
+
+const TouchesView: React.FC<TouchesViewProps> = ({
+  actions,
+  setActions,
+  getEventStamp = defaultEventStamp,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   // The action open in the form for editing; null when adding a new one
   const [editingAction, setEditingAction] = useState<Action | null>(null);
@@ -66,6 +75,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
 
   const handleAddAction = (details: Omit<Action, "id" | "timestamp">) => {
     const newAction: Action = {
+      ...getEventStamp(),
       ...details,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: Date.now(),

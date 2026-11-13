@@ -36,6 +36,16 @@ describe("XgTotals", () => {
     expect(screen.getByTestId("xg-totals").textContent).toBe("Away 0.76 xG");
   });
 
+  it("uses the match's team names", () => {
+    render(
+      <XgTotals
+        shots={[penalty("1", "away")]}
+        teamNames={{ home: "Leeds", away: "Hull" }}
+      />,
+    );
+    expect(screen.getByTestId("xg-totals").textContent).toBe("Hull 0.76 xG");
+  });
+
   it("renders nothing without shots", () => {
     const { container } = render(<XgTotals shots={[]} />);
     expect(container.textContent).toBe("");

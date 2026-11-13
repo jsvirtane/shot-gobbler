@@ -1,4 +1,4 @@
-import { Coordinates, Team } from "./common";
+import { Coordinates, EventMeta, Team } from "./common";
 
 export type BodyPart = "Foot" | "Head" | "Other";
 export type ShotType = "Open Play" | "Set Piece" | "Penalty";
@@ -13,4 +13,4 @@ export type Shot = Coordinates & {
   team: Team;
   playerName?: string;
   timestamp: number;
-};
+} & EventMeta;
