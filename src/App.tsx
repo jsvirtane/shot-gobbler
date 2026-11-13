@@ -133,12 +133,14 @@ function AppContent() {
 
   return (
     <>
-      <div className="mx-auto flex h-screen flex-col">
+      {/* On phones the bottom padding keeps content clear of the fixed
+          bottom tab bar (3.75rem plus the safe area) */}
+      <div className="mx-auto flex h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
         <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="relative flex-grow">
+        <div className="relative min-h-0 flex-1">
           {/* Floating Share Button - Hide on docs page */}
           {activeDataTab && (
-            <div className="fixed top-20 right-4 z-20">
+            <div className="fixed top-[calc(env(safe-area-inset-top)+1.25rem)] right-4 z-20 md:top-20">
               <ShareButton
                 title={activeDataTab.shareTitle}
                 className="rounded-full bg-white shadow-lg hover:shadow-xl"
@@ -151,7 +153,7 @@ function AppContent() {
           )}
           <main
             id="main-content"
-            className="flex h-full w-full flex-col bg-gray-100 p-5"
+            className="flex h-full w-full flex-col overflow-y-auto bg-gray-100 p-5"
           >
             {activeDataTab && (
               <MatchBar
