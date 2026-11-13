@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createEnvelope } from "./dataSchema";
 import { validateImport } from "./importValidation";
 
 const validShot = {
@@ -128,5 +129,54 @@ describe("validateImport", () => {
       "pass-chains",
     );
     expect(result.ok).toBe(false);
+  });
+
+  describe("envelopes", () => {
+    it("accepts an envelope of the matching type", () => {
+      const result = validateImport(
+        createEnvelope("shots", [validShot]),
+        "shots",
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.items).toHaveLength(1);
+    });
+
+    it("accepts an old v0 envelope", () => {
+      const result = validateImport(
+        {
+          app: "shot-gobbler",
+          type: "touches",
+          version: 0,
+          data: [validAction],
+        },
+        "touches",
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it("tells the user which tab to use for an envelope of another type", () => {
+      const result = validateImport(
+        createEnvelope("touches", [validAction]),
+        "shots",
+      );
+      expect(result).toEqual({
+        ok: false,
+        error:
+          "This file contains touches, not shots. Switch to the Touches tab to import it.",
+      });
+    });
+
+    it("rejects an empty envelope or one from another app", () => {
+      expect(validateImport(createEnvelope("shots", []), "shots").ok).toBe(
+        false,
+      );
+      expect(
+        validateImport(
+          { app: "other", type: "shots", version: 1, data: [validShot] },
+          "shots",
+        ).ok,
+      ).toBe(false);
+    });
   });
 });

@@ -11,9 +11,10 @@ import {
   PassChain,
 } from "../types/PassChain";
 import { BodyPart, Shot, ShotResult, ShotType } from "../types/Shot";
+import { DataType, migrate, unwrapAndMigrate } from "./dataSchema";
 import { getZoneFromCoordinates, getZonesFromPassChain } from "./pitchZones";
 
-export type ImportDataType = "shots" | "touches" | "pass-chains";
+export type ImportDataType = DataType;
 
 const DATA_TYPE_LABELS: Record<ImportDataType, string> = {
   shots: "shots",
@@ -223,41 +224,56 @@ export type ImportResult<T extends ImportDataType> =
   | { ok: true; items: ImportItem<T>[]; skipped: number }
   | { ok: false; error: string };
 
+const wrongTabError = (actual: ImportDataType, expected: ImportDataType) =>
+  `This file contains ${DATA_TYPE_LABELS[actual]}, not ${DATA_TYPE_LABELS[expected]}. Switch to the ${TAB_LABELS[actual]} tab to import it.`;
+
 /**
  * Validates parsed JSON from an import file against the data type of the
- * current tab. Invalid items are skipped. If no items are valid but the file
- * matches another data type, the error says which tab to use instead.
+ * current tab. The file may be a bare array (old exports) or a versioned
+ * envelope; either way the items are migrated to the current version before
+ * they are validated. Invalid items are skipped. If no items are valid but
+ * the file matches another data type, the error says which tab to use
+ * instead.
  */
 export const validateImport = <T extends ImportDataType>(
   data: unknown,
   expectedType: T,
 ): ImportResult<T> => {
-  if (!Array.isArray(data) || data.length === 0) {
+  const unwrapped = unwrapAndMigrate(data, expectedType);
+  if (!unwrapped.ok && unwrapped.reason === "wrong-type") {
+    return {
+      ok: false,
+      error: wrongTabError(unwrapped.actualType, expectedType),
+    };
+  }
+  if (!unwrapped.ok || unwrapped.data.length === 0) {
     return { ok: false, error: "The imported file doesn't contain any data." };
   }
 
   const normalize = normalizers[expectedType] as (
     item: unknown,
   ) => ImportItem<T> | null;
-  const items = data
+  const items = unwrapped.data
     .map((item) => normalize(item))
     .filter((item): item is ImportItem<T> => item !== null);
 
   if (items.length > 0) {
-    return { ok: true, items, skipped: data.length - items.length };
+    return { ok: true, items, skipped: unwrapped.data.length - items.length };
   }
 
-  const otherType = (Object.keys(normalizers) as ImportDataType[]).find(
-    (type) =>
-      type !== expectedType &&
-      data.some((item) => normalizers[type](item) !== null),
-  );
+  // A bare array carries no type, so check whether it fits another tab.
+  const otherType = Array.isArray(data)
+    ? (Object.keys(normalizers) as ImportDataType[]).find(
+        (type) =>
+          type !== expectedType &&
+          migrate(type, data, 0).some(
+            (item) => normalizers[type](item) !== null,
+          ),
+      )
+    : undefined;
 
   if (otherType) {
-    return {
-      ok: false,
-      error: `This file contains ${DATA_TYPE_LABELS[otherType]}, not ${DATA_TYPE_LABELS[expectedType]}. Switch to the ${TAB_LABELS[otherType]} tab to import it.`,
-    };
+    return { ok: false, error: wrongTabError(otherType, expectedType) };
   }
 
   return {
