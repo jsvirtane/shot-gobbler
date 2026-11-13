@@ -136,4 +136,22 @@ describe("ShotMap Component", () => {
     // Should not call the handler
     expect(mockOnPitchClick).not.toHaveBeenCalled();
   });
+
+  it("mirrors bottom-half shots into the top half in half view", () => {
+    render(
+      <ShotMap
+        onPitchClick={mockOnPitchClick}
+        shots={mockShots}
+        variant="half-top"
+      />,
+    );
+
+    const [home, away] = Array.from(
+      document.querySelectorAll<HTMLElement>(".transform.rounded-full"),
+    );
+    expect(home.style.top).toBe("25%");
+    // Away shot at (50, 75) is shown at (50, 25)
+    expect(away.style.left).toBe("50%");
+    expect(away.style.top).toBe("25%");
+  });
 });
