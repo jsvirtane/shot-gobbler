@@ -1,5 +1,10 @@
 import React from "react";
 import { Shot } from "../../types/Shot";
+import {
+  attackedGoal,
+  distanceToGoal,
+  shotAngle,
+} from "../../utils/pitchGeometry";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 
 interface ShotCardProps {
@@ -18,6 +23,9 @@ const ShotCard: React.FC<ShotCardProps> = ({
   onPrevious,
 }) => {
   const result = getShotResult(shot);
+  const goal = attackedGoal(shot);
+  const distance = distanceToGoal(shot, goal);
+  const angle = shotAngle(shot, goal);
 
   return (
     <div
@@ -122,8 +130,8 @@ const ShotCard: React.FC<ShotCardProps> = ({
             <p className="text-xs font-semibold text-gray-500 uppercase">
               Position
             </p>
-            <p className="text-sm font-medium">
-              X: {shot.x.toFixed(1)}%, Y: {shot.y.toFixed(1)}%
+            <p className="text-lg font-semibold">
+              {distance.toFixed(1)} m · {Math.round(angle)}°
             </p>
           </div>
         </div>
