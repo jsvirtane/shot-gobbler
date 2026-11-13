@@ -17,7 +17,8 @@ import {
   getZonesFromPassChain,
 } from "../utils/pitchZones";
 
-type PassChainsView = "pitch" | "list";
+const PASS_CHAINS_VIEWS = ["pitch", "list"] as const;
+type PassChainsView = (typeof PASS_CHAINS_VIEWS)[number];
 
 const viewOptions = [
   { id: "pitch", label: "Pitch View", icon: "⚽️" },
@@ -36,6 +37,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   const [currentView, setCurrentView] = useUrlState<PassChainsView>(
     "view",
     "pitch",
+    PASS_CHAINS_VIEWS,
   );
   const [selectedActionType, setSelectedActionType] =
     useState<ChainActionType>("start");

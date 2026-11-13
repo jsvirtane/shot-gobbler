@@ -16,10 +16,14 @@ const SHOTS_STORAGE_KEY = "shot-gobbler-data";
 const TOUCHES_STORAGE_KEY = "shot-gobbler-touches-data";
 const PASS_CHAINS_STORAGE_KEY = "shot-gobbler-pass-chains";
 
+const TABS = ["docs", "shots", "touches", "pass-chains"] as const;
+
 function App() {
-  const [activeTab, setActiveTabInternal] = useUrlState<
-    "docs" | "shots" | "touches" | "pass-chains"
-  >("tab", "docs");
+  const [activeTab, setActiveTabInternal] = useUrlState<(typeof TABS)[number]>(
+    "tab",
+    "docs",
+    TABS,
+  );
 
   // Track data for each view - initialize from localStorage
   const [shots, setShots] = useState<Shot[]>(() => {

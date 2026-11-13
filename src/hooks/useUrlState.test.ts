@@ -2,6 +2,16 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useUrlState } from "./useUrlState";
 
+const ALLOWED: readonly string[] = [
+  "default",
+  "custom",
+  "newValue",
+  "new",
+  "old",
+  "value1",
+  "value2",
+];
+
 describe("useUrlState", () => {
   beforeEach(() => {
     // Reset URL before each test
@@ -9,7 +19,9 @@ describe("useUrlState", () => {
   });
 
   it("should initialize with default value when no URL parameter exists", () => {
-    const { result } = renderHook(() => useUrlState("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState("test", "default", ALLOWED),
+    );
 
     expect(result.current[0]).toBe("default");
   });
@@ -17,13 +29,17 @@ describe("useUrlState", () => {
   it("should initialize with URL parameter value when it exists", () => {
     window.history.replaceState({}, "", "/?test=custom");
 
-    const { result } = renderHook(() => useUrlState("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState("test", "default", ALLOWED),
+    );
 
     expect(result.current[0]).toBe("custom");
   });
 
   it("should update URL when state changes", () => {
-    const { result } = renderHook(() => useUrlState<string>("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState<string>("test", "default", ALLOWED),
+    );
 
     act(() => {
       result.current[1]("newValue");
@@ -36,7 +52,9 @@ describe("useUrlState", () => {
   it("should remove parameter from URL when setting to default value", () => {
     window.history.replaceState({}, "", "/?test=custom");
 
-    const { result } = renderHook(() => useUrlState("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState("test", "default", ALLOWED),
+    );
 
     act(() => {
       result.current[1]("default");
@@ -49,7 +67,9 @@ describe("useUrlState", () => {
   it("should preserve other URL parameters when updating", () => {
     window.history.replaceState({}, "", "/?other=value&test=old");
 
-    const { result } = renderHook(() => useUrlState<string>("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState<string>("test", "default", ALLOWED),
+    );
 
     act(() => {
       result.current[1]("new");
@@ -61,7 +81,9 @@ describe("useUrlState", () => {
   });
 
   it("should handle popstate events (browser back/forward)", () => {
-    const { result } = renderHook(() => useUrlState<string>("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState<string>("test", "default", ALLOWED),
+    );
 
     // Set initial value
     act(() => {
@@ -82,7 +104,9 @@ describe("useUrlState", () => {
   it("should clean up popstate listener on unmount", () => {
     const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
 
-    const { unmount } = renderHook(() => useUrlState("test", "default"));
+    const { unmount } = renderHook(() =>
+      useUrlState("test", "default", ALLOWED),
+    );
 
     unmount();
 
@@ -96,10 +120,10 @@ describe("useUrlState", () => {
 
   it("should work with multiple instances for different keys", () => {
     const { result: result1 } = renderHook(() =>
-      useUrlState<string>("key1", "default1"),
+      useUrlState<string>("key1", "default1", ALLOWED),
     );
     const { result: result2 } = renderHook(() =>
-      useUrlState<string>("key2", "default2"),
+      useUrlState<string>("key2", "default2", ALLOWED),
     );
 
     act(() => {
@@ -119,7 +143,9 @@ describe("useUrlState", () => {
   it("should not trigger page reload when updating URL", () => {
     const pushStateSpy = vi.spyOn(window.history, "pushState");
 
-    const { result } = renderHook(() => useUrlState<string>("test", "default"));
+    const { result } = renderHook(() =>
+      useUrlState<string>("test", "default", ALLOWED),
+    );
 
     act(() => {
       result.current[1]("newValue");
@@ -127,5 +153,55 @@ describe("useUrlState", () => {
 
     expect(pushStateSpy).toHaveBeenCalledWith({}, "", "/?test=newValue");
     pushStateSpy.mockRestore();
+  });
+
+  describe("allowed values", () => {
+    const VIEWS = ["pitch", "list"] as const;
+
+    it("should fall back to default when URL value is not allowed", () => {
+      window.history.replaceState({}, "", "/?view=bar");
+
+      const { result } = renderHook(() => useUrlState("view", "pitch", VIEWS));
+
+      expect(result.current[0]).toBe("pitch");
+    });
+
+    it("should fall back to default when URL value is empty", () => {
+      window.history.replaceState({}, "", "/?view=");
+
+      const { result } = renderHook(() => useUrlState("view", "pitch", VIEWS));
+
+      expect(result.current[0]).toBe("pitch");
+    });
+
+    it("should accept an allowed non-default URL value", () => {
+      window.history.replaceState({}, "", "/?view=list");
+
+      const { result } = renderHook(() => useUrlState("view", "pitch", VIEWS));
+
+      expect(result.current[0]).toBe("list");
+    });
+
+    it("should fall back to default on popstate with a disallowed value", () => {
+      window.history.replaceState({}, "", "/?view=list");
+
+      const { result } = renderHook(() => useUrlState("view", "pitch", VIEWS));
+      expect(result.current[0]).toBe("list");
+
+      act(() => {
+        window.history.replaceState({}, "", "/?view=bar");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+
+      expect(result.current[0]).toBe("pitch");
+    });
+
+    it("should be case-sensitive", () => {
+      window.history.replaceState({}, "", "/?view=LIST");
+
+      const { result } = renderHook(() => useUrlState("view", "pitch", VIEWS));
+
+      expect(result.current[0]).toBe("pitch");
+    });
   });
 });
