@@ -107,6 +107,17 @@ describe("App - URL State Management", () => {
     });
   });
 
+  describe("Invalid URL Parameters", () => {
+    it("should show the docs view when the tab parameter is invalid", () => {
+      window.history.replaceState({}, "", "/?tab=foo");
+
+      render(<App />);
+
+      expect(screen.getByTestId("active-tab").textContent).toBe("docs");
+      expect(screen.getByTestId("docs-view")).toBeTruthy();
+    });
+  });
+
   describe("View Parameter Cleanup", () => {
     it("should clear view parameter when switching tabs", () => {
       window.history.replaceState({}, "", "/?tab=shots&view=list");

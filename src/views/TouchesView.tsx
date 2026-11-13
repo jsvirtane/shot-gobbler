@@ -7,7 +7,8 @@ import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
 
-type TouchesView = "pitch" | "list";
+const TOUCHES_VIEWS = ["pitch", "list"] as const;
+type TouchesView = (typeof TOUCHES_VIEWS)[number];
 
 interface TouchesViewProps {
   actions: Action[];
@@ -20,6 +21,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
   const [currentView, setCurrentView] = useUrlState<TouchesView>(
     "view",
     "pitch",
+    TOUCHES_VIEWS,
   );
 
   const handlePitchClick = (x: number, y: number) => {

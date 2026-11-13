@@ -10,8 +10,10 @@ import { useUrlState } from "../hooks/useUrlState";
 import { Team } from "../types/common";
 import { Shot } from "../types/Shot";
 
-type DisplayFilter = "all" | "home" | "away";
-type ShotsView = "pitch" | "list";
+const DISPLAY_FILTERS = ["all", "home", "away"] as const;
+type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
+const SHOTS_VIEWS = ["pitch", "list"] as const;
+type ShotsView = (typeof SHOTS_VIEWS)[number];
 
 interface ShotsViewProps {
   shots: Shot[];
@@ -21,10 +23,15 @@ interface ShotsViewProps {
 const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   const [currentTeam, setCurrentTeam] = useState<Team>("home");
 
-  const [shotsView, setShotsView] = useUrlState<ShotsView>("view", "pitch");
+  const [shotsView, setShotsView] = useUrlState<ShotsView>(
+    "view",
+    "pitch",
+    SHOTS_VIEWS,
+  );
   const [shotDisplayFilter, setShotDisplayFilter] = useUrlState<DisplayFilter>(
     "filter",
     "all",
+    DISPLAY_FILTERS,
   );
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
