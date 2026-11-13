@@ -1,16 +1,53 @@
 import html2canvas from "html2canvas-pro";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface ShareButtonProps {
   targetElementId?: string;
   className?: string;
   title?: string;
+  /** Whether the tab has data; Share image and Export JSON need it. */
   hasData?: boolean;
   onExportJSON?: () => void;
+  /** Downloads the current match; the item is shown only when given. */
+  onExportMatch?: () => void;
   onImport?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBeforeShare?: () => Promise<void>;
 }
 
+const MENU_LABEL = "Share, export or import";
+
+const menuItemClass =
+  "flex w-full items-center gap-3 px-4 py-3 text-left text-gray-700 transition-colors hover:bg-gray-50 focus-visible:bg-gray-100 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent";
+
+const MenuIcon: React.FC<{ path: string }> = ({ path }) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    className="shrink-0"
+  >
+    <path d={path} fill="currentColor" />
+  </svg>
+);
+
+const ICONS = {
+  image:
+    "M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z",
+  exportFile:
+    "M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM18 20H6V4H13V9H18V20ZM8 15.01L9.41 16.42L11 14.84V19H13V14.84L14.59 16.43L16 15.01L12.01 11L8 15.01Z",
+  match:
+    "M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3 4.9 3 6V20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V10H19V20ZM19 8H5V6H19V8ZM11 18H13V15H16L12 11L8 15H11V18Z",
+  import: "M9 16V10H5L12 3L19 10H15V16H9ZM5 20V18H19V20H5Z",
+};
+
+/**
+ * One fixed data menu ("⋯") for sharing the pitch as an image, exporting
+ * and importing. The icon never changes; items that need data are disabled
+ * while the tab is empty.
+ */
 const ShareButton: React.FC<ShareButtonProps> = ({
   // Id of the PitchContainer.tsx component that we want to capture by default
   targetElementId = "share-pitch",
@@ -18,11 +55,26 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   title = "Shot Gobbler Analysis",
   hasData = true,
   onExportJSON,
+  onExportMatch,
   onImport,
   onBeforeShare,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Close on Esc and return focus to the menu button
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isMenuOpen]);
 
   const onShareImage = async () => {
     try {
@@ -99,7 +151,13 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     }
   };
 
+  const handleExportMatch = () => {
+    onExportMatch?.();
+    setIsMenuOpen(false);
+  };
+
   const handleImportClick = () => {
+    setIsMenuOpen(false);
     fileInputRef.current?.click();
   };
 
@@ -109,66 +167,44 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     }
   };
 
-  // If no data, show import button
-  if (!hasData) {
-    return (
-      <>
-        <input
-          type="file"
-          accept=".json"
-          onChange={handleImport}
-          ref={fileInputRef}
-          className="hidden"
-        />
-        <button
-          onClick={handleImportClick}
-          className={`flex items-center justify-center p-3 text-gray-600 transition-all duration-200 hover:scale-105 hover:text-blue-500 ${className}`}
-          title="Import data"
-          aria-label="Import data"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-          >
-            <path
-              d="M9 16V10H5L12 3L19 10H15V16H9ZM5 20V18H19V20H5Z"
-              fill="currentColor"
-            />
-          </svg>
-        </button>
-      </>
-    );
-  }
-
-  // If has data, show share button with floating menu
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        className={`flex items-center justify-center p-3 text-gray-600 transition-all duration-200 hover:scale-105 hover:text-blue-500 ${className}`}
-        title="Share or export"
-        aria-label="Share or export"
+        className={`flex items-center justify-center text-gray-600 transition-colors hover:text-blue-500 ${className}`}
+        title={MENU_LABEL}
+        aria-label={MENU_LABEL}
+        aria-haspopup="menu"
+        aria-expanded={isMenuOpen}
       >
+        {/* Horizontal "⋯" */}
         <svg
           width="24"
           height="24"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
           className="h-6 w-6"
         >
-          <path
-            d="M18 16.08C17.24 16.08 16.56 16.38 16.04 16.85L8.91 12.7C8.96 12.47 9 12.24 9 12C9 11.76 8.96 11.53 8.91 11.3L15.96 7.19C16.5 7.69 17.21 8 18 8C19.66 8 21 6.66 21 5C21 3.34 19.66 2 18 2C16.34 2 15 3.34 15 5C15 5.24 15.04 5.47 15.09 5.7L8.04 9.81C7.5 9.31 6.79 9 6 9C4.34 9 3 10.34 3 12C3 13.66 4.34 15 6 15C6.79 15 7.5 14.69 8.04 14.19L15.16 18.34C15.11 18.55 15.08 18.77 15.08 19C15.08 20.61 16.39 21.92 18 21.92C19.61 21.92 20.92 20.61 20.92 19C20.92 17.39 19.61 16.08 18 16.08Z"
-            fill="currentColor"
-          />
+          <circle cx="5" cy="12" r="2" fill="currentColor" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+          <circle cx="19" cy="12" r="2" fill="currentColor" />
         </svg>
       </button>
 
-      {/* Floating menu */}
+      {/* Outside the menu so the file picker still works once it closes */}
+      <input
+        type="file"
+        accept=".json"
+        onChange={handleImport}
+        ref={fileInputRef}
+        className="hidden"
+        data-testid="import-file-input"
+      />
+
       {isMenuOpen && (
         <>
           {/* Backdrop to close menu when clicking outside */}
@@ -176,42 +212,51 @@ const ShareButton: React.FC<ShareButtonProps> = ({
             className="fixed inset-0 z-30"
             onClick={() => setIsMenuOpen(false)}
           />
-          <div className="absolute top-full right-0 z-40 mt-2 w-48 overflow-hidden rounded-lg bg-white shadow-xl">
+          <div
+            role="menu"
+            aria-label={MENU_LABEL}
+            className="absolute top-full right-0 z-40 mt-2 w-52 overflow-hidden rounded-lg bg-white py-1 shadow-xl ring-1 ring-black/5"
+          >
             <button
+              type="button"
+              role="menuitem"
               onClick={onShareImage}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left text-gray-700 transition-colors hover:bg-gray-50"
+              disabled={!hasData}
+              className={menuItemClass}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span>Share Image</span>
+              <MenuIcon path={ICONS.image} />
+              <span>Share image</span>
             </button>
             <button
+              type="button"
+              role="menuitem"
               onClick={handleExportJSON}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left text-gray-700 transition-colors hover:bg-gray-50"
+              disabled={!hasData}
+              className={menuItemClass}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM18 20H6V4H13V9H18V20ZM8 15.01L9.41 16.42L11 14.84V19H13V14.84L14.59 16.43L16 15.01L12.01 11L8 15.01Z"
-                  fill="currentColor"
-                />
-              </svg>
+              <MenuIcon path={ICONS.exportFile} />
               <span>Export JSON</span>
+            </button>
+            {onExportMatch && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleExportMatch}
+                className={menuItemClass}
+              >
+                <MenuIcon path={ICONS.match} />
+                <span>Export match</span>
+              </button>
+            )}
+            <div role="separator" className="my-1 border-t border-gray-100" />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleImportClick}
+              className={menuItemClass}
+            >
+              <MenuIcon path={ICONS.import} />
+              <span>Import</span>
             </button>
           </div>
         </>

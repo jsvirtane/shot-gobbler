@@ -44,8 +44,13 @@ describe("ShareButton Component", () => {
     mockCanShare.mockReturnValue(true);
   });
 
-  describe("Import Mode (No Data)", () => {
-    it("should render import button when hasData is false", () => {
+  describe("Without data", () => {
+    const openMenu = () =>
+      fireEvent.click(
+        screen.getByRole("button", { name: /share, export or import/i }),
+      );
+
+    it("keeps the same menu button instead of switching to an import icon", () => {
       render(
         <ShareButton
           hasData={false}
@@ -54,19 +59,35 @@ describe("ShareButton Component", () => {
         />,
       );
 
-      // Should show import icon (upload arrow)
-      const importButton = screen.getByRole("button", {
-        name: /import data/i,
-      });
-      expect(importButton).toBeTruthy();
-
-      // Should not show share icon
       expect(
-        screen.queryByRole("button", { name: /share or export/i }),
-      ).toBeNull();
+        screen.getByRole("button", { name: /share, export or import/i }),
+      ).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /import data/i })).toBeNull();
     });
 
-    it("should trigger file input when import button is clicked", () => {
+    it("disables the options that need data and keeps Import enabled", () => {
+      render(
+        <ShareButton
+          hasData={false}
+          onImport={mockOnImport}
+          onExportJSON={mockOnExportJSON}
+          onExportMatch={vi.fn()}
+        />,
+      );
+      openMenu();
+
+      const item = (name: string) =>
+        screen.getByRole("menuitem", { name }) as HTMLButtonElement;
+      expect(item("Share image").disabled).toBe(true);
+      expect(item("Export JSON").disabled).toBe(true);
+      expect(item("Export match").disabled).toBe(false);
+      expect(item("Import").disabled).toBe(false);
+
+      fireEvent.click(item("Export JSON"));
+      expect(mockOnExportJSON).not.toHaveBeenCalled();
+    });
+
+    it("should trigger file input when Import is clicked", () => {
       render(
         <ShareButton
           hasData={false}
@@ -75,9 +96,6 @@ describe("ShareButton Component", () => {
         />,
       );
 
-      const importButton = screen.getByRole("button", {
-        name: /import data/i,
-      });
       const fileInput = document.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -88,9 +106,13 @@ describe("ShareButton Component", () => {
       // Spy on fileInput click
       const clickSpy = vi.spyOn(fileInput, "click");
 
-      fireEvent.click(importButton);
+      openMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: "Import" }));
 
       expect(clickSpy).toHaveBeenCalled();
+      // The menu closes; the file input stays for the picker's result
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(document.querySelector('input[type="file"]')).toBe(fileInput);
     });
 
     it("should call onImport when file is selected", () => {
@@ -150,7 +172,7 @@ describe("ShareButton Component", () => {
       );
 
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       expect(shareButton).toBeTruthy();
     });
@@ -165,18 +187,18 @@ describe("ShareButton Component", () => {
       );
 
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
 
       // Menu should not be visible initially
-      expect(screen.queryByText("Share Image")).toBeNull();
+      expect(screen.queryByText("Share image")).toBeNull();
       expect(screen.queryByText("Export JSON")).toBeNull();
 
       // Click to open menu
       fireEvent.click(shareButton);
 
       // Menu should now be visible
-      expect(screen.getByText("Share Image")).toBeTruthy();
+      expect(screen.getByText("Share image")).toBeTruthy();
       expect(screen.getByText("Export JSON")).toBeTruthy();
     });
 
@@ -190,12 +212,12 @@ describe("ShareButton Component", () => {
       );
 
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
 
       // Open menu
       fireEvent.click(shareButton);
-      expect(screen.getByText("Share Image")).toBeTruthy();
+      expect(screen.getByText("Share image")).toBeTruthy();
 
       // Click backdrop
       const backdrop = document.querySelector(".fixed.inset-0");
@@ -204,7 +226,7 @@ describe("ShareButton Component", () => {
 
       // Menu should be closed
       await waitFor(() => {
-        expect(screen.queryByText("Share Image")).toBeNull();
+        expect(screen.queryByText("Share image")).toBeNull();
       });
     });
 
@@ -218,16 +240,16 @@ describe("ShareButton Component", () => {
       );
 
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
 
       // First click - open
       fireEvent.click(shareButton);
-      expect(screen.getByText("Share Image")).toBeTruthy();
+      expect(screen.getByText("Share image")).toBeTruthy();
 
       // Second click - close
       fireEvent.click(shareButton);
-      expect(screen.queryByText("Share Image")).toBeNull();
+      expect(screen.queryByText("Share image")).toBeNull();
     });
   });
 
@@ -243,7 +265,7 @@ describe("ShareButton Component", () => {
 
       // Open menu
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
 
@@ -265,7 +287,7 @@ describe("ShareButton Component", () => {
 
       // Open menu
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
 
@@ -277,6 +299,32 @@ describe("ShareButton Component", () => {
       await waitFor(() => {
         expect(screen.queryByText("Export JSON")).toBeNull();
       });
+    });
+  });
+
+  describe("Export match", () => {
+    it("calls onExportMatch and closes the menu", () => {
+      const onExportMatch = vi.fn();
+      render(<ShareButton hasData={true} onExportMatch={onExportMatch} />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /share, export or import/i }),
+      );
+      fireEvent.click(screen.getByRole("menuitem", { name: "Export match" }));
+
+      expect(onExportMatch).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("menu")).toBeNull();
+    });
+
+    it("is left out when no onExportMatch is given", () => {
+      render(<ShareButton hasData={true} />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /share, export or import/i }),
+      );
+      expect(
+        screen.queryByRole("menuitem", { name: "Export match" }),
+      ).toBeNull();
     });
   });
 
@@ -319,12 +367,12 @@ describe("ShareButton Component", () => {
 
       // Open menu
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
 
       // Click Share Image
-      const shareImageButton = screen.getByText("Share Image");
+      const shareImageButton = screen.getByText("Share image");
       fireEvent.click(shareImageButton);
 
       await waitFor(() => {
@@ -350,10 +398,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(html2canvas).toHaveBeenCalledWith(
@@ -388,10 +436,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(mockShare).toHaveBeenCalledWith(
@@ -432,10 +480,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       // Wait for html2canvas to be called
       await waitFor(() => {
@@ -467,15 +515,15 @@ describe("ShareButton Component", () => {
 
       // Open menu
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
 
       // Click Share Image
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
-        expect(screen.queryByText("Share Image")).toBeNull();
+        expect(screen.queryByText("Share image")).toBeNull();
       });
 
       document.body.removeChild(targetElement);
@@ -501,10 +549,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -533,10 +581,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -570,10 +618,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(beforeShareCompleted).toBe(true);
@@ -622,10 +670,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       // Wait for html2canvas to be called with custom title context
       await waitFor(() => {
@@ -656,10 +704,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(html2canvas).toHaveBeenCalledWith(
@@ -686,10 +734,10 @@ describe("ShareButton Component", () => {
 
       // Open menu and click Share Image
       const shareButton = screen.getByRole("button", {
-        name: /share or export/i,
+        name: /share, export or import/i,
       });
       fireEvent.click(shareButton);
-      fireEvent.click(screen.getByText("Share Image"));
+      fireEvent.click(screen.getByText("Share image"));
 
       await waitFor(() => {
         expect(html2canvas).toHaveBeenCalledWith(
@@ -712,21 +760,21 @@ describe("ShareButton Component", () => {
         />,
       );
 
-      const shareButton = screen.getByLabelText("Share or export");
-      expect(shareButton).toBeTruthy();
+      const shareButton = screen.getByLabelText("Share, export or import");
+      expect(shareButton.getAttribute("aria-haspopup")).toBe("menu");
+      expect(shareButton.getAttribute("aria-expanded")).toBe("false");
+      fireEvent.click(shareButton);
+      expect(shareButton.getAttribute("aria-expanded")).toBe("true");
+      expect(screen.getByRole("menu")).toBeTruthy();
     });
 
-    it("should have proper aria-label for import button", () => {
-      render(
-        <ShareButton
-          hasData={false}
-          onExportJSON={mockOnExportJSON}
-          onImport={mockOnImport}
-        />,
-      );
+    it("closes the menu on Escape", () => {
+      render(<ShareButton hasData={true} onExportJSON={mockOnExportJSON} />);
 
-      const importButton = screen.getByLabelText("Import data");
-      expect(importButton).toBeTruthy();
+      fireEvent.click(screen.getByLabelText("Share, export or import"));
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(screen.queryByRole("menu")).toBeNull();
     });
   });
 });

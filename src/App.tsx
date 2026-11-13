@@ -138,35 +138,37 @@ function AppContent() {
       <div className="mx-auto flex h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
         <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="relative min-h-0 flex-1">
-          {/* Floating Share Button - Hide on docs page */}
-          {activeDataTab && (
-            <div className="fixed top-[calc(env(safe-area-inset-top)+1.25rem)] right-4 z-20 md:top-20">
-              <ShareButton
-                title={activeDataTab.shareTitle}
-                className="rounded-full bg-white shadow-lg hover:shadow-xl"
-                hasData={activeDataTab.hasData}
-                onExportJSON={activeDataTab.exportData}
-                onImport={handleImport}
-                onBeforeShare={handleBeforeShare}
-              />
-            </div>
-          )}
           <main
             id="main-content"
             className="flex h-full w-full flex-col overflow-y-auto bg-gray-100 p-5"
           >
             {activeDataTab && (
-              <MatchBar
-                matches={matchData.matches}
-                currentMatch={currentMatch}
-                onSelect={matchData.selectMatch}
-                onCreate={matchData.addMatch}
-                onUpdate={matchData.updateMatch}
-                onDuplicate={matchData.duplicateMatch}
-                onDelete={matchData.deleteMatch}
-                onExport={matchData.exportMatch}
-                onClockChange={matchData.updateClock}
-              />
+              // The data menu sits at the end of the match row, so it never
+              // covers the view controls or the pitch
+              <div className="flex shrink-0 items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <MatchBar
+                    matches={matchData.matches}
+                    currentMatch={currentMatch}
+                    onSelect={matchData.selectMatch}
+                    onCreate={matchData.addMatch}
+                    onUpdate={matchData.updateMatch}
+                    onDuplicate={matchData.duplicateMatch}
+                    onDelete={matchData.deleteMatch}
+                    onExport={matchData.exportMatch}
+                    onClockChange={matchData.updateClock}
+                  />
+                </div>
+                <ShareButton
+                  title={activeDataTab.shareTitle}
+                  className="h-10 w-10 rounded-md border border-gray-200 bg-white shadow-sm hover:bg-gray-50"
+                  hasData={activeDataTab.hasData}
+                  onExportJSON={activeDataTab.exportData}
+                  onExportMatch={matchData.exportMatch}
+                  onImport={handleImport}
+                  onBeforeShare={handleBeforeShare}
+                />
+              </div>
             )}
             {activeTab === "docs" && <DocsView />}
             {activeTab === "shots" && (
