@@ -8,12 +8,15 @@ type PassChainVisualizationProps = {
   chain?: PassChain;
   actions?: ChainAction[];
   isCurrentChain?: boolean;
+  /** Tap on any of the chain's markers. */
+  onMarkerTap?: () => void;
 };
 
 export const PassChainVisualization: React.FC<PassChainVisualizationProps> = ({
   chain,
   actions,
   isCurrentChain = false,
+  onMarkerTap,
 }) => {
   const actionsToRender = chain?.actions || actions || [];
 
@@ -55,6 +58,7 @@ export const PassChainVisualization: React.FC<PassChainVisualizationProps> = ({
               key={`${chain?.id || "current"}-start-${index}`}
               action={startMarker}
               isCurrentChain={isCurrentChain}
+              onTap={onMarkerTap}
             />
           );
         }
@@ -96,6 +100,7 @@ export const PassChainVisualization: React.FC<PassChainVisualizationProps> = ({
           action={actionsToRender[actionsToRender.length - 1]}
           terminationReason={chain.terminationReason}
           isCurrentChain={isCurrentChain}
+          onTap={onMarkerTap}
         />
       )}
     </>

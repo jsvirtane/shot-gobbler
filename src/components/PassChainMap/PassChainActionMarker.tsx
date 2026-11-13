@@ -1,4 +1,5 @@
 import React from "react";
+import PitchMarker from "../PitchContainer/PitchMarker";
 import { PassChainActionColors } from "../../constants/passChainColors";
 import { ChainAction } from "../../types/PassChain";
 import { formatPitchZoneCapitalized } from "../../utils/pitchZones";
@@ -6,11 +7,14 @@ import { formatPitchZoneCapitalized } from "../../utils/pitchZones";
 type PassChainActionMarkerProps = {
   action: ChainAction;
   isCurrentChain?: boolean;
+  /** Tap on the marker (selects its chain). */
+  onTap?: () => void;
 };
 
 export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
   action,
   isCurrentChain = false,
+  onTap,
 }) => {
   const getMarkerShape = () => {
     switch (action.actionType) {
@@ -63,30 +67,36 @@ export const PassChainActionMarker: React.FC<PassChainActionMarkerProps> = ({
     const shape = getMarkerShape();
     const outline = isFirstAction() ? "outline-double outline-red-500" : "";
 
-    return `absolute ${size} ${baseColor} ${opacity} ${border} ${shape} ${outline} shadow-lg z-[6] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs`;
+    return `${size} ${baseColor} ${opacity} ${border} ${shape} ${outline} shadow-lg flex items-center justify-center text-xs`;
   };
 
   return (
-    <div
-      className={getMarkerClasses()}
-      style={{
-        left: `${action.x}%`,
-        top: `${action.y}%`,
-        borderRadius:
-          action.actionType === "pass" ||
-          action.actionType === "cross" ||
-          action.actionType === "placeholder"
-            ? "50%"
-            : "0.5rem", // Explicit for html2canvas iOS compatibility
-      }}
-      title={`${action.actionType} - Sequence ${action.sequenceNumber} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
+    <PitchMarker
+      x={action.x}
+      y={action.y}
+      label={`${action.actionType} - Sequence ${action.sequenceNumber} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
+      onTap={onTap}
+      className="z-[6]"
+      testId="chain-action-marker"
     >
-      <span
-        className={`text-xs font-bold ${isCurrentChain ? "text-white" : "text-gray-300"}`}
+      <div
+        className={getMarkerClasses()}
+        style={{
+          borderRadius:
+            action.actionType === "pass" ||
+            action.actionType === "cross" ||
+            action.actionType === "placeholder"
+              ? "50%"
+              : "0.5rem", // Explicit for html2canvas iOS compatibility
+        }}
       >
-        {action.actionType === "placeholder" ? "•" : action.sequenceNumber}
-      </span>
-    </div>
+        <span
+          className={`text-xs font-bold ${isCurrentChain ? "text-white" : "text-gray-300"}`}
+        >
+          {action.actionType === "placeholder" ? "•" : action.sequenceNumber}
+        </span>
+      </div>
+    </PitchMarker>
   );
 };
 

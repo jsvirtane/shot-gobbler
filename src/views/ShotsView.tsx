@@ -67,6 +67,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // The shot open in the form for editing; null when adding a new one
+  const [editingShot, setEditingShot] = useState<Shot | null>(null);
   const [isQuickSheetOpen, setIsQuickSheetOpen] = useState(false);
   const [currentShotCoords, setCurrentShotCoords] = useState<{
     x: number;
@@ -96,6 +98,32 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditingShot(null);
+  };
+
+  // Tapping a marker opens that shot in the full form, also in quick mode
+  const handleShotClick = (shot: Shot) => {
+    setEditingShot(shot);
+    setCurrentShotCoords({ x: shot.x, y: shot.y });
+    setIsQuickSheetOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const handleShotMove = (id: string, x: number, y: number) => {
+    shotList.update(id, { x, y }, "Shot moved");
+  };
+
+  const handleFormSubmit = (details: Omit<Shot, "id" | "timestamp">) => {
+    if (editingShot) {
+      shotList.update(editingShot.id, details);
+    } else {
+      handleAddShot(details);
+    }
+  };
+
+  const handleDeleteEditingShot = () => {
+    if (editingShot) shotList.remove(editingShot.id);
+    handleCloseModal();
   };
 
   const handleToggleQuickMode = () => {
@@ -259,6 +287,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
             onPitchClick={handlePitchClick}
             shots={filteredShots}
             variant={pitchView === "half" ? "half-top" : "full"}
+            onShotClick={handleShotClick}
+            onShotMove={handleShotMove}
           />
           {pitchView === "full" && (
             <p className="text-center text-base text-black md:text-lg lg:text-xl">
@@ -302,12 +332,14 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
       <ShotForm
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onSubmit={handleAddShot}
+        onSubmit={handleFormSubmit}
         initialCoords={currentShotCoords}
         defaultTeam={formDefaultTeam}
         defaultBodyPart={shotDefaults.bodyPart}
         defaultShotType={shotDefaults.shotType}
         defaultPlayerName={shotDefaults.playerName}
+        shot={editingShot ?? undefined}
+        onDelete={handleDeleteEditingShot}
       />
       <QuickShotSheet
         isOpen={isQuickSheetOpen}

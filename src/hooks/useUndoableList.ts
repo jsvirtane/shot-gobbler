@@ -9,7 +9,7 @@ type Nouns = {
 };
 
 /**
- * Add, remove and clear-all for a list of items with ids, each showing a
+ * Add, update, remove and clear-all for a list of items with ids, each showing a
  * toast with an Undo button. Undo uses functional updates keyed by id, so
  * it stays correct when other changes happened in between.
  */
@@ -79,5 +79,32 @@ export function useUndoableList<T extends { id: string }>(
     });
   }, [items, setItems, showToast, one, many]);
 
-  return { add, remove, clearAll };
+  const update = useCallback(
+    (id: string, changes: Partial<T>, message = `${one} updated`) => {
+      const previous = items.find((i) => i.id === id);
+      if (!previous) return;
+      // Undo restores only the changed fields, keeping later edits to others
+      const reverted: Partial<T> = {};
+      for (const key of Object.keys(changes) as (keyof T)[]) {
+        reverted[key] = previous[key];
+      }
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, ...changes } : i)),
+      );
+      showToast({
+        message,
+        variant: "success",
+        action: {
+          label: "Undo",
+          onClick: () =>
+            setItems((prev) =>
+              prev.map((i) => (i.id === id ? { ...i, ...reverted } : i)),
+            ),
+        },
+      });
+    },
+    [items, setItems, showToast, one],
+  );
+
+  return { add, remove, clearAll, update };
 }

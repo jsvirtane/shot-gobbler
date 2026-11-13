@@ -50,10 +50,18 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
 
   const [currentPassChain, setCurrentPassChain] = useState<ChainAction[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Saved chain highlighted by tapping one of its markers
+  const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
   const isActivePassChain = currentPassChain.length > 0;
 
   const handlePitchClick = (x: number, y: number) => {
     console.log(`Pitch clicked at: x=${x}, y=${y}`);
+
+    // While a chain is selected, a tap elsewhere only clears the selection
+    if (selectedChainId && passChains.some((c) => c.id === selectedChainId)) {
+      setSelectedChainId(null);
+      return;
+    }
 
     setCurrentPassChain((prevChain) => {
       const isFirstAction = prevChain.length === 0;
@@ -113,6 +121,11 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   const handleClearAllPassChains = chainList.clearAll;
   const handleRemovePassChain = chainList.remove;
 
+  const handleDeleteSelectedChain = () => {
+    if (selectedChainId) chainList.remove(selectedChainId);
+    setSelectedChainId(null);
+  };
+
   return (
     <>
       {!isActivePassChain && (
@@ -136,6 +149,10 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
           onEndChain={handleEndChain}
           onUndoLastAction={handleUndoLastAction}
           onClearCurrentChain={handleClearCurrentChain}
+          selectedChainId={selectedChainId}
+          onChainClick={setSelectedChainId}
+          onDeleteSelectedChain={handleDeleteSelectedChain}
+          onCloseSelection={() => setSelectedChainId(null)}
         />
       ) : (
         <div className="flex flex-col gap-4">

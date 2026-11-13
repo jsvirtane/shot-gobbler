@@ -15,3 +15,19 @@ export interface PitchPoint {
  */
 export const mirrorToTopHalf = <T extends PitchPoint>(point: T): T =>
   point.y > 50 ? { ...point, x: 100 - point.x, y: 100 - point.y } : point;
+
+/**
+ * Converts a point dropped on the pitch (as displayed) back to stored
+ * coordinates for an item stored at `stored`. In the half view a mirrored
+ * item stays in the bottom half, so it is shown exactly where it was dropped.
+ */
+export const displayToStored = (
+  stored: PitchPoint,
+  dropped: PitchPoint,
+  variant: PitchVariant,
+): PitchPoint => {
+  const wasMirrored = variant === "half-top" && stored.y > 50;
+  return wasMirrored && dropped.y < 50
+    ? { x: 100 - dropped.x, y: 100 - dropped.y }
+    : { x: dropped.x, y: dropped.y };
+};

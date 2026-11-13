@@ -8,6 +8,7 @@ import {
 import { ActionFormColors } from "../../constants/actionFormColors";
 import {
   getCancelButtonStyle,
+  getSecondaryButtonStyle,
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
 import Modal from "../Modal";
@@ -119,6 +120,10 @@ type ActionFormProps = {
   onClose: () => void;
   onSubmit: (details: Omit<Action, "id" | "timestamp">) => void;
   initialCoords: { x: number; y: number };
+  /** Edit mode: the form starts from this action and offers Save / Delete. */
+  action?: Action;
+  /** Edit mode: deletes the action (the parent closes the form). */
+  onDelete?: () => void;
 };
 
 const ActionForm: React.FC<ActionFormProps> = ({
@@ -126,6 +131,8 @@ const ActionForm: React.FC<ActionFormProps> = ({
   onClose,
   onSubmit,
   initialCoords,
+  action,
+  onDelete,
 }) => {
   const [selectedCategory, setSelectedCategory] =
     useState<ActionCategory>("attacking");
@@ -141,6 +148,15 @@ const ActionForm: React.FC<ActionFormProps> = ({
       setSelectedOutcome("successful");
     }
   }, [isOpen, initialCoords]);
+
+  // Edit mode: start from the action being edited instead (runs after the reset)
+  useEffect(() => {
+    if (isOpen && action) {
+      setSelectedCategory(action.category);
+      setSelectedAction(action.actionType);
+      setSelectedOutcome(action.outcome);
+    }
+  }, [isOpen, initialCoords, action]);
 
   if (!isOpen) {
     return null;
@@ -173,7 +189,11 @@ const ActionForm: React.FC<ActionFormProps> = ({
   const outcomes = OUTCOMES[selectedAction];
 
   return (
-    <Modal isOpen={isOpen} title="Record Player Action" onClose={onClose}>
+    <Modal
+      isOpen={isOpen}
+      title={action ? "Edit action" : "Record Player Action"}
+      onClose={onClose}
+    >
       <p className="mb-4 text-sm text-gray-600">
         Position: ({initialCoords.x.toFixed(1)}%, {initialCoords.y.toFixed(1)}
         %)
@@ -230,12 +250,23 @@ const ActionForm: React.FC<ActionFormProps> = ({
         {/* Submit Buttons */}
         <div className="mt-5 flex flex-col justify-between gap-3 md:flex-row">
           <button type="submit" className={getSubmitButtonStyle()}>
-            Record Action
+            {action ? "Save" : "Record Action"}
           </button>
+          {action && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className={getCancelButtonStyle()}
+            >
+              Delete
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
-            className={getCancelButtonStyle()}
+            className={
+              action ? getSecondaryButtonStyle() : getCancelButtonStyle()
+            }
           >
             Cancel
           </button>

@@ -3,8 +3,10 @@ import { Team } from "../../types/common";
 import { BodyPart, Shot, ShotResult, ShotType } from "../../types/Shot";
 import {
   getCancelButtonStyle,
+  getSecondaryButtonStyle,
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
+import { getShotResult } from "../../utils/shotResult";
 import { getTeamOptions } from "../../utils/teamLabels";
 import Modal from "../Modal";
 import SegmentedControl, { SegmentedOption } from "../SegmentedControl";
@@ -38,6 +40,10 @@ interface ShotFormProps {
   defaultBodyPart?: BodyPart;
   defaultShotType?: ShotType;
   defaultPlayerName?: string;
+  /** Edit mode: the form starts from this shot and offers Save / Delete. */
+  shot?: Shot;
+  /** Edit mode: deletes the shot (the parent closes the form). */
+  onDelete?: () => void;
 }
 
 const ShotForm: React.FC<ShotFormProps> = ({
@@ -49,6 +55,8 @@ const ShotForm: React.FC<ShotFormProps> = ({
   defaultBodyPart = "Foot",
   defaultShotType = "Open Play",
   defaultPlayerName = "",
+  shot,
+  onDelete,
 }) => {
   const [result, setResult] = useState<ShotResult>("Miss");
   const [bodyPart, setBodyPart] = useState<BodyPart>(defaultBodyPart);
@@ -69,6 +77,25 @@ const ShotForm: React.FC<ShotFormProps> = ({
     }
   }, [
     isOpen,
+    initialCoords,
+    defaultTeam,
+    defaultBodyPart,
+    defaultShotType,
+    defaultPlayerName,
+  ]);
+
+  // Edit mode: start from the shot being edited instead (runs after the reset)
+  useEffect(() => {
+    if (isOpen && shot) {
+      setResult(getShotResult(shot));
+      setBodyPart(shot.bodyPart);
+      setShotType(shot.shotType);
+      setPlayerName(shot.playerName ?? "");
+      setTeam(shot.team);
+    }
+  }, [
+    isOpen,
+    shot,
     initialCoords,
     defaultTeam,
     defaultBodyPart,
@@ -98,7 +125,11 @@ const ShotForm: React.FC<ShotFormProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} title="New Shot" onClose={onClose}>
+    <Modal
+      isOpen={isOpen}
+      title={shot ? "Edit shot" : "New Shot"}
+      onClose={onClose}
+    >
       <form>
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">Team:</label>
@@ -168,12 +199,23 @@ const ShotForm: React.FC<ShotFormProps> = ({
             className={getSubmitButtonStyle()}
             onClick={handleShotAdd}
           >
-            Add Shot
+            {shot ? "Save" : "Add Shot"}
           </button>
+          {shot && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className={getCancelButtonStyle()}
+            >
+              Delete
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
-            className={getCancelButtonStyle()}
+            className={
+              shot ? getSecondaryButtonStyle() : getCancelButtonStyle()
+            }
           >
             Cancel
           </button>

@@ -1,12 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Shot } from "../../types/Shot";
+import { longPressDrag, polyfillPointerEvent } from "../../test/pointerEvents";
 import ShotMap from "./ShotMap";
 
 // Mock the SVG import
 vi.mock("../../assets/football_pitch.svg", () => ({
   default: "mocked-football-pitch",
 }));
+
+polyfillPointerEvent();
 
 describe("ShotMap Component", () => {
   // Test props
@@ -67,19 +70,19 @@ describe("ShotMap Component", () => {
   it("renders shots on the pitch", () => {
     render(<ShotMap onPitchClick={mockOnPitchClick} shots={mockShots} />);
 
-    // Should render exactly 2 shot elements
-    const shotElements = document.querySelectorAll(".transform.rounded-full");
+    // Should render exactly 2 shot markers
+    const shotElements = screen.getAllByTestId("shot-marker");
     expect(shotElements.length).toBe(2);
 
     // Check appropriate styling based on team and goal/miss
-    const homeGoalShot = shotElements[0] as HTMLElement;
-    const awayMissShot = shotElements[1] as HTMLElement;
+    const homeGoalShot = shotElements[0];
+    const awayMissShot = shotElements[1];
 
     // Home goal should have yellow background
-    expect(homeGoalShot.classList.contains("bg-yellow-400")).toBe(true);
+    expect(homeGoalShot.querySelector(".bg-yellow-400")).not.toBeNull();
 
     // Away miss should have purple background
-    expect(awayMissShot.classList.contains("bg-purple-500")).toBe(true);
+    expect(awayMissShot.querySelector(".bg-purple-500")).not.toBeNull();
 
     // Check tooltip content
     expect(homeGoalShot.title).toContain("Open Play");
@@ -109,13 +112,13 @@ describe("ShotMap Component", () => {
     expect(mockOnPitchClick).toHaveBeenCalledWith(25, 75);
   });
 
-  it("handles clicks on existing shots", () => {
+  it("passes clicks on read-only markers through to the pitch", () => {
     render(<ShotMap onPitchClick={mockOnPitchClick} shots={mockShots} />);
 
-    const shotElements = document.querySelectorAll(".transform.rounded-full");
-    fireEvent.click(shotElements[0]);
-
-    // Should still trigger the click handler
+    const [marker] = screen.getAllByTestId("shot-marker");
+    expect(marker.tagName).toBe("DIV");
+    expect(marker.className).toContain("pointer-events-none");
+    fireEvent.click(marker);
     expect(mockOnPitchClick).toHaveBeenCalled();
   });
 
@@ -146,12 +149,124 @@ describe("ShotMap Component", () => {
       />,
     );
 
-    const [home, away] = Array.from(
-      document.querySelectorAll<HTMLElement>(".transform.rounded-full"),
-    );
+    const [home, away] = screen.getAllByTestId("shot-marker");
     expect(home.style.top).toBe("25%");
     // Away shot at (50, 75) is shown at (50, 25)
     expect(away.style.left).toBe("50%");
     expect(away.style.top).toBe("25%");
+  });
+
+  describe("interactive markers", () => {
+    const onShotClick = vi.fn();
+    const onShotMove = vi.fn();
+
+    const renderInteractive = (variant: "full" | "half-top" = "full") =>
+      render(
+        <ShotMap
+          onPitchClick={mockOnPitchClick}
+          shots={mockShots}
+          variant={variant}
+          onShotClick={onShotClick}
+          onShotMove={onShotMove}
+        />,
+      );
+
+    beforeEach(() => {
+      onShotClick.mockReset();
+      onShotMove.mockReset();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("renders each marker as a labelled button with a 44px hit area", () => {
+      renderInteractive();
+      const marker = screen.getByRole("button", { name: /Open Play/ });
+      expect(marker.className).toContain("h-11");
+      expect(marker.className).toContain("w-11");
+      // The visible dot keeps its size
+      expect(marker.querySelector(".h-5.w-5")).not.toBeNull();
+    });
+
+    it("tapping a marker opens that shot and does not create a new one", () => {
+      renderInteractive();
+      fireEvent.click(screen.getByRole("button", { name: /Set Piece/ }));
+      expect(onShotClick).toHaveBeenCalledWith(mockShots[1]);
+      expect(mockOnPitchClick).not.toHaveBeenCalled();
+    });
+
+    it("passes the stored shot when tapping a mirrored marker", () => {
+      renderInteractive("half-top");
+      fireEvent.click(screen.getByRole("button", { name: /Set Piece/ }));
+      expect(onShotClick).toHaveBeenCalledWith(mockShots[1]);
+    });
+
+    it("long-press then drag moves the shot to the drop point", () => {
+      vi.useFakeTimers();
+      renderInteractive();
+      const marker = screen.getByRole("button", { name: /Open Play/ });
+
+      longPressDrag(marker, { clientX: 30, clientY: 60 });
+
+      expect(onShotMove).toHaveBeenCalledWith("1", 30, 60);
+      expect(onShotClick).not.toHaveBeenCalled();
+      expect(mockOnPitchClick).not.toHaveBeenCalled();
+    });
+
+    it("shows the marker lifted while dragging", () => {
+      vi.useFakeTimers();
+      renderInteractive();
+      const marker = screen.getByRole("button", { name: /Open Play/ });
+      fireEvent.pointerDown(marker, { pointerId: 1, clientX: 50, clientY: 25 });
+      act(() => {
+        vi.advanceTimersByTime(450);
+      });
+      fireEvent.pointerMove(marker, { pointerId: 1, clientX: 20, clientY: 40 });
+      expect(marker.dataset.dragging).toBe("true");
+      expect(marker.style.left).toBe("20%");
+      expect(marker.style.top).toBe("40%");
+      fireEvent.pointerUp(marker, { pointerId: 1, clientX: 20, clientY: 40 });
+      expect(marker.dataset.dragging).toBeUndefined();
+    });
+
+    it("does not move on a short press, which stays a tap", () => {
+      vi.useFakeTimers();
+      renderInteractive();
+      const marker = screen.getByRole("button", { name: /Open Play/ });
+      fireEvent.pointerDown(marker, { pointerId: 1, clientX: 50, clientY: 25 });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      fireEvent.pointerMove(marker, { pointerId: 1, clientX: 80, clientY: 80 });
+      fireEvent.pointerUp(marker, { pointerId: 1, clientX: 80, clientY: 80 });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(onShotMove).not.toHaveBeenCalled();
+      expect(marker.dataset.dragging).toBeUndefined();
+    });
+
+    it("clamps drops outside the pitch to its edge", () => {
+      vi.useFakeTimers();
+      renderInteractive();
+      longPressDrag(screen.getByRole("button", { name: /Open Play/ }), {
+        clientX: 150,
+        clientY: -20,
+      });
+      expect(onShotMove).toHaveBeenCalledWith("1", 100, 0);
+    });
+
+    it("keeps a mirrored shot where it was dropped in half view", () => {
+      vi.useFakeTimers();
+      renderInteractive("half-top");
+      // The visible half maps 100px of height to y 0-50
+      longPressDrag(screen.getByRole("button", { name: /Set Piece/ }), {
+        clientX: 30,
+        clientY: 40,
+      });
+      // Dropped at (30, 20) on screen; stored mirrored in the bottom half
+      expect(onShotMove).toHaveBeenCalledWith("2", 70, 80);
+    });
   });
 });
