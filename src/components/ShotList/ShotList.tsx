@@ -1,6 +1,7 @@
 import React from "react";
 import { Shot } from "../../types/Shot";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
+import { formatXg, shotXg } from "../../utils/xg";
 import { RemoveItemButton } from "../common";
 
 interface ShotListProps {
@@ -42,10 +43,18 @@ const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
                   </p>
                 </div>
 
-                <RemoveItemButton
-                  onClick={() => onRemoveShot(shot.id)}
-                  title="Remove this shot"
-                />
+                <div className="flex items-center gap-3">
+                  <span className="text-right text-sm text-gray-600">
+                    <span className="block text-base font-semibold text-gray-900">
+                      {formatXg(shotXg(shot))}
+                    </span>
+                    xG
+                  </span>
+                  <RemoveItemButton
+                    onClick={() => onRemoveShot(shot.id)}
+                    title="Remove this shot"
+                  />
+                </div>
               </div>
             </li>
           ))}

@@ -70,6 +70,13 @@ describe("ShotList Component", () => {
     expect(mockOnRemoveShot).toHaveBeenCalledWith(mockShots[0].id);
   });
 
+  it("shows the xG of each shot", () => {
+    const shots = [{ ...mockShots[0], shotType: "Penalty" as const }];
+    render(<ShotList shots={shots} onRemoveShot={mockOnRemoveShot} />);
+
+    expect(screen.getByText("0.76")).toBeTruthy();
+  });
+
   it("shows the actual result for saved, blocked and old shots", () => {
     const shots = [
       { ...mockShots[1], id: "saved", result: "Saved" as const },
