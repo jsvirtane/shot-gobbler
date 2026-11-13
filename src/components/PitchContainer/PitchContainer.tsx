@@ -1,6 +1,7 @@
-import React, { forwardRef, useRef } from "react";
+import React, { forwardRef, useCallback, useMemo, useRef } from "react";
 import football_pitch from "../../assets/football_pitch.svg";
 import { PitchVariant } from "../../utils/pitchView";
+import { PitchApi, PitchContext } from "./pitchContext";
 
 /** Width:height ratio of the full pitch image. */
 const PITCH_RATIO = 74 / 110;
@@ -48,8 +49,12 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     const visibleHeight = VISIBLE_HEIGHT[variant];
     const aspectRatio = PITCH_RATIO / visibleHeight;
 
+    // Time until which pitch clicks are ignored (set when a marker drag ends)
+    const suppressClickUntil = useRef(0);
+
     const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
       if (!pitchRef.current) return;
+      if (Date.now() < suppressClickUntil.current) return;
 
       // The bounding rect is the visible (possibly cropped) area
       const rect = pitchRef.current.getBoundingClientRect();
@@ -65,6 +70,30 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
         );
       }
     };
+
+    const toPitchPoint = useCallback(
+      (clientX: number, clientY: number) => {
+        if (!pitchRef.current) return null;
+        const rect = pitchRef.current.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return null;
+        const clamp = (v: number) => Math.min(1, Math.max(0, v));
+        return {
+          x: clamp((clientX - rect.left) / rect.width) * 100,
+          y: clamp((clientY - rect.top) / rect.height) * 100 * visibleHeight,
+        };
+      },
+      [pitchRef, visibleHeight],
+    );
+
+    const pitchApi = useMemo<PitchApi>(
+      () => ({
+        toPitchPoint,
+        suppressNextClick: () => {
+          suppressClickUntil.current = Date.now() + 400;
+        },
+      }),
+      [toPitchPoint],
+    );
 
     return (
       <div className="flex w-full justify-center">
@@ -90,7 +119,9 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
               alt="Football Pitch"
               className="block h-full w-full bg-green-700"
             />
-            {children}
+            <PitchContext.Provider value={pitchApi}>
+              {children}
+            </PitchContext.Provider>
           </div>
         </div>
       </div>

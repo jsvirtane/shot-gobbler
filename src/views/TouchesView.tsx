@@ -18,6 +18,8 @@ interface TouchesViewProps {
 
 const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // The action open in the form for editing; null when adding a new one
+  const [editingAction, setEditingAction] = useState<Action | null>(null);
   const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
   const [currentView, setCurrentView] = useUrlState<TouchesView>(
     "view",
@@ -36,6 +38,30 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditingAction(null);
+  };
+
+  const handleActionClick = (action: Action) => {
+    setEditingAction(action);
+    setCurrentPosition({ x: action.x, y: action.y });
+    setIsModalOpen(true);
+  };
+
+  const handleActionMove = (id: string, x: number, y: number) => {
+    actionList.update(id, { x, y }, "Action moved");
+  };
+
+  const handleFormSubmit = (details: Omit<Action, "id" | "timestamp">) => {
+    if (editingAction) {
+      actionList.update(editingAction.id, details);
+    } else {
+      handleAddAction(details);
+    }
+  };
+
+  const handleDeleteEditingAction = () => {
+    if (editingAction) actionList.remove(editingAction.id);
+    handleCloseModal();
   };
 
   const handleAddAction = (details: Omit<Action, "id" | "timestamp">) => {
@@ -70,7 +96,12 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
           <p className="mb-4 text-sm text-gray-600">
             Click on the pitch to record player's actions during the match.
           </p>
-          <TouchMap onPitchClick={handlePitchClick} actions={actions} />
+          <TouchMap
+            onPitchClick={handlePitchClick}
+            actions={actions}
+            onActionClick={handleActionClick}
+            onActionMove={handleActionMove}
+          />
         </>
       ) : (
         <div className="flex flex-col gap-4">
@@ -84,8 +115,10 @@ const TouchesView: React.FC<TouchesViewProps> = ({ actions, setActions }) => {
       <ActionForm
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onSubmit={handleAddAction}
+        onSubmit={handleFormSubmit}
         initialCoords={currentPosition}
+        action={editingAction ?? undefined}
+        onDelete={handleDeleteEditingAction}
       />
     </>
   );

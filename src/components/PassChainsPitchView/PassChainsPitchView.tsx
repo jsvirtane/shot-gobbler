@@ -12,6 +12,11 @@ type PassChainsPitchViewProps = {
   onEndChain: () => void;
   onUndoLastAction: () => void;
   onClearCurrentChain: () => void;
+  /** Saved chain selected by tapping one of its markers. */
+  selectedChainId?: string | null;
+  onChainClick?: (id: string) => void;
+  onDeleteSelectedChain?: () => void;
+  onCloseSelection?: () => void;
 };
 
 const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
@@ -23,8 +28,14 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
   onEndChain,
   onUndoLastAction,
   onClearCurrentChain,
+  selectedChainId,
+  onChainClick,
+  onDeleteSelectedChain,
+  onCloseSelection,
 }) => {
   const isActivePassChain = currentPassChain.length > 0;
+  const selectedIndex = passChains.findIndex((c) => c.id === selectedChainId);
+  const selectedChain = selectedIndex === -1 ? null : passChains[selectedIndex];
 
   return (
     <>
@@ -49,10 +60,41 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
         </>
       )}
 
+      {selectedChain && !isActivePassChain && (
+        <div
+          role="toolbar"
+          aria-label="Selected pass chain"
+          className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm"
+        >
+          <span className="text-sm font-medium text-gray-800">
+            Chain {selectedIndex + 1} · {selectedChain.actions.length}{" "}
+            {selectedChain.actions.length === 1 ? "point" : "points"}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onDeleteSelectedChain}
+              className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+            >
+              Delete chain
+            </button>
+            <button
+              type="button"
+              onClick={onCloseSelection}
+              className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       <PassChainMap
         onPitchClick={onPitchClick}
         passChains={passChains}
         currentPassChain={currentPassChain}
+        selectedChainId={selectedChain?.id}
+        onChainClick={onChainClick}
       />
 
       {isActivePassChain && (

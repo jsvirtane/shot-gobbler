@@ -2,12 +2,21 @@ import React from "react";
 import { ShotMarkerColors } from "../../constants/markerColors";
 import { Shot } from "../../types/Shot";
 import { getShotResult } from "../../utils/shotResult";
+import PitchMarker from "../PitchContainer/PitchMarker";
 
 interface ShotMarkerProps {
   shot: Shot;
+  /** Opens the shot for editing. */
+  onTap?: () => void;
+  /** Long-press drag ended at this displayed point. */
+  onMove?: (x: number, y: number) => void;
 }
 
-export const ShotMarker: React.FC<ShotMarkerProps> = ({ shot }) => {
+export const ShotMarker: React.FC<ShotMarkerProps> = ({
+  shot,
+  onTap,
+  onMove,
+}) => {
   const result = getShotResult(shot);
 
   // Determine color based on team and goal/miss
@@ -31,17 +40,23 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({ shot }) => {
   };
 
   return (
-    <div
-      className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 transform rounded-full shadow ${getColorClass()} ${getBorderStyle()} opacity-80`}
-      style={{
-        left: `${shot.x}%`,
-        top: `${shot.y}%`,
-        borderRadius: "50%", // Explicit for html2canvas iOS compatibility
-      }}
-      title={`${shot.shotType} - ${shot.bodyPart} - ${result}${
+    <PitchMarker
+      x={shot.x}
+      y={shot.y}
+      label={`${shot.shotType} - ${shot.bodyPart} - ${result}${
         shot.playerName ? " - " + shot.playerName : ""
       }`}
-    ></div>
+      onTap={onTap}
+      onMove={onMove}
+      testId="shot-marker"
+    >
+      <div
+        className={`h-5 w-5 rounded-full shadow ${getColorClass()} ${getBorderStyle()} opacity-80`}
+        style={{
+          borderRadius: "50%", // Explicit for html2canvas iOS compatibility
+        }}
+      />
+    </PitchMarker>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from "react";
+import PitchMarker from "../PitchContainer/PitchMarker";
 import { ChainAction, ChainTerminationReason } from "../../types/PassChain";
 import { formatPitchZoneCapitalized } from "../../utils/pitchZones";
 
@@ -6,11 +7,13 @@ type PassChainTerminationMarkerProps = {
   action: ChainAction;
   terminationReason: ChainTerminationReason;
   isCurrentChain?: boolean;
+  /** Tap on the marker (selects its chain). */
+  onTap?: () => void;
 };
 
 export const PassChainTerminationMarker: React.FC<
   PassChainTerminationMarkerProps
-> = ({ action, terminationReason, isCurrentChain = false }) => {
+> = ({ action, terminationReason, isCurrentChain = false, onTap }) => {
   const getTerminationColor = () => {
     if (terminationReason === "goal") {
       return "bg-green-500";
@@ -47,7 +50,7 @@ export const PassChainTerminationMarker: React.FC<
     const { opacity, size } = getMarkerStyling();
     const border = getMarkerBorder();
 
-    return `absolute ${size} ${baseColor} ${opacity} ${border} rounded-sm shadow-lg z-[6] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs`;
+    return `${size} ${baseColor} ${opacity} ${border} rounded-sm shadow-lg flex items-center justify-center text-xs`;
   };
 
   const getTerminationSymbol = () => {
@@ -59,20 +62,25 @@ export const PassChainTerminationMarker: React.FC<
   };
 
   return (
-    <div
-      className={getMarkerClasses()}
-      style={{
-        left: `${action.x}%`,
-        top: `${action.y}%`,
-      }}
-      title={`Chain ended: ${terminationReason} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
+    <PitchMarker
+      x={action.x}
+      y={action.y}
+      label={`Chain ended: ${terminationReason} - Zone: ${formatPitchZoneCapitalized(action.pitchZone)}`}
+      onTap={onTap}
+      className="z-[6]"
+      testId="chain-termination-marker"
     >
-      <span
-        className={`text-xs ${isCurrentChain ? "text-white" : "text-gray-300"}`}
+      <div
+        className={getMarkerClasses()}
+        style={{ borderRadius: "0.125rem" }} // Explicit for html2canvas iOS compatibility
       >
-        {getTerminationSymbol()}
-      </span>
-    </div>
+        <span
+          className={`text-xs ${isCurrentChain ? "text-white" : "text-gray-300"}`}
+        >
+          {getTerminationSymbol()}
+        </span>
+      </div>
+    </PitchMarker>
   );
 };
 

@@ -2,12 +2,21 @@ import React from "react";
 import { ActionMarkerColors } from "../../constants/markerColors";
 import { Action } from "../../types/Action";
 import { isSuccessfulActionOutcome } from "../../utils/isSuccessfulActionOutcome";
+import PitchMarker from "../PitchContainer/PitchMarker";
 
 interface ActionMarkerProps {
   action: Action;
+  /** Opens the action for editing. */
+  onTap?: () => void;
+  /** Long-press drag ended at this point. */
+  onMove?: (x: number, y: number) => void;
 }
 
-export const ActionMarker: React.FC<ActionMarkerProps> = ({ action }) => {
+export const ActionMarker: React.FC<ActionMarkerProps> = ({
+  action,
+  onTap,
+  onMove,
+}) => {
   const getMarkerClasses = () => {
     const isSuccessful = isSuccessfulActionOutcome(action.outcome);
     const outcomeClass = isSuccessful
@@ -27,16 +36,21 @@ export const ActionMarker: React.FC<ActionMarkerProps> = ({ action }) => {
   };
 
   return (
-    <div
-      className={`absolute h-5 w-5 rounded-full ${getMarkerClasses()}`}
-      style={{
-        left: `${action.x}%`,
-        top: `${action.y}%`,
-        transform: "translate(-50%, -50%)",
-        borderRadius: "50%", // Explicit for html2canvas iOS compatibility
-      }}
-      title={`${action.category} - ${action.actionType} (${action.outcome})`}
-    />
+    <PitchMarker
+      x={action.x}
+      y={action.y}
+      label={`${action.category} - ${action.actionType} (${action.outcome})`}
+      onTap={onTap}
+      onMove={onMove}
+      testId="action-marker"
+    >
+      <div
+        className={`h-5 w-5 rounded-full ${getMarkerClasses()}`}
+        style={{
+          borderRadius: "50%", // Explicit for html2canvas iOS compatibility
+        }}
+      />
+    </PitchMarker>
   );
 };
 

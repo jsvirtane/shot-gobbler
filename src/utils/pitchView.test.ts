@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mirrorToTopHalf } from "./pitchView";
+import { displayToStored, mirrorToTopHalf } from "./pitchView";
 
 describe("mirrorToTopHalf", () => {
   it("leaves points in the top half unchanged", () => {
@@ -22,5 +22,38 @@ describe("mirrorToTopHalf", () => {
       x: 100,
       y: 25,
     });
+  });
+});
+
+describe("displayToStored", () => {
+  it("stores the dropped point as is in the full view", () => {
+    expect(displayToStored({ x: 10, y: 80 }, { x: 40, y: 30 }, "full")).toEqual(
+      { x: 40, y: 30 },
+    );
+  });
+
+  it("keeps top-half items unmirrored in the half view", () => {
+    expect(
+      displayToStored({ x: 10, y: 20 }, { x: 40, y: 30 }, "half-top"),
+    ).toEqual({ x: 40, y: 30 });
+  });
+
+  it("mirrors a bottom-half item back so it shows where it was dropped", () => {
+    const stored = displayToStored(
+      { x: 10, y: 80 },
+      { x: 40, y: 30 },
+      "half-top",
+    );
+    expect(stored).toEqual({ x: 60, y: 70 });
+    expect(mirrorToTopHalf(stored)).toEqual({ x: 40, y: 30 });
+  });
+
+  it("does not mirror a drop on the halfway line", () => {
+    const stored = displayToStored(
+      { x: 10, y: 80 },
+      { x: 40, y: 50 },
+      "half-top",
+    );
+    expect(mirrorToTopHalf(stored)).toEqual({ x: 40, y: 50 });
   });
 });
