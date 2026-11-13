@@ -23,7 +23,8 @@ interface ShotsViewProps {
 }
 
 const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
-  const [currentTeam, setCurrentTeam] = useState<Team>("home");
+  // Team last used in the form; sticky regardless of the display filter
+  const [lastUsedTeam, setLastUsedTeam] = useState<Team>("home");
 
   const [shotsView, setShotsView] = useUrlState<ShotsView>(
     "view",
@@ -48,6 +49,10 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
     x: number;
     y: number;
   }>({ x: 0, y: 0 });
+
+  // A Home/Away filter pre-selects that team; "All" keeps the last-used team
+  const formDefaultTeam: Team =
+    shotDisplayFilter === "all" ? lastUsedTeam : shotDisplayFilter;
 
   // Shot filtering
   const filteredShots = shots.filter((shot) => {
@@ -74,6 +79,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
       timestamp: Date.now(),
     };
     setShots((prevShots) => [...prevShots, newShot]);
+    setLastUsedTeam(details.team);
     console.log("Added shot:", newShot);
   };
 
@@ -124,10 +130,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
       <div className="inline-flex rounded-md shadow-sm" role="group">
         <button
           type="button"
-          onClick={() => {
-            setCurrentTeam("home");
-            setShotDisplayFilter("all");
-          }}
+          onClick={() => setShotDisplayFilter("all")}
           className={`rounded-l-lg px-4 py-2 text-sm font-medium ${
             shotDisplayFilter === "all"
               ? "bg-neutral-900 text-white"
@@ -138,10 +141,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         </button>
         <button
           type="button"
-          onClick={() => {
-            setCurrentTeam("home");
-            setShotDisplayFilter("home");
-          }}
+          onClick={() => setShotDisplayFilter("home")}
           className={`px-4 py-2 text-sm font-medium ${
             shotDisplayFilter === "home"
               ? "bg-neutral-900 text-white"
@@ -152,10 +152,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         </button>
         <button
           type="button"
-          onClick={() => {
-            setCurrentTeam("away");
-            setShotDisplayFilter("away");
-          }}
+          onClick={() => setShotDisplayFilter("away")}
           className={`rounded-r-lg px-4 py-2 text-sm font-medium ${
             shotDisplayFilter === "away"
               ? "bg-neutral-900 text-white"
@@ -252,7 +249,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         onClose={handleCloseModal}
         onSubmit={handleAddShot}
         initialCoords={currentShotCoords}
-        defaultTeam={currentTeam}
+        defaultTeam={formDefaultTeam}
       />
     </>
   );

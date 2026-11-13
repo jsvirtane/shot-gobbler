@@ -1,11 +1,26 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Team } from "../types/common";
 import { Shot } from "../types/Shot";
 import ShotsView from "./ShotsView";
 
+// Initial values for the mocked URL state, adjustable per test
+const urlDefaults = vi.hoisted(() => ({
+  view: "list",
+  filter: "all",
+}));
+
 // Mock the child components
 vi.mock("../components/ShotMap/ShotMap", () => ({
-  default: () => <div data-testid="shot-map">Shot Map</div>,
+  default: ({
+    onPitchClick,
+  }: {
+    onPitchClick: (x: number, y: number) => void;
+  }) => (
+    <button data-testid="shot-map" onClick={() => onPitchClick(50, 50)}>
+      Shot Map
+    </button>
+  ),
 }));
 
 vi.mock("../components/ShotList/ShotList", () => ({
@@ -28,7 +43,38 @@ vi.mock("../components/ShotList/ShotList", () => ({
 }));
 
 vi.mock("../components/ShotForm/ShotForm", () => ({
-  default: () => <div data-testid="shot-form">Shot Form</div>,
+  default: ({
+    isOpen,
+    defaultTeam,
+    onSubmit,
+    onClose,
+  }: {
+    isOpen: boolean;
+    defaultTeam: Team;
+    onSubmit: (details: Omit<Shot, "id" | "timestamp">) => void;
+    onClose: () => void;
+  }) =>
+    isOpen ? (
+      <div data-testid="shot-form">
+        <span data-testid="form-default-team">{defaultTeam}</span>
+        <button
+          onClick={() => {
+            onSubmit({
+              x: 50,
+              y: 50,
+              isGoal: false,
+              result: "Miss",
+              bodyPart: "Foot",
+              shotType: "Open Play",
+              team: "away",
+            });
+            onClose();
+          }}
+        >
+          Submit away shot
+        </button>
+      </div>
+    ) : null,
 }));
 
 vi.mock("../components/ViewToggle/ViewToggle", () => ({
@@ -45,20 +91,17 @@ vi.mock("../components/Accordion", () => ({
   ),
 }));
 
-// Mock useUrlState hook
-vi.mock("../hooks/useUrlState", () => ({
-  useUrlState: (key: string, defaultValue: string) => {
-    // Return "list" view to make Clear All button visible
-    if (key === "view") {
-      return ["list", vi.fn()];
-    }
-    // Return "all" filter
-    if (key === "filter") {
-      return ["all", vi.fn()];
-    }
-    return [defaultValue, vi.fn()];
-  },
-}));
+// Mock useUrlState hook with plain component state (no URL syncing)
+vi.mock("../hooks/useUrlState", async () => {
+  const { useState } = await vi.importActual<typeof import("react")>("react");
+  return {
+    useUrlState: (key: string, defaultValue: string) =>
+      useState(
+        (urlDefaults as Record<string, string | undefined>)[key] ??
+          defaultValue,
+      ),
+  };
+});
 
 import React from "react";
 
@@ -67,6 +110,9 @@ describe("ShotsView", () => {
   const mockConfirm = vi.spyOn(window, "confirm");
 
   beforeEach(() => {
+    // List view makes the Clear All button visible
+    urlDefaults.view = "list";
+    urlDefaults.filter = "all";
     mockSetShots.mockClear();
     mockConfirm.mockClear();
     mockConfirm.mockReturnValue(true);
@@ -220,6 +266,39 @@ describe("ShotsView", () => {
       // Should only have the second shot remaining
       expect(newShots).toHaveLength(1);
       expect(newShots[0].id).toBe("2");
+    });
+  });
+
+  describe("Form default team", () => {
+    beforeEach(() => {
+      urlDefaults.view = "pitch";
+    });
+
+    it("keeps the last-used team when switching back to All Shots", () => {
+      render(<ShotsView shots={[]} setShots={mockSetShots} />);
+
+      // Record an away shot while filtering by Away
+      fireEvent.click(screen.getByText("Away Team"));
+      fireEvent.click(screen.getByTestId("shot-map"));
+      expect(screen.getByTestId("form-default-team").textContent).toBe("away");
+      fireEvent.click(screen.getByText("Submit away shot"));
+
+      // Back to All Shots: the form should still default to Away
+      fireEvent.click(screen.getByText("All Shots"));
+      fireEvent.click(screen.getByTestId("shot-map"));
+      expect(screen.getByTestId("form-default-team").textContent).toBe("away");
+    });
+
+    it("pre-selects the filtered team when filtering by Home or Away", () => {
+      render(<ShotsView shots={[]} setShots={mockSetShots} />);
+
+      fireEvent.click(screen.getByText("Away Team"));
+      fireEvent.click(screen.getByTestId("shot-map"));
+      fireEvent.click(screen.getByText("Submit away shot"));
+
+      fireEvent.click(screen.getByText("Home Team"));
+      fireEvent.click(screen.getByTestId("shot-map"));
+      expect(screen.getByTestId("form-default-team").textContent).toBe("home");
     });
   });
 });
