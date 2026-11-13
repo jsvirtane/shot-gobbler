@@ -6,6 +6,9 @@ import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import XgTotals from "../components/ShotList/XgTotals";
 import ShotMap from "../components/ShotMap/ShotMap";
+import SegmentedControl, {
+  SegmentedOption,
+} from "../components/SegmentedControl";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
@@ -19,6 +22,7 @@ import {
   saveShotDefaults,
   ShotDefaults,
 } from "../utils/shotEntryPrefs";
+import { getTeamOptions } from "../utils/teamLabels";
 
 const DISPLAY_FILTERS = ["all", "home", "away"] as const;
 type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
@@ -165,43 +169,24 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
   );
 
   // UI components
+  const filterOptions: SegmentedOption<DisplayFilter>[] = [
+    { value: "all", label: "All Shots" },
+    ...getTeamOptions().map(({ value, label }) => ({
+      value,
+      label: `${label} Team`,
+    })),
+  ];
   const filterButtonsUI = (
     <div className="mb-4 flex justify-center">
-      <div className="inline-flex rounded-md shadow-sm" role="group">
-        <button
-          type="button"
-          onClick={() => setShotDisplayFilter("all")}
-          className={`rounded-l-lg px-4 py-2 text-sm font-medium ${
-            shotDisplayFilter === "all"
-              ? "bg-neutral-900 text-white"
-              : "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
-          }`}
-        >
-          All Shots
-        </button>
-        <button
-          type="button"
-          onClick={() => setShotDisplayFilter("home")}
-          className={`px-4 py-2 text-sm font-medium ${
-            shotDisplayFilter === "home"
-              ? "bg-neutral-900 text-white"
-              : "border-y border-r border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
-          }`}
-        >
-          Home Team
-        </button>
-        <button
-          type="button"
-          onClick={() => setShotDisplayFilter("away")}
-          className={`rounded-r-lg px-4 py-2 text-sm font-medium ${
-            shotDisplayFilter === "away"
-              ? "bg-neutral-900 text-white"
-              : "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
-          }`}
-        >
-          Away Team
-        </button>
-      </div>
+      <SegmentedControl
+        variant="joined"
+        size="sm"
+        ariaLabel="Show shots"
+        options={filterOptions}
+        value={shotDisplayFilter}
+        onChange={setShotDisplayFilter}
+        activeClassName="bg-neutral-900 text-white"
+      />
     </div>
   );
 

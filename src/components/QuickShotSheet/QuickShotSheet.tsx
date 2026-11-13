@@ -1,6 +1,7 @@
 import React from "react";
 import { ShotResult } from "../../types/Shot";
 import { ShotDefaults } from "../../utils/shotEntryPrefs";
+import { formatTeam } from "../../utils/teamLabels";
 import Modal from "../Modal";
 
 interface QuickShotSheetProps {
@@ -51,7 +52,7 @@ const QuickShotSheet: React.FC<QuickShotSheetProps> = ({
   defaults,
 }) => {
   const summary = [
-    defaults.team === "home" ? "🏠 Home" : "🚌 Away",
+    formatTeam(defaults.team),
     `${BODY_PART_ICONS[defaults.bodyPart]} ${defaults.bodyPart}`,
     defaults.shotType,
     defaults.playerName.trim(),
