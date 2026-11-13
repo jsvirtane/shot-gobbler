@@ -1,6 +1,5 @@
 import shot_gobbler from "../../assets/shot_gobbler.svg";
-
-type Tab = "docs" | "shots" | "touches" | "pass-chains";
+import { Tab } from "../../types/Tab";
 
 type NavBarProps = {
   activeTab: Tab;

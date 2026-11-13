@@ -220,9 +220,13 @@ type ImportItem<T extends ImportDataType> = NonNullable<
   ReturnType<(typeof normalizers)[T]>
 >;
 
-export type ImportResult<T extends ImportDataType> =
-  | { ok: true; items: ImportItem<T>[]; skipped: number }
+export type ValidationResult<Item> =
+  | { ok: true; items: Item[]; skipped: number }
   | { ok: false; error: string };
+
+export type ImportResult<T extends ImportDataType> = ValidationResult<
+  ImportItem<T>
+>;
 
 const wrongTabError = (actual: ImportDataType, expected: ImportDataType) =>
   `This file contains ${DATA_TYPE_LABELS[actual]}, not ${DATA_TYPE_LABELS[expected]}. Switch to the ${TAB_LABELS[actual]} tab to import it.`;

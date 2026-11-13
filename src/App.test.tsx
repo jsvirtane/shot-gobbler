@@ -165,6 +165,17 @@ describe("App - URL State Management", () => {
       expect(window.location.search).not.toContain("filter=away");
     });
 
+    it("should clear the pitch parameter when switching tabs", () => {
+      window.history.replaceState({}, "", "/?tab=shots&view=pitch&pitch=half");
+
+      render(<App />);
+
+      fireEvent.click(screen.getByTestId("nav-touches"));
+
+      expect(window.location.search).toBe("?tab=touches");
+      expect(window.location.search).not.toContain("pitch=half");
+    });
+
     it("should clear view and filter when switching to docs", () => {
       window.history.replaceState({}, "", "/?tab=shots&view=list&filter=home");
 
