@@ -11,6 +11,8 @@ type PassChainMapProps = {
   selectedChainId?: string | null;
   /** Tap on a saved chain's marker (only while no chain is being recorded). */
   onChainClick?: (id: string) => void;
+  /** Empty-state hint over the pitch. */
+  hint?: React.ReactNode;
 };
 
 export const PassChainMap: React.FC<PassChainMapProps> = ({
@@ -19,6 +21,7 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
   currentPassChain,
   selectedChainId,
   onChainClick,
+  hint,
 }) => {
   const hasActiveCurrentChain = currentPassChain && currentPassChain.length > 0;
   const hasSelection =
@@ -28,8 +31,9 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
     // Reserved height includes the match bar and the two-row legend
     <PitchContainer
       onCoordinateClick={onPitchClick}
-      reservedHeight="24.75rem"
+      reservedHeight="23rem"
       legend={<PassChainLegend />}
+      hint={hint}
     >
       {/* Render completed pass chains */}
       {passChains.map((chain) => {

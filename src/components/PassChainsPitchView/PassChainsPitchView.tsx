@@ -39,16 +39,6 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
 
   return (
     <>
-      {!isActivePassChain && passChains.length === 0 && (
-        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-          <p className="text-blue-800">
-            <strong>Click on the pitch to start a new pass chain.</strong>
-            <br />
-            The first action will automatically be marked as the start position.
-          </p>
-        </div>
-      )}
-
       {isActivePassChain && currentPassChain.length > 0 && (
         <>
           <ActionTypeSelection
@@ -95,6 +85,17 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
         currentPassChain={currentPassChain}
         selectedChainId={selectedChain?.id}
         onChainClick={onChainClick}
+        hint={
+          !isActivePassChain &&
+          passChains.length === 0 && (
+            <>
+              <strong>Click on the pitch to start a new pass chain.</strong>
+              <br />
+              The first action will automatically be marked as the start
+              position.
+            </>
+          )
+        }
       />
 
       {isActivePassChain && (

@@ -20,6 +20,10 @@ type ShotMapProps = {
   onShotMove?: (id: string, x: number, y: number) => void;
   /** Team names for the legend; defaults to Home / Away. */
   teamLabels?: Record<Team, string>;
+  /** Shown between the pitch and the legend. */
+  belowPitch?: React.ReactNode;
+  /** Empty-state hint over the pitch. */
+  hint?: React.ReactNode;
 };
 
 export const ShotMap: React.FC<ShotMapProps> = ({
@@ -29,6 +33,8 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   onShotClick,
   onShotMove,
   teamLabels,
+  belowPitch,
+  hint,
 }) => {
   return (
     // Reserved height includes the match bar, the Shots view's quick
@@ -38,6 +44,8 @@ export const ShotMap: React.FC<ShotMapProps> = ({
       variant={variant}
       reservedHeight="23.25rem"
       legend={<ShotLegend teamLabels={teamLabels} />}
+      belowPitch={belowPitch}
+      hint={hint}
     >
       {shots.map((shot) => (
         <ShotMarker

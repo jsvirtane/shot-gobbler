@@ -46,6 +46,16 @@ interface PitchContainerProps {
    * also appears in shared images.
    */
   legend?: React.ReactNode;
+  /**
+   * Shown between the pitch and the legend, inside the shared-image area
+   * (e.g. the team at the bottom of the pitch).
+   */
+  belowPitch?: React.ReactNode;
+  /**
+   * Empty-state hint drawn over the pitch. Taps go through it, and it is
+   * left out of shared images.
+   */
+  hint?: React.ReactNode;
   /** Markers positioned with `left: x%` / `top: y%` of the full pitch. */
   children?: React.ReactNode;
 }
@@ -57,6 +67,8 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
       variant = "full",
       reservedHeight = DEFAULT_RESERVED_HEIGHT,
       legend,
+      belowPitch,
+      hint,
       children,
     },
     ref,
@@ -150,7 +162,19 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
                 {children}
               </PitchContext.Provider>
             </div>
+            {hint && (
+              <div
+                data-html2canvas-ignore="true"
+                data-testid="pitch-hint"
+                className="pointer-events-none absolute inset-x-0 top-[38%] z-20 flex justify-center px-3"
+              >
+                <p className="max-w-[16rem] rounded-lg border border-blue-200 bg-blue-50/95 px-3 py-2 text-center text-sm text-blue-800 shadow-md">
+                  {hint}
+                </p>
+              </div>
+            )}
           </div>
+          {belowPitch}
           {legend}
         </div>
       </div>
