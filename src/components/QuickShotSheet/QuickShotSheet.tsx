@@ -1,7 +1,8 @@
 import React from "react";
+import { TeamNames } from "../../types/Match";
 import { ShotResult } from "../../types/Shot";
 import { ShotDefaults } from "../../utils/shotEntryPrefs";
-import { formatTeam } from "../../utils/teamLabels";
+import { DEFAULT_TEAM_LABELS, formatTeam } from "../../utils/teamLabels";
 import Modal from "../Modal";
 
 interface QuickShotSheetProps {
@@ -13,6 +14,8 @@ interface QuickShotSheetProps {
   onMoreDetails: () => void;
   /** The remembered choices the shot will be saved with. */
   defaults: ShotDefaults;
+  /** Team names for the summary; defaults to Home / Away. */
+  teamNames?: TeamNames;
 }
 
 const RESULTS: { result: ShotResult; icon: string; className: string }[] = [
@@ -50,9 +53,10 @@ const QuickShotSheet: React.FC<QuickShotSheetProps> = ({
   onSelectResult,
   onMoreDetails,
   defaults,
+  teamNames = DEFAULT_TEAM_LABELS,
 }) => {
   const summary = [
-    formatTeam(defaults.team),
+    formatTeam(defaults.team, teamNames),
     `${BODY_PART_ICONS[defaults.bodyPart]} ${defaults.bodyPart}`,
     defaults.shotType,
     defaults.playerName.trim(),

@@ -13,6 +13,18 @@ export const DEFAULT_TEAM_LABELS: Record<Team, string> = {
   away: "Away",
 };
 
+/**
+ * Labels from a match's team names; an empty name falls back to the
+ * default label.
+ */
+export const getTeamLabels = (match?: {
+  homeTeam: string;
+  awayTeam: string;
+}): Record<Team, string> => ({
+  home: match?.homeTeam.trim() || DEFAULT_TEAM_LABELS.home,
+  away: match?.awayTeam.trim() || DEFAULT_TEAM_LABELS.away,
+});
+
 /** Team choices for a SegmentedControl, e.g. "🏠 Home" / "🚌 Away". */
 export const getTeamOptions = (
   labels: Record<Team, string> = DEFAULT_TEAM_LABELS,

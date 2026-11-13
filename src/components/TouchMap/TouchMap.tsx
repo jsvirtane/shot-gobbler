@@ -18,7 +18,7 @@ export const TouchMap = ({
   onActionMove,
 }: TouchMapProps) => {
   return (
-    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="13.5rem">
+    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="16.75rem">
       {actions.map((action) => (
         <ActionMarker
           key={action.id}

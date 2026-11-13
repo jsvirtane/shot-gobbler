@@ -1,23 +1,24 @@
 import React from "react";
-import { Team } from "../../types/common";
+import { TeamNames } from "../../types/Match";
 import { Shot } from "../../types/Shot";
+import { DEFAULT_TEAM_LABELS, TEAMS } from "../../utils/teamLabels";
 import { formatXg, totalXg } from "../../utils/xg";
-
-const TEAMS: { team: Team; label: string }[] = [
-  { team: "home", label: "Home" },
-  { team: "away", label: "Away" },
-];
 
 interface XgTotalsProps {
   /** The shots currently shown; teams without shots are left out. */
   shots: Shot[];
+  /** Team labels; defaults to Home / Away. */
+  teamNames?: TeamNames;
 }
 
 /** One-line xG total per team, e.g. "Home 1.84 xG · Away 0.62 xG". */
-const XgTotals: React.FC<XgTotalsProps> = ({ shots }) => {
-  const totals = TEAMS.map(({ team, label }) => ({
+const XgTotals: React.FC<XgTotalsProps> = ({
+  shots,
+  teamNames = DEFAULT_TEAM_LABELS,
+}) => {
+  const totals = TEAMS.map((team) => ({
     team,
-    label,
+    label: teamNames[team],
     shots: shots.filter((shot) => shot.team === team),
   })).filter((t) => t.shots.length > 0);
 

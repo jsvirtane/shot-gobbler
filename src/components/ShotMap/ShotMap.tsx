@@ -26,11 +26,12 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   onShotMove,
 }) => {
   return (
-    // Reserved height includes the Shots view's quick entry toggle row
+    // Reserved height includes the match bar and the Shots view's quick
+    // entry toggle row
     <PitchContainer
       onCoordinateClick={onPitchClick}
       variant={variant}
-      reservedHeight="17.5rem"
+      reservedHeight="20.75rem"
     >
       {shots.map((shot) => (
         <ShotMarker

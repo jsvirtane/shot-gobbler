@@ -1,5 +1,5 @@
 import { PitchZone } from "../utils/pitchZones";
-import { Coordinates } from "./common";
+import { Coordinates, EventMeta } from "./common";
 
 export type ChainActionType =
   | "pass"
@@ -29,7 +29,7 @@ export type ChainAction = Coordinates & {
   pitchZone: PitchZone;
 };
 
-export type PassChain = {
+export type PassChain = EventMeta & {
   id: string;
   actions: ChainAction[];
   terminationReason: ChainTerminationReason;

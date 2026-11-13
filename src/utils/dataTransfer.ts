@@ -9,23 +9,32 @@ export type DataTabConfig<T> = DataTabInfo<T> & {
   setData: Dispatch<SetStateAction<T[]>>;
 };
 
-/** Downloads the tab's data as a versioned JSON export file. */
+/** Starts a download of the value as a pretty-printed JSON file. */
+export const downloadJson = (value: unknown, filename: string): void => {
+  const json = JSON.stringify(value, null, 2);
+  const link = document.createElement("a");
+  link.href = `data:text/json;charset=utf-8,${encodeURIComponent(json)}`;
+  link.download = filename;
+  link.click();
+};
+
+/** Downloads the tab's data (the current match's items) as an export file. */
 export const exportTabData = <T>(tab: DataTabConfig<T>): void => {
   if (tab.data.length === 0) {
     notify("No data to export");
     return;
   }
 
-  const json = JSON.stringify(createEnvelope(tab.key, tab.data), null, 2);
-  const link = document.createElement("a");
-  link.href = `data:text/json;charset=utf-8,${encodeURIComponent(json)}`;
-  link.download = `${tab.filenamePrefix}${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
+  downloadJson(
+    createEnvelope(tab.key, tab.data),
+    `${tab.filenamePrefix}${new Date().toISOString().slice(0, 10)}.json`,
+  );
 };
 
 /**
  * Validates parsed import data and adds the valid items to the tab's
- * existing data (never replacing it). Tells the user when the file is
+ * existing data (never replacing it). The setter is scoped to the current
+ * match, so imported items are assigned to it. Tells the user when the file is
  * refused or when invalid items were skipped.
  */
 export const importTabData = <T>(tab: DataTabConfig<T>, parsed: unknown) => {

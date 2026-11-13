@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Team } from "../../types/common";
+import { TeamNames } from "../../types/Match";
 import { BodyPart, Shot, ShotResult, ShotType } from "../../types/Shot";
 import {
   getCancelButtonStyle,
@@ -7,7 +8,7 @@ import {
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
 import { getShotResult } from "../../utils/shotResult";
-import { getTeamOptions } from "../../utils/teamLabels";
+import { DEFAULT_TEAM_LABELS, getTeamOptions } from "../../utils/teamLabels";
 import Modal from "../Modal";
 import SegmentedControl, { SegmentedOption } from "../SegmentedControl";
 
@@ -44,6 +45,8 @@ interface ShotFormProps {
   shot?: Shot;
   /** Edit mode: deletes the shot (the parent closes the form). */
   onDelete?: () => void;
+  /** Labels of the team buttons; defaults to Home / Away. */
+  teamNames?: TeamNames;
 }
 
 const ShotForm: React.FC<ShotFormProps> = ({
@@ -57,6 +60,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
   defaultPlayerName = "",
   shot,
   onDelete,
+  teamNames = DEFAULT_TEAM_LABELS,
 }) => {
   const [result, setResult] = useState<ShotResult>("Miss");
   const [bodyPart, setBodyPart] = useState<BodyPart>(defaultBodyPart);
@@ -107,7 +111,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
     return null;
   }
 
-  const teamOptions = getTeamOptions();
+  const teamOptions = getTeamOptions(teamNames);
 
   // Create a safer wrapper function that handles the iOS Safari issue
   const handleShotAdd = () => {
