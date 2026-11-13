@@ -25,16 +25,15 @@ describe("ShotForm Component", () => {
     render(<ShotForm {...defaultProps} />);
 
     // Check if the form title is rendered
-    expect(screen.getByText(/Shot Details at/)).toBeTruthy();
-    expect(screen.getByText("50.0%", { exact: false })).toBeTruthy();
-    expect(screen.getByText("25.0%", { exact: false })).toBeTruthy();
+    expect(screen.getByText("New Shot")).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "New Shot" })).toBeTruthy();
   });
 
   it("does not render when isOpen is false", () => {
     render(<ShotForm {...defaultProps} isOpen={false} />);
 
     // Check if the form is not in the document
-    expect(screen.queryByText(/Shot Details at/)).toBeNull();
+    expect(screen.queryByText("New Shot")).toBeNull();
   });
 
   it("updates team when team buttons are clicked", () => {
@@ -140,7 +139,7 @@ describe("ShotForm Component", () => {
     fireEvent.click(screen.getByText("⚽ Goal")); // Set as goal
     fireEvent.click(screen.getByText("👤 Head")); // Set body part to head
     fireEvent.click(screen.getByText("Penalty")); // Set shot type to penalty
-    
+
     fireEvent.change(screen.getByPlaceholderText("e.g., Ronaldo or 7"), {
       target: { value: "Pippola" },
     });

@@ -163,7 +163,12 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} title="Complete Pass Chain" maxWidth="500px">
+      <Modal
+        isOpen={isModalOpen}
+        title="Complete Pass Chain"
+        maxWidth="500px"
+        onClose={() => setIsModalOpen(false)}
+      >
         <PassChainForm
           onSubmit={handleFormSubmit}
           onCancel={() => setIsModalOpen(false)}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Shot } from "../../types/Shot";
+import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 
 interface ShotCardProps {
   shot: Shot;
@@ -16,20 +17,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
   onNext,
   onPrevious,
 }) => {
-  const getResultColor = (result: Shot["result"]) => {
-    switch (result) {
-      case "Goal":
-        return "text-green-600";
-      case "Miss":
-        return "text-red-600";
-      case "Saved":
-        return "text-orange-600";
-      case "Blocked":
-        return "text-gray-600";
-      default:
-        return "text-gray-600";
-    }
-  };
+  const result = getShotResult(shot);
 
   return (
     <div
@@ -110,9 +98,9 @@ const ShotCard: React.FC<ShotCardProps> = ({
               Result
             </p>
             <p
-              className={`text-lg font-semibold ${getResultColor(shot.result)}`}
+              className={`text-lg font-semibold ${shotResultTextColors[result]}`}
             >
-              {shot.result}
+              {result}
             </p>
           </div>
 

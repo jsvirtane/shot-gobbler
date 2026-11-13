@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
@@ -51,7 +51,16 @@ vi.mock("./components/NavBar/NavBar", () => ({
 
 // Mock ShareButton
 vi.mock("./components/ShareButton", () => ({
-  default: () => <div data-testid="share-button">Share</div>,
+  default: ({
+    onImport,
+  }: {
+    onImport?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  }) => (
+    <div data-testid="share-button">
+      Share
+      <input data-testid="import-input" type="file" onChange={onImport} />
+    </div>
+  ),
 }));
 
 describe("App - URL State Management", () => {
@@ -437,5 +446,88 @@ describe("App - LocalStorage Persistence", () => {
     // The save effect will overwrite the corrupted data with valid empty arrays
     expect(localStorageMock.getItem("shot-gobbler-data")).toBe("[]");
     expect(localStorageMock.getItem("shot-gobbler-touches-data")).toBe("[]");
+  });
+});
+
+describe("App - Import", () => {
+  const existingShot = {
+    id: "existing-1",
+    x: 50,
+    y: 25,
+    isGoal: true,
+    result: "Goal",
+    bodyPart: "Foot",
+    shotType: "Open Play",
+    team: "home",
+    timestamp: 1700000000000,
+  };
+
+  const importFile = (data: unknown) => {
+    const file = new File([JSON.stringify(data)], "import.json", {
+      type: "application/json",
+    });
+    fireEvent.change(screen.getByTestId("import-input"), {
+      target: { files: [file] },
+    });
+  };
+
+  const storedShots = () =>
+    JSON.parse(window.localStorage.getItem("shot-gobbler-data") ?? "[]");
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.history.replaceState({}, "", "/?tab=shots");
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+  });
+
+  it("adds imported shots to existing shots instead of replacing them", async () => {
+    window.localStorage.setItem(
+      "shot-gobbler-data",
+      JSON.stringify([existingShot]),
+    );
+    render(<App />);
+
+    importFile([
+      { ...existingShot, id: "imported-1", result: "Saved", isGoal: false },
+      { ...existingShot, id: "imported-2", result: "Miss", isGoal: false },
+    ]);
+
+    await waitFor(() => expect(storedShots()).toHaveLength(3));
+    const shots = storedShots();
+    expect(shots[0].id).toBe("existing-1");
+    expect(shots.map((s: { result: string }) => s.result)).toEqual([
+      "Goal",
+      "Saved",
+      "Miss",
+    ]);
+    // Imported items get fresh, unique ids
+    expect(new Set(shots.map((s: { id: string }) => s.id)).size).toBe(3);
+  });
+
+  it("refuses a file of the wrong type and keeps existing data", async () => {
+    window.localStorage.setItem(
+      "shot-gobbler-data",
+      JSON.stringify([existingShot]),
+    );
+    render(<App />);
+
+    importFile([
+      {
+        id: "a1",
+        x: 30,
+        y: 40,
+        category: "attacking",
+        actionType: "pass",
+        outcome: "successful",
+        timestamp: 1,
+      },
+    ]);
+
+    await waitFor(() =>
+      expect(window.alert).toHaveBeenCalledWith(
+        expect.stringContaining("Touches tab"),
+      ),
+    );
+    expect(storedShots()).toEqual([existingShot]);
   });
 });
