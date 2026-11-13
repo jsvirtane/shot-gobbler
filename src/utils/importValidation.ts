@@ -13,6 +13,7 @@ import {
 import { BodyPart, Shot, ShotResult, ShotType } from "../types/Shot";
 import { DataTab } from "../types/Tab";
 import { migrate, unwrapAndMigrate } from "./dataSchema";
+import { normalizeEventTime } from "./matchClock";
 import { getZoneFromCoordinates, getZonesFromPassChain } from "./pitchZones";
 
 export type ImportDataType = DataTab;
@@ -144,6 +145,7 @@ export const normalizeShot = (item: unknown): Shot | null => {
     shotType: item.shotType,
     ...(playerName ? { playerName } : {}),
     timestamp: getTimestamp(item.timestamp),
+    ...normalizeEventTime(item),
   };
 };
 
@@ -167,6 +169,7 @@ export const normalizeAction = (item: unknown): Action | null => {
     actionType: item.actionType,
     outcome: item.outcome,
     timestamp: getTimestamp(item.timestamp),
+    ...normalizeEventTime(item),
   };
 };
 
@@ -208,6 +211,7 @@ export const normalizePassChain = (item: unknown): PassChain | null => {
     terminationReason: item.terminationReason,
     isCompleted: true,
     zones: getZonesFromPassChain(actions),
+    ...normalizeEventTime(item),
   };
 };
 

@@ -5,6 +5,7 @@ import {
   distanceToGoal,
   shotAngle,
 } from "../../utils/pitchGeometry";
+import { formatEventTime } from "../../utils/matchClock";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 import { formatXg, shotXg } from "../../utils/xg";
 
@@ -148,6 +149,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
         <div className="border-t pt-2">
           <p className="text-center text-sm font-medium text-gray-600">
             Shot {currentIndex + 1} of {totalShots}
+            {formatEventTime(shot) && ` · ${formatEventTime(shot)}`}
           </p>
         </div>
       </div>

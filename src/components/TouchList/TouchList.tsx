@@ -1,5 +1,6 @@
 import { Action } from "../../types/Action";
 import { isSuccessfulActionOutcome } from "../../utils/isSuccessfulActionOutcome";
+import { formatEventTime } from "../../utils/matchClock";
 import { RemoveItemButton } from "../common";
 
 type TouchListProps = {
@@ -34,6 +35,8 @@ export const TouchList = ({ actions, onRemoveAction }: TouchListProps) => {
                       {action.outcome}
                     </p>
                     <p className="text-sm text-gray-500 capitalize">
+                      {formatEventTime(action) &&
+                        `${formatEventTime(action)} · `}
                       Category: {action.category}
                     </p>
                   </div>

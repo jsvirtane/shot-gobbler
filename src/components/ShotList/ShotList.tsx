@@ -1,5 +1,6 @@
 import React from "react";
 import { Shot } from "../../types/Shot";
+import { formatEventTime } from "../../utils/matchClock";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 import { formatXg, shotXg } from "../../utils/xg";
 import { RemoveItemButton } from "../common";
@@ -39,7 +40,9 @@ const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
                     {getShotResult(shot).toLowerCase()}
                   </p>
                   <p className="text-sm text-gray-500 capitalize">
-                    {shot.shotType}
+                    {[formatEventTime(shot), shot.shotType]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
 

@@ -30,6 +30,8 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   // The action open in the form for editing; null when adding a new one
   const [editingAction, setEditingAction] = useState<Action | null>(null);
   const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
+  // Match minute and period taken when the pitch is tapped
+  const [pendingStamp, setPendingStamp] = useState<EventStamp | null>(null);
   const [currentView, setCurrentView] = useUrlState<TouchesView>(
     "view",
     "pitch",
@@ -42,6 +44,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
 
   const handlePitchClick = (x: number, y: number) => {
     setCurrentPosition({ x, y });
+    setPendingStamp(getEventStamp());
     setIsModalOpen(true);
   };
 
@@ -75,7 +78,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
 
   const handleAddAction = (details: Omit<Action, "id" | "timestamp">) => {
     const newAction: Action = {
-      ...getEventStamp(),
+      ...(pendingStamp ?? getEventStamp()),
       ...details,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: Date.now(),
@@ -129,6 +132,9 @@ const TouchesView: React.FC<TouchesViewProps> = ({
         initialCoords={currentPosition}
         action={editingAction ?? undefined}
         onDelete={handleDeleteEditingAction}
+        defaultMinute={
+          editingAction ? editingAction.minute : pendingStamp?.minute
+        }
       />
     </>
   );

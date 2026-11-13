@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { Shot } from "./types/Shot";
 
@@ -256,7 +256,7 @@ describe("App - matches", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
       expect(
         screen.getByRole("button", { name: /change match/i }).textContent,
-      ).toContain("Spurs vs Fulham· 2026-12-24");
+      ).toContain("Spurs vs Fulham2026-12-24");
       expect(shotIds()).toBe("");
       expect(storedMatches()).toHaveLength(3);
       expect(storedMatches()[2]).toMatchObject({
@@ -380,6 +380,68 @@ describe("App - matches", () => {
       expect((await screen.findByRole("status")).textContent).toContain(
         "Imported Arsenal vs Chelsea: 1 shots",
       );
+    });
+  });
+
+  describe("match clock", () => {
+    const T0 = new Date("2026-11-13T15:00:00Z").getTime();
+    const MIN = 60_000;
+
+    beforeEach(() => {
+      // Only Date is faked: the clock is computed from timestamps
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(T0);
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const clockText = () => screen.getByTestId("match-clock").textContent;
+
+    it("records no minute before the clock is used", () => {
+      render(<App />);
+      expect(clockText()).toBe("–' 1H");
+      fireEvent.click(screen.getByText("Add shot"));
+      expect(storedShots()[0]).not.toHaveProperty("minute");
+    });
+
+    it("stamps events with the minute and period and survives a reload", () => {
+      const { unmount } = render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "Start clock" }));
+      expect(clockText()).toBe("1' 1H");
+
+      vi.setSystemTime(T0 + 22 * MIN + 30_000);
+      fireEvent.click(screen.getByText("Add shot"));
+      expect(storedShots()[0]).toMatchObject({ minute: 23, period: "1H" });
+
+      // Reload: the clock is still running and still right
+      unmount();
+      vi.setSystemTime(T0 + 30 * MIN);
+      render(<App />);
+      expect(clockText()).toBe("31' 1H");
+      expect(screen.getByRole("button", { name: "Pause clock" })).toBeTruthy();
+    });
+
+    it("uses the last minute while paused, and next period / adjust", () => {
+      render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "Start clock" }));
+      vi.setSystemTime(T0 + 10 * MIN);
+      fireEvent.click(screen.getByRole("button", { name: "Pause clock" }));
+      vi.setSystemTime(T0 + 40 * MIN);
+      fireEvent.click(screen.getByText("Add shot"));
+      expect(storedShots()[0]).toMatchObject({ minute: 11, period: "1H" });
+
+      openSheet();
+      fireEvent.click(
+        within(sheet()).getByRole("button", { name: "One minute forward" }),
+      );
+      expect(clockText()).toBe("12' 1H");
+      fireEvent.click(within(sheet()).getByText("Next: 2H"));
+      expect(clockText()).toBe("46' 2H");
+      fireEvent.click(
+        within(sheet()).getByRole("button", { name: "One minute back" }),
+      );
+      expect(clockText()).toBe("46' 2H");
     });
   });
 });

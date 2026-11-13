@@ -1,9 +1,19 @@
-import React, { useState } from "react";
-import { Match, MatchDetails } from "../../types/Match";
+import React, { useEffect, useState } from "react";
+import { Match, MatchClock, MatchDetails } from "../../types/Match";
 import {
   getCancelButtonStyle,
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
+import {
+  adjustClock,
+  clockMinute,
+  formatMinute,
+  nextPeriod,
+  nextPeriodOf,
+  pauseClock,
+  PERIOD_LABELS,
+  startClock,
+} from "../../utils/matchClock";
 import { formatMatchTitle, todayIso } from "../../utils/matches";
 import Modal from "../Modal";
 
@@ -17,6 +27,32 @@ export type MatchBarProps = {
   onDelete: (id: string) => void;
   /** Downloads the current match with all its data. */
   onExport: () => void;
+  /**
+   * Changes the current match's clock; returning undefined resets it. The
+   * change gets the clock (a new one on first use) and the current time.
+   */
+  onClockChange: (
+    change: (clock: MatchClock, now: number) => MatchClock | undefined,
+  ) => void;
+};
+
+/** The current time, updated every second while `ticking`. */
+const useNow = (ticking: boolean) => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    setNow(Date.now());
+    if (!ticking) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [ticking]);
+  return now;
+};
+
+/** E.g. "23' 1H"; "–' 1H" before the clock is first used. */
+const formatClock = (clock: MatchClock | undefined, now: number) => {
+  if (!clock) return "–' 1H";
+  if (clock.period === "PEN") return "PEN";
+  return `${formatMinute(clockMinute(clock, now), clock.period)} ${clock.period}`;
 };
 
 type SheetMode =
@@ -132,8 +168,14 @@ const MatchBar: React.FC<MatchBarProps> = ({
   onDuplicate,
   onDelete,
   onExport,
+  onClockChange,
 }) => {
   const [mode, setMode] = useState<SheetMode>({ kind: "closed" });
+  const clock = currentMatch.clock;
+  const running = clock?.running ?? false;
+  const now = useNow(running);
+  const clockText = formatClock(clock, now);
+  const upcomingPeriod = nextPeriodOf(clock?.period ?? "1H");
   const close = () => setMode({ kind: "closed" });
   const backToList = () => setMode({ kind: "list" });
 
@@ -152,15 +194,45 @@ const MatchBar: React.FC<MatchBarProps> = ({
         type="button"
         onClick={() => setMode({ kind: "list" })}
         aria-haspopup="dialog"
-        aria-label={`Match: ${title}, ${currentMatch.date}. Change match`}
-        className="flex h-full min-w-0 flex-1 items-center gap-1 rounded-md border border-gray-200 bg-white px-3 text-left text-sm shadow-sm hover:bg-gray-50"
+        aria-label={`Match: ${title} · ${currentMatch.date}. Change match`}
+        className="flex h-full min-w-0 flex-1 items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 text-left shadow-sm hover:bg-gray-50"
       >
-        <span className="truncate font-semibold text-gray-900">{title}</span>
-        <span className="shrink-0 text-gray-500">· {currentMatch.date}</span>
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="truncate text-sm font-semibold text-gray-900">
+            {title}
+          </span>
+          <span className="truncate text-xs text-gray-500">
+            {currentMatch.date}
+          </span>
+        </span>
         <span aria-hidden="true" className="ml-auto shrink-0 text-gray-400">
           ▾
         </span>
       </button>
+      <div className="flex h-full shrink-0 items-center rounded-md border border-gray-200 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() =>
+            onClockChange((c, at) =>
+              c.running ? pauseClock(c, at) : startClock(c, at),
+            )
+          }
+          disabled={clock?.period === "PEN"}
+          aria-label={running ? "Pause clock" : "Start clock"}
+          className="flex h-full w-9 items-center justify-center rounded-l-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-30"
+        >
+          {running ? "❚❚" : "▶"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode({ kind: "list" })}
+          aria-label={`Match clock ${clockText}. Clock settings`}
+          className={`h-full rounded-r-md border-l border-gray-200 px-2 text-sm font-semibold tabular-nums hover:bg-gray-50 ${running ? "text-green-700" : "text-gray-700"}`}
+          data-testid="match-clock"
+        >
+          {clockText}
+        </button>
+      </div>
 
       <Modal
         isOpen={mode.kind !== "closed"}
@@ -169,6 +241,61 @@ const MatchBar: React.FC<MatchBarProps> = ({
       >
         {mode.kind === "list" && (
           <div className="flex flex-col gap-4">
+            <section
+              aria-label="Match clock"
+              className="rounded-md border border-gray-200 p-3"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="text-lg font-semibold tabular-nums">
+                  {clockText}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {PERIOD_LABELS[clock?.period ?? "1H"]}
+                  {running ? " · running" : clock ? " · paused" : ""}
+                </span>
+              </div>
+              <div className="mt-2 grid grid-cols-4 gap-2 text-sm font-semibold">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onClockChange((c, at) => adjustClock(c, -1, at))
+                  }
+                  disabled={!clock || clock.period === "PEN"}
+                  className="rounded-md border border-gray-300 py-2 hover:bg-gray-50 disabled:opacity-30"
+                  aria-label="One minute back"
+                >
+                  −1′
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onClockChange((c, at) => adjustClock(c, 1, at))
+                  }
+                  disabled={clock?.period === "PEN"}
+                  className="rounded-md border border-gray-300 py-2 hover:bg-gray-50 disabled:opacity-30"
+                  aria-label="One minute forward"
+                >
+                  +1′
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onClockChange((c) => nextPeriod(c))}
+                  disabled={!upcomingPeriod}
+                  className="col-span-2 rounded-md border border-gray-300 py-2 hover:bg-gray-50 disabled:opacity-30"
+                >
+                  {upcomingPeriod ? `Next: ${upcomingPeriod}` : "Last period"}
+                </button>
+              </div>
+              {clock && (
+                <button
+                  type="button"
+                  onClick={() => onClockChange(() => undefined)}
+                  className="mt-2 text-xs font-medium text-gray-500 underline underline-offset-2 hover:text-gray-800"
+                >
+                  Reset clock
+                </button>
+              )}
+            </section>
             <ul className="flex flex-col divide-y divide-gray-100 rounded-md border border-gray-200">
               {matches.map((match) => {
                 const isCurrent = match.id === currentMatch.id;
