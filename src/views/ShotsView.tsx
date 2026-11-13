@@ -4,6 +4,7 @@ import { ClearButton } from "../components/common";
 import ShotCard from "../components/ShotCard";
 import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
+import XgTotals from "../components/ShotList/XgTotals";
 import ShotMap from "../components/ShotMap/ShotMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUndoableList } from "../hooks/useUndoableList";
@@ -282,6 +283,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({ shots, setShots }) => {
         </>
       ) : (
         <div className="flex flex-col gap-4">
+          <XgTotals shots={filteredShots} />
           {filteredShots.length > 0 && (
             <Accordion
               header={<h3 className="text-lg font-semibold">Shot details</h3>}

@@ -6,6 +6,7 @@ import {
   shotAngle,
 } from "../../utils/pitchGeometry";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
+import { formatXg, shotXg } from "../../utils/xg";
 
 interface ShotCardProps {
   shot: Shot;
@@ -134,6 +135,13 @@ const ShotCard: React.FC<ShotCardProps> = ({
               {distance.toFixed(1)} m · {Math.round(angle)}°
             </p>
           </div>
+        </div>
+
+        <div className="flex items-baseline justify-between rounded bg-gray-50 p-3">
+          <p className="text-xs font-semibold text-gray-500 uppercase">
+            Expected goals (xG)
+          </p>
+          <p className="text-lg font-semibold">{formatXg(shotXg(shot))}</p>
         </div>
 
         {/* Shot counter */}

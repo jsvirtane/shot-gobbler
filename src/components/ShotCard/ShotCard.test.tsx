@@ -34,6 +34,12 @@ describe("ShotCard", () => {
     expect(screen.getByText("11.0 m · 37°")).toBeTruthy();
   });
 
+  it("shows the shot's xG with two decimals", () => {
+    renderCard({ ...shot, shotType: "Penalty" });
+    expect(screen.getByText("Expected goals (xG)")).toBeTruthy();
+    expect(screen.getByText("0.76")).toBeTruthy();
+  });
+
   it("measures from the bottom goal for shots in the bottom half", () => {
     renderCard({ ...shot, ...fromMetres({ x: 34, y: 105 - 16.5 }) });
     expect(screen.getByText("16.5 m · 25°")).toBeTruthy();
