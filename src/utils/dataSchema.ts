@@ -5,9 +5,11 @@
  * before envelopes existed) is version 0.
  */
 
+import { DataTab } from "../types/Tab";
+
 export const APP_ID = "shot-gobbler";
 
-export type DataType = "shots" | "touches" | "pass-chains";
+export type DataType = DataTab;
 
 export const DATA_TYPES: readonly DataType[] = [
   "shots",
@@ -118,3 +120,22 @@ export const parseStored = (
 
 export const serializeForStorage = <T>(type: DataType, data: T[]): string =>
   JSON.stringify(createEnvelope(type, data));
+
+/** How a value is turned into a localStorage string and back. */
+export type StorageCodec<T> = {
+  /** Returns null when the stored value cannot be used. May throw. */
+  parse: (raw: string) => T | null;
+  stringify: (value: T) => string;
+};
+
+/** Plain JSON with no envelope or migrations. */
+export const jsonCodec: StorageCodec<unknown> = {
+  parse: (raw) => JSON.parse(raw),
+  stringify: (value) => JSON.stringify(value),
+};
+
+/** Stores an array in a versioned envelope and migrates it on load. */
+export const envelopeCodec = <T>(type: DataType): StorageCodec<T[]> => ({
+  parse: (raw) => parseStored(raw, type) as T[] | null,
+  stringify: (value) => serializeForStorage(type, value),
+});
