@@ -68,6 +68,29 @@ describe("NavBar", () => {
     expect(setActiveTab).toHaveBeenCalledWith("docs");
   });
 
+  it("pins the tabs to the bottom on phones and the top on wide screens", () => {
+    renderNavBar();
+
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(nav.className).toContain("fixed");
+    expect(nav.className).toContain("bottom-0");
+    expect(nav.className).toContain("md:static");
+  });
+
+  it("shows the logo header on phones only on the docs tab", () => {
+    const { unmount } = render(
+      <NavBar activeTab="shots" setActiveTab={vi.fn()} />,
+    );
+    const logo = () =>
+      screen.getByRole("button", { name: "Shot Gobbler – home" });
+    expect(logo().className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(logo().className).toContain("md:flex");
+    unmount();
+
+    render(<NavBar activeTab="docs" setActiveTab={vi.fn()} />);
+    expect(logo().className).not.toMatch(/(^|\s)hidden(\s|$)/);
+  });
+
   it("makes the logo and tabs keyboard focusable", () => {
     renderNavBar();
 

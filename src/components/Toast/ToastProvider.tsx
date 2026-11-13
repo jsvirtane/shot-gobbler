@@ -65,7 +65,12 @@ const Toast: React.FC<{
   );
 };
 
-/** Shows toasts at the bottom of the screen; use them via useToast(). */
+/**
+ * Shows toasts at the top of the screen (below the header on wide screens);
+ * use them via useToast(). The top keeps them off the pitch, which runs down
+ * to the bottom tab bar on phones, and off the action buttons at the bottom
+ * of forms. They stay above modals so form errors are visible.
+ */
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -99,7 +104,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
       <div
         data-testid="toast-viewport"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[1100] mx-auto flex max-w-md flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[1100] mx-auto flex max-w-md flex-col gap-2 px-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:top-15"
       >
         {toasts.map((toast) => (
           <Toast key={toast.id} toast={toast} onDismiss={dismissToast} />

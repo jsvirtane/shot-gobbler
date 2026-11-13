@@ -13,13 +13,19 @@ const VISIBLE_HEIGHT: Record<PitchVariant, number> = {
 };
 
 /**
- * Default vertical space (nav bar, page padding, view controls and labels)
- * reserved outside the pitch so that the whole pitch fits in the viewport.
+ * Default vertical space (the 3.75rem nav bar, page padding, view controls
+ * and labels) reserved outside the pitch so that the whole pitch fits in the
+ * viewport. The nav bar is at the top on wide screens and at the bottom on
+ * phones; the safe-area insets around it are added on top of this.
  */
 const DEFAULT_RESERVED_HEIGHT = "16rem";
 
 /** Narrowest shared-image area, so a legend fits in two rows. */
 const LEGEND_MIN_WIDTH = "22rem";
+
+/** Notch and home-indicator insets, outside the app's own layout. */
+const SAFE_AREA_HEIGHT =
+  "(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))";
 
 interface PitchContainerProps {
   /** Called with full-pitch % coordinates (0-100) of the clicked point. */
@@ -30,7 +36,10 @@ interface PitchContainerProps {
    * always in full-pitch % in both variants.
    */
   variant?: PitchVariant;
-  /** CSS length of the viewport height not available to the pitch. */
+  /**
+   * CSS length of the viewport height not available to the pitch, including
+   * the nav bar but not the safe-area insets (those are added here).
+   */
   reservedHeight?: string;
   /**
    * Key shown under the pitch. It is inside the shared-image area, so it
@@ -58,7 +67,7 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     const visibleHeight = VISIBLE_HEIGHT[variant];
     const aspectRatio = PITCH_RATIO / visibleHeight;
     // Shrink the width when the height would overflow the viewport
-    const pitchWidth = `min(100%, calc((100dvh - ${reservedHeight}) * ${aspectRatio}))`;
+    const pitchWidth = `min(100%, calc((100dvh - ${reservedHeight} - ${SAFE_AREA_HEIGHT}) * ${aspectRatio}))`;
 
     // Time until which pitch clicks are ignored (set when a marker drag ends)
     const suppressClickUntil = useRef(0);
