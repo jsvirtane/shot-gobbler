@@ -61,10 +61,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      title={`Shot Details at (${initialCoords.x.toFixed(1)}%, ${initialCoords.y.toFixed(1)}%)`}
-    >
+    <Modal isOpen={isOpen} title="New Shot" onClose={onClose}>
       <form>
         <div className="mb-4">
           <label className="mb-1 block font-bold text-gray-600">Team:</label>

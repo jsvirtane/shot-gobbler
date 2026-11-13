@@ -69,4 +69,19 @@ describe("ShotList Component", () => {
     // Check if onRemoveShot was called with the correct ID
     expect(mockOnRemoveShot).toHaveBeenCalledWith(mockShots[0].id);
   });
+
+  it("shows the actual result for saved, blocked and old shots", () => {
+    const shots = [
+      { ...mockShots[1], id: "saved", result: "Saved" as const },
+      { ...mockShots[1], id: "blocked", result: "Blocked" as const },
+      // Recorded before the result field existed
+      { ...mockShots[0], id: "old", result: undefined as never },
+    ];
+    render(<ShotList shots={shots} onRemoveShot={mockOnRemoveShot} />);
+
+    expect(screen.getByText("saved").className).toContain("text-orange-600");
+    expect(screen.getByText("blocked").className).toContain("text-gray-600");
+    expect(screen.getByText("goal").className).toContain("text-green-600");
+    expect(screen.queryByText("miss")).toBeNull();
+  });
 });

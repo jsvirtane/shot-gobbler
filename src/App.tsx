@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import NavBar from "./components/NavBar/NavBar";
 import ShareButton from "./components/ShareButton";
 import { useUrlState } from "./hooks/useUrlState";
+import { validateImport } from "./utils/importValidation";
 import { Action } from "./types/Action";
 import { PassChain } from "./types/PassChain";
 import { Shot } from "./types/Shot";
@@ -180,44 +181,39 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const importedData = JSON.parse(e.target?.result as string);
-          if (!Array.isArray(importedData) || importedData.length === 0) {
-            alert("The imported file doesn't contain valid data.");
-            return;
-          }
+          const importedData: unknown = JSON.parse(e.target?.result as string);
+
+          // Imported items are always added to the existing data (never
+          // replace it), and every item gets a fresh id.
+          const reportImport = (imported: number, skipped: number) => {
+            if (skipped === 0) return;
+            const label =
+              activeTab === "pass-chains" ? "pass chains" : activeTab;
+            alert(
+              `Imported ${imported} ${label}. Skipped ${skipped} invalid ${skipped === 1 ? "item" : "items"}.`,
+            );
+          };
 
           switch (activeTab) {
             case "shots": {
-              const shotsWithNewIds = importedData.map((shot: Shot) => ({
-                ...shot,
-                id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-                timestamp: shot.timestamp || Date.now(),
-              }));
-              setShots(shotsWithNewIds);
-              console.log(`Imported ${shotsWithNewIds.length} shots`);
+              const result = validateImport(importedData, "shots");
+              if (!result.ok) return alert(result.error);
+              setShots((prev) => [...prev, ...result.items]);
+              reportImport(result.items.length, result.skipped);
               break;
             }
             case "touches": {
-              const actionsWithIds = importedData.map((action: Action) => ({
-                ...action,
-                id:
-                  action.id ||
-                  `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-                timestamp: action.timestamp || Date.now(),
-              }));
-              const currentActions = [...actions, ...actionsWithIds];
-              setActions(currentActions);
-              console.log(`Imported ${actionsWithIds.length} actions`);
+              const result = validateImport(importedData, "touches");
+              if (!result.ok) return alert(result.error);
+              setActions((prev) => [...prev, ...result.items]);
+              reportImport(result.items.length, result.skipped);
               break;
             }
             case "pass-chains": {
-              const chainsWithNewIds = importedData.map((chain: PassChain) => ({
-                ...chain,
-                id: `chain-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-              }));
-              const currentChains = [...passChains, ...chainsWithNewIds];
-              setPassChains(currentChains);
-              console.log(`Imported ${chainsWithNewIds.length} pass chains`);
+              const result = validateImport(importedData, "pass-chains");
+              if (!result.ok) return alert(result.error);
+              setPassChains((prev) => [...prev, ...result.items]);
+              reportImport(result.items.length, result.skipped);
               break;
             }
           }
@@ -232,8 +228,10 @@ function App() {
         alert("Error reading the file.");
       };
       reader.readAsText(file);
+      // Allow importing the same file again
+      event.target.value = "";
     },
-    [activeTab, actions, passChains],
+    [activeTab],
   );
 
   // Handle switching to pitch view before sharing

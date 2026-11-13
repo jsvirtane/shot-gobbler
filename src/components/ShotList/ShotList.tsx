@@ -1,5 +1,6 @@
 import React from "react";
 import { Shot } from "../../types/Shot";
+import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 import { RemoveItemButton } from "../common";
 
 interface ShotListProps {
@@ -32,9 +33,9 @@ const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
                     {shot.playerName && <span> ({shot.playerName}) </span>}
                   </span>
                   <p
-                    className={` ${shot.isGoal ? "text-green-500" : "text-red-500"} text-base capitalize`}
+                    className={`${shotResultTextColors[getShotResult(shot)]} text-base capitalize`}
                   >
-                    {shot.isGoal ? "goal" : "miss"}
+                    {getShotResult(shot).toLowerCase()}
                   </p>
                   <p className="text-sm text-gray-500 capitalize">
                     {shot.shotType}

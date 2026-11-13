@@ -312,7 +312,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} title="Record Player Action">
+    <Modal isOpen={isOpen} title="Record Player Action" onClose={onClose}>
       <p className="mb-4 text-sm text-gray-600">
         Position: ({initialCoords.x.toFixed(1)}%, {initialCoords.y.toFixed(1)}
         %)
