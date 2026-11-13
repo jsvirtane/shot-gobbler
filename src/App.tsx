@@ -163,6 +163,7 @@ function AppContent() {
                 onDuplicate={matchData.duplicateMatch}
                 onDelete={matchData.deleteMatch}
                 onExport={matchData.exportMatch}
+                onClockChange={matchData.updateClock}
               />
             )}
             {activeTab === "docs" && <DocsView />}

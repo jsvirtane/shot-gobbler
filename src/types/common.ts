@@ -1,3 +1,5 @@
+import type { Period } from "./Match";
+
 export type Coordinates = {
   x: number;
   y: number;
@@ -12,4 +14,7 @@ export type EventMeta = {
    * default match.
    */
   matchId?: string;
+  /** Match minute (1-based, e.g. 47 for "45+2'" in the first half). */
+  minute?: number;
+  period?: Period;
 };

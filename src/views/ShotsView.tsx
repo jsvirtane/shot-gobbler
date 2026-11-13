@@ -72,6 +72,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   );
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
+  const [pendingStamp, setPendingStamp] = useState<EventStamp | null>(null);
 
   const shotList = useUndoableList(shots, setShots, {
     one: "Shot",
@@ -101,6 +102,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   const handlePitchClick = (x: number, y: number) => {
     console.log(`Pitch clicked at: x=${x}, y=${y}`);
     setCurrentShotCoords({ x, y });
+    // The shot happened at the tap, so take the match minute now
+    setPendingStamp(getEventStamp());
     if (isQuickMode) {
       setIsQuickSheetOpen(true);
     } else {
@@ -167,7 +170,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   // Shot "CRUD" operations
   const handleAddShot = (details: Omit<Shot, "id" | "timestamp">) => {
     const newShot: Shot = {
-      ...getEventStamp(),
+      ...(pendingStamp ?? getEventStamp()),
       ...details,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: Date.now(),
@@ -354,6 +357,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({
         defaultPlayerName={shotDefaults.playerName}
         shot={editingShot ?? undefined}
         onDelete={handleDeleteEditingShot}
+        // Edit mode shows the shot's own minute
+        defaultMinute={editingShot ? editingShot.minute : pendingStamp?.minute}
         teamNames={teamNames}
       />
       <QuickShotSheet

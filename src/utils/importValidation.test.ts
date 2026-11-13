@@ -52,6 +52,20 @@ describe("validateImport", () => {
     expect(result.skipped).toBe(0);
   });
 
+  it("keeps a valid minute and period and drops invalid ones", () => {
+    const result = validateImport(
+      [
+        { ...validShot, minute: 47, period: "1H" },
+        { ...validShot, minute: -3, period: "3H" },
+      ],
+      "shots",
+    );
+    if (!result.ok) throw new Error(result.error);
+    expect(result.items[0]).toMatchObject({ minute: 47, period: "1H" });
+    expect(result.items[1]).not.toHaveProperty("minute");
+    expect(result.items[1]).not.toHaveProperty("period");
+  });
+
   it("accepts old shots without a result field", () => {
     const oldGoal: Record<string, unknown> = { ...validShot, isGoal: true };
     delete oldGoal.result;

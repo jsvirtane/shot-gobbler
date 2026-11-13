@@ -11,6 +11,8 @@ import {
   getSecondaryButtonStyle,
   getSubmitButtonStyle,
 } from "../../utils/buttonStyles";
+import { parseMinuteInput } from "../../utils/matchClock";
+import { MinuteInput } from "../common/MinuteInput";
 import Modal from "../Modal";
 import SegmentedControl, { SegmentedOption } from "../SegmentedControl";
 
@@ -124,6 +126,8 @@ type ActionFormProps = {
   action?: Action;
   /** Edit mode: deletes the action (the parent closes the form). */
   onDelete?: () => void;
+  /** Match minute from the clock; the user can change it. */
+  defaultMinute?: number;
 };
 
 const ActionForm: React.FC<ActionFormProps> = ({
@@ -133,12 +137,14 @@ const ActionForm: React.FC<ActionFormProps> = ({
   initialCoords,
   action,
   onDelete,
+  defaultMinute,
 }) => {
   const [selectedCategory, setSelectedCategory] =
     useState<ActionCategory>("attacking");
   const [selectedAction, setSelectedAction] = useState<ActionType>("pass");
   const [selectedOutcome, setSelectedOutcome] =
     useState<ActionOutcome>("successful");
+  const [minute, setMinute] = useState("");
 
   // Reset form when it opens with new coordinates
   useEffect(() => {
@@ -146,8 +152,9 @@ const ActionForm: React.FC<ActionFormProps> = ({
       setSelectedCategory("attacking");
       setSelectedAction("pass");
       setSelectedOutcome("successful");
+      setMinute(defaultMinute?.toString() ?? "");
     }
-  }, [isOpen, initialCoords]);
+  }, [isOpen, initialCoords, defaultMinute]);
 
   // Edit mode: start from the action being edited instead (runs after the reset)
   useEffect(() => {
@@ -182,6 +189,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
       category: selectedCategory,
       actionType: selectedAction,
       outcome: selectedOutcome,
+      ...parseMinuteInput(minute),
     });
     onClose();
   };
@@ -246,6 +254,8 @@ const ActionForm: React.FC<ActionFormProps> = ({
             inactiveClassName={ActionFormColors.outcome.inactive}
           />
         </div>
+
+        <MinuteInput value={minute} onChange={setMinute} />
 
         {/* Submit Buttons */}
         <div className="mt-5 flex flex-col justify-between gap-3 md:flex-row">

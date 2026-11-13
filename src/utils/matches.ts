@@ -17,6 +17,7 @@ import {
 } from "./dataSchema";
 import { validateImport } from "./importValidation";
 import { getTeamLabels } from "./teamLabels";
+import { normalizeClock } from "./matchClock";
 
 export const MATCHES_STORAGE_KEY = "shot-gobbler-matches";
 export const CURRENT_MATCH_STORAGE_KEY = "shot-gobbler-current-match";
@@ -87,6 +88,7 @@ export const normalizeMatch = (item: unknown): Match | null => {
   if (!isRecord(item)) return null;
   if (typeof item.id !== "string" || item.id === "") return null;
   const competition = optionalString(item.competition).trim();
+  const clock = normalizeClock(item.clock);
   return {
     id: item.id,
     homeTeam: optionalString(item.homeTeam),
@@ -100,6 +102,7 @@ export const normalizeMatch = (item: unknown): Match | null => {
       typeof item.createdAt === "number" && Number.isFinite(item.createdAt)
         ? item.createdAt
         : Date.now(),
+    ...(clock ? { clock } : {}),
   };
 };
 

@@ -58,10 +58,13 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Saved chain highlighted by tapping one of its markers
   const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
+  // Match minute and period taken when the chain's first action is tapped
+  const [chainStamp, setChainStamp] = useState<EventStamp | null>(null);
   const isActivePassChain = currentPassChain.length > 0;
 
   const handlePitchClick = (x: number, y: number) => {
     console.log(`Pitch clicked at: x=${x}, y=${y}`);
+    if (currentPassChain.length === 0) setChainStamp(getEventStamp());
 
     // While a chain is selected, a tap elsewhere only clears the selection
     if (selectedChainId && passChains.some((c) => c.id === selectedChainId)) {
@@ -101,7 +104,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   }) => {
     if (currentPassChain.length > 0) {
       const newChain: PassChain = {
-        ...getEventStamp(),
+        ...(chainStamp ?? getEventStamp()),
         id: `chain-${Date.now()}`,
         actions: currentPassChain,
         terminationReason: data.terminationReason,

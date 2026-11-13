@@ -13,11 +13,13 @@ import {
   DEFAULT_MATCH_ID,
   EventStamp,
   Match,
+  MatchClock,
   MatchDetails,
 } from "../types/Match";
 import { PassChain } from "../types/PassChain";
 import { Shot } from "../types/Shot";
 import { downloadJson } from "../utils/dataTransfer";
+import { clockStamp, NEW_CLOCK } from "../utils/matchClock";
 import {
   cleanDetails,
   createDefaultMatch,
@@ -165,8 +167,31 @@ export function useMatchData() {
     [setAllPassChains, matchId],
   );
 
-  /** Fields a new event gets from the current match. */
-  const getEventStamp = useCallback((): EventStamp => ({ matchId }), [matchId]);
+  const clock = currentMatch.clock;
+
+  /** Fields a new event gets from the current match and its clock. */
+  const getEventStamp = useCallback(
+    (): EventStamp => ({ matchId, ...clockStamp(clock, Date.now()) }),
+    [matchId, clock],
+  );
+
+  /** Changes the current match's clock (created on first use). */
+  const updateClock = useCallback(
+    (change: (clock: MatchClock, now: number) => MatchClock | undefined) => {
+      const now = Date.now();
+      setMatches((prev) =>
+        prev.map((m) => {
+          if (m.id !== matchId) return m;
+          const next = change(m.clock ?? NEW_CLOCK, now);
+          if (next) return { ...m, clock: next };
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { clock, ...rest } = m;
+          return rest;
+        }),
+      );
+    },
+    [setMatches, matchId],
+  );
 
   const selectMatch = useCallback(
     (id: string) => setCurrentMatchId(id),
@@ -328,6 +353,7 @@ export function useMatchData() {
     passChains,
     setPassChains,
     getEventStamp,
+    updateClock,
     selectMatch,
     addMatch,
     updateMatch,

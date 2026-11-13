@@ -9,6 +9,8 @@ import {
 } from "../../utils/buttonStyles";
 import { getShotResult } from "../../utils/shotResult";
 import { DEFAULT_TEAM_LABELS, getTeamOptions } from "../../utils/teamLabels";
+import { parseMinuteInput } from "../../utils/matchClock";
+import { MinuteInput } from "../common/MinuteInput";
 import Modal from "../Modal";
 import SegmentedControl, { SegmentedOption } from "../SegmentedControl";
 
@@ -45,6 +47,8 @@ interface ShotFormProps {
   shot?: Shot;
   /** Edit mode: deletes the shot (the parent closes the form). */
   onDelete?: () => void;
+  /** Match minute from the clock; the user can change it. */
+  defaultMinute?: number;
   /** Labels of the team buttons; defaults to Home / Away. */
   teamNames?: TeamNames;
 }
@@ -61,12 +65,14 @@ const ShotForm: React.FC<ShotFormProps> = ({
   shot,
   onDelete,
   teamNames = DEFAULT_TEAM_LABELS,
+  defaultMinute,
 }) => {
   const [result, setResult] = useState<ShotResult>("Miss");
   const [bodyPart, setBodyPart] = useState<BodyPart>(defaultBodyPart);
   const [shotType, setShotType] = useState<ShotType>(defaultShotType);
   const [playerName, setPlayerName] = useState<string>(defaultPlayerName);
   const [team, setTeam] = useState<Team>(defaultTeam);
+  const [minute, setMinute] = useState("");
   const isGoal = result === "Goal";
 
   // Reset form when it opens with new coordinates: the result goes back to
@@ -78,6 +84,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
       setShotType(defaultShotType);
       setPlayerName(defaultPlayerName);
       setTeam(defaultTeam);
+      setMinute(defaultMinute?.toString() ?? "");
     }
   }, [
     isOpen,
@@ -86,6 +93,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
     defaultBodyPart,
     defaultShotType,
     defaultPlayerName,
+    defaultMinute,
   ]);
 
   // Edit mode: start from the shot being edited instead (runs after the reset)
@@ -124,6 +132,7 @@ const ShotForm: React.FC<ShotFormProps> = ({
       shotType,
       team,
       playerName: playerName.trim() || undefined,
+      ...parseMinuteInput(minute),
     });
     onClose();
   };
@@ -196,6 +205,8 @@ const ShotForm: React.FC<ShotFormProps> = ({
             className="w-full rounded-md border border-gray-300 p-2.5 text-base"
           />
         </div>
+
+        <MinuteInput value={minute} onChange={setMinute} />
 
         <div className="mt-5 flex flex-col justify-between gap-3 md:flex-row">
           <button

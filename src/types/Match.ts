@@ -1,4 +1,20 @@
 import type { Team } from "./common";
+/** Match periods: halves, extra-time halves and the penalty shoot-out. */
+export const PERIODS = ["1H", "2H", "ET1", "ET2", "PEN"] as const;
+export type Period = (typeof PERIODS)[number];
+
+/**
+ * The match clock. It is stored as timestamps rather than a ticking
+ * counter, so the elapsed time is right after a reload.
+ */
+export type MatchClock = {
+  period: Period;
+  running: boolean;
+  /** Epoch ms when the current running stretch started (null when paused). */
+  startedAt: number | null;
+  /** Time played in this period before the current running stretch. */
+  elapsedBeforeStartMs: number;
+};
 
 /** A match groups shots, touches and pass chains. */
 export type Match = {
@@ -9,6 +25,8 @@ export type Match = {
   date: string;
   competition?: string;
   createdAt: number;
+  /** Missing until the clock is first used. */
+  clock?: MatchClock;
 };
 
 /** Editable match details (everything except id and creation time). */
@@ -23,6 +41,9 @@ export type TeamNames = Record<Team, string>;
 /** Fields every recorded event gets from the current match. */
 export type EventStamp = {
   matchId: string;
+  /** From the match clock, when it has been used. */
+  minute?: number;
+  period?: Period;
 };
 
 /** Items created before matches existed are assigned to this match. */
