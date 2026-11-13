@@ -1,4 +1,5 @@
 import { Action } from "../../types/Action";
+import { TouchLegend } from "../MapLegend/MapLegend";
 import PitchContainer from "../PitchContainer/PitchContainer";
 import ActionMarker from "./ActionMarker";
 
@@ -18,7 +19,12 @@ export const TouchMap = ({
   onActionMove,
 }: TouchMapProps) => {
   return (
-    <PitchContainer onCoordinateClick={onPitchClick} reservedHeight="16.75rem">
+    // Reserved height includes the match bar and the two-row legend
+    <PitchContainer
+      onCoordinateClick={onPitchClick}
+      reservedHeight="19.25rem"
+      legend={<TouchLegend />}
+    >
       {actions.map((action) => (
         <ActionMarker
           key={action.id}

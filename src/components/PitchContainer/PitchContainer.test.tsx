@@ -21,7 +21,11 @@ const mockRect = (width: number, height: number) => {
   });
 };
 
+// Clicks go to the shared-image area (pitch plus legend)
 const getPitch = () => document.getElementById("share-pitch")!;
+// The visible pitch itself
+const getVisiblePitch = () =>
+  document.querySelector<HTMLElement>("[data-testid=pitch]")!;
 
 describe("PitchContainer", () => {
   const onClick = vi.fn();
@@ -43,10 +47,22 @@ describe("PitchContainer", () => {
 
     it("uses the 74:110 aspect ratio and no zoom", () => {
       render(<PitchContainer onCoordinateClick={onClick} />);
-      expect(getPitch().style.aspectRatio).toBe(String(74 / 110));
-      const content = getPitch().firstElementChild as HTMLElement;
+      expect(getVisiblePitch().style.aspectRatio).toBe(String(74 / 110));
+      const content = getVisiblePitch().firstElementChild as HTMLElement;
       expect(content.style.height).toBe("100%");
     });
+  });
+
+  it("shows the legend under the pitch, inside the shared-image area", () => {
+    render(
+      <PitchContainer
+        onCoordinateClick={onClick}
+        legend={<div data-testid="legend" />}
+      />,
+    );
+    const legend = document.querySelector("[data-testid=legend]");
+    expect(getPitch().contains(legend as HTMLElement)).toBe(true);
+    expect(getVisiblePitch().contains(legend as HTMLElement)).toBe(false);
   });
 
   describe("half-top variant", () => {
@@ -81,11 +97,11 @@ describe("PitchContainer", () => {
           <span data-testid="marker" style={{ left: "50%", top: "25%" }} />
         </PitchContainer>,
       );
-      expect(getPitch().style.aspectRatio).toBe(String(74 / 55));
-      expect(getPitch().className).toContain("overflow-hidden");
+      expect(getVisiblePitch().style.aspectRatio).toBe(String(74 / 55));
+      expect(getVisiblePitch().className).toContain("overflow-hidden");
       // Content box is twice the visible height, so top: 25% of the full
       // pitch lands halfway down the visible half
-      const content = getPitch().firstElementChild as HTMLElement;
+      const content = getVisiblePitch().firstElementChild as HTMLElement;
       expect(content.style.height).toBe("200%");
       expect(content.querySelector("[data-testid=marker]")).not.toBeNull();
     });

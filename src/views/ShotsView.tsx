@@ -306,6 +306,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
             variant={pitchView === "half" ? "half-top" : "full"}
             onShotClick={handleShotClick}
             onShotMove={handleShotMove}
+            teamLabels={teamNames}
           />
           {pitchView === "full" && (
             <p className="truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">

@@ -1,1 +1,6 @@
-export { DocsMarkerDisplay } from "./DocsMarkerDisplay";
+export {
+  DocsExample,
+  DocsExampleGroup,
+  DocsLegendPreview,
+  DocsMarkerDisplay,
+} from "./DocsMarkerDisplay";

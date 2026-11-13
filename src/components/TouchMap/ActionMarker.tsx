@@ -1,7 +1,7 @@
 import React from "react";
-import { ActionMarkerColors } from "../../constants/markerColors";
 import { Action } from "../../types/Action";
-import { isSuccessfulActionOutcome } from "../../utils/isSuccessfulActionOutcome";
+import { getActionMarkerStyle } from "../../utils/markerStyle";
+import MarkerShape from "../Markers/MarkerShape";
 import PitchMarker from "../PitchContainer/PitchMarker";
 
 interface ActionMarkerProps {
@@ -17,23 +17,7 @@ export const ActionMarker: React.FC<ActionMarkerProps> = ({
   onTap,
   onMove,
 }) => {
-  const getMarkerClasses = () => {
-    const isSuccessful = isSuccessfulActionOutcome(action.outcome);
-    const outcomeClass = isSuccessful
-      ? ActionMarkerColors.outcome.successful
-      : ActionMarkerColors.outcome.unsuccessful;
-
-    let categoryClass;
-    if (action.category === "attacking") {
-      categoryClass = ActionMarkerColors.category.attacking;
-    } else if (action.category === "defensive") {
-      categoryClass = ActionMarkerColors.category.defensive;
-    } else {
-      categoryClass = ActionMarkerColors.category.other;
-    }
-
-    return `${categoryClass} ${outcomeClass}`;
-  };
+  const style = getActionMarkerStyle(action);
 
   return (
     <PitchMarker
@@ -44,12 +28,7 @@ export const ActionMarker: React.FC<ActionMarkerProps> = ({
       onMove={onMove}
       testId="action-marker"
     >
-      <div
-        className={`h-5 w-5 rounded-full ${getMarkerClasses()}`}
-        style={{
-          borderRadius: "50%", // Explicit for html2canvas iOS compatibility
-        }}
-      />
+      <MarkerShape {...style} />
     </PitchMarker>
   );
 };

@@ -1,5 +1,15 @@
 import React from "react";
-import { DocsMarkerDisplay } from "../components/DocsMarkerDisplay";
+import {
+  DocsExample,
+  DocsExampleGroup,
+  DocsLegendPreview,
+  DocsMarkerDisplay,
+} from "../components/DocsMarkerDisplay";
+import {
+  PassChainLegend,
+  ShotLegend,
+  TouchLegend,
+} from "../components/MapLegend/MapLegend";
 import { PassChainActionMarker } from "../components/PassChainMap/PassChainActionMarker";
 import { PassChainArrow } from "../components/PassChainMap/PassChainArrow";
 import { PassChainTerminationMarker } from "../components/PassChainMap/PassChainTerminationMarker";
@@ -10,6 +20,7 @@ import {
   arrowSamples,
   passChainMarkerSamples,
   shotMarkerSamples,
+  xgSizeSamples,
 } from "./DocsView.samples";
 
 const DocsView: React.FC = () => {
@@ -97,71 +108,54 @@ const DocsView: React.FC = () => {
           🎯 Marker Legend
         </h2>
 
+        <p className="mb-6 text-gray-600">
+          Each map shows a compact legend under the pitch, which is also
+          included in shared images. Colours were chosen to stay distinct for
+          common types of colour blindness, and shape or fill carries the same
+          information as colour.
+        </p>
+
         {/* Shot Markers */}
         <div className="mb-8">
           <h3 className="mb-4 text-xl font-semibold text-gray-700">
             Shot Markers
           </h3>
           <div className="space-y-4">
-            {/* Team Colors */}
-            <div>
-              <h4 className="mb-2 text-sm font-semibold text-gray-500 uppercase">
-                Team Colors
-              </h4>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.homeGoal} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Home Team - Goal</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.homeMiss} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Home Team - Miss</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.awayGoal} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Away Team - Goal</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.awayMiss} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Away Team - Miss</span>
-                </div>
-              </div>
-            </div>
+            <DocsExampleGroup title="Team (Colour)">
+              <DocsExample label="Home team">
+                <ShotMarker shot={shotMarkerSamples.homeSaved} />
+              </DocsExample>
+              <DocsExample label="Away team">
+                <ShotMarker shot={shotMarkerSamples.awaySaved} />
+              </DocsExample>
+            </DocsExampleGroup>
 
-            {/* Shot Results */}
-            <div>
-              <h4 className="mb-2 text-sm font-semibold text-gray-500 uppercase">
-                Shot Results (Border Style)
-              </h4>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.homeGoal} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Goal/Miss</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.saved} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Saved</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ShotMarker shot={shotMarkerSamples.blocked} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Blocked</span>
-                </div>
-              </div>
-            </div>
+            <DocsExampleGroup title="Result (Shape)">
+              <DocsExample label="Goal (star)">
+                <ShotMarker shot={shotMarkerSamples.homeGoal} />
+              </DocsExample>
+              <DocsExample label="Saved (filled circle)">
+                <ShotMarker shot={shotMarkerSamples.homeSaved} />
+              </DocsExample>
+              <DocsExample label="Blocked (triangle)">
+                <ShotMarker shot={shotMarkerSamples.homeBlocked} />
+              </DocsExample>
+              <DocsExample label="Miss (hollow circle)">
+                <ShotMarker shot={shotMarkerSamples.homeMiss} />
+              </DocsExample>
+            </DocsExampleGroup>
+
+            <DocsExampleGroup title="Expected Goals (Size)">
+              {xgSizeSamples.map(({ label, shot }) => (
+                <DocsExample key={label} label={label}>
+                  <ShotMarker shot={shot} />
+                </DocsExample>
+              ))}
+            </DocsExampleGroup>
+
+            <DocsLegendPreview>
+              <ShotLegend />
+            </DocsLegendPreview>
           </div>
         </div>
 
@@ -171,65 +165,32 @@ const DocsView: React.FC = () => {
             Touch/Action Markers
           </h3>
           <div className="space-y-4">
-            {/* Action Categories */}
-            <div>
-              <h4 className="mb-2 text-sm font-semibold text-gray-500 uppercase">
-                Action Categories (Background Color)
-              </h4>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ActionMarker
-                      action={actionMarkerSamples.attackingSuccess}
-                    />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">
-                    Attacking (pass, cross, dribble, shot, throw-in)
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ActionMarker action={actionMarkerSamples.defensive} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">
-                    Defensive (tackle, block, interception, clearance)
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ActionMarker action={actionMarkerSamples.duel} />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Duels (aerial, ground)</span>
-                </div>
-              </div>
-            </div>
+            <DocsExampleGroup title="Action Categories (Colour)">
+              <DocsExample label="Attacking (pass, cross, dribble, shot, throw-in)">
+                <ActionMarker action={actionMarkerSamples.attackingSuccess} />
+              </DocsExample>
+              <DocsExample label="Defensive (tackle, block, interception, clearance)">
+                <ActionMarker action={actionMarkerSamples.defensive} />
+              </DocsExample>
+              <DocsExample label="Duels (aerial, ground)">
+                <ActionMarker action={actionMarkerSamples.duel} />
+              </DocsExample>
+            </DocsExampleGroup>
 
-            {/* Action Outcomes */}
-            <div>
-              <h4 className="mb-2 text-sm font-semibold text-gray-500 uppercase">
-                Action Outcomes (Border Color)
-              </h4>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ActionMarker
-                      action={actionMarkerSamples.attackingSuccess}
-                    />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">
-                    Successful (It's white, trust me!)
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <DocsMarkerDisplay>
-                    <ActionMarker
-                      action={actionMarkerSamples.attackingUnsuccessful}
-                    />
-                  </DocsMarkerDisplay>
-                  <span className="text-gray-700">Unsuccessful</span>
-                </div>
-              </div>
-            </div>
+            <DocsExampleGroup title="Action Outcomes (Fill)">
+              <DocsExample label="Successful (filled)">
+                <ActionMarker action={actionMarkerSamples.attackingSuccess} />
+              </DocsExample>
+              <DocsExample label="Unsuccessful (hollow)">
+                <ActionMarker
+                  action={actionMarkerSamples.attackingUnsuccessful}
+                />
+              </DocsExample>
+            </DocsExampleGroup>
+
+            <DocsLegendPreview>
+              <TouchLegend />
+            </DocsLegendPreview>
           </div>
         </div>
 
@@ -371,6 +332,11 @@ const DocsView: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+        <div className="mt-4">
+          <DocsLegendPreview>
+            <PassChainLegend />
+          </DocsLegendPreview>
         </div>
       </section>
 
