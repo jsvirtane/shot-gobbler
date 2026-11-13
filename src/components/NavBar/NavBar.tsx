@@ -1,62 +1,58 @@
 import shot_gobbler from "../../assets/shot_gobbler.svg";
 
+type Tab = "docs" | "shots" | "touches" | "pass-chains";
+
 type NavBarProps = {
-  activeTab: "docs" | "shots" | "touches" | "pass-chains";
-  setActiveTab: (tab: "docs" | "shots" | "touches" | "pass-chains") => void;
+  activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
 };
+
+const TABS: { id: Tab; icon: string; label: string }[] = [
+  { id: "docs", icon: "📖", label: "Docs" },
+  { id: "shots", icon: "⚽", label: "Shots" },
+  { id: "touches", icon: "👟", label: "Touches" },
+  { id: "pass-chains", icon: "🔗", label: "Chains" },
+];
+
+const focusRing =
+  "rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none";
 
 const NavBar = ({ activeTab, setActiveTab }: NavBarProps) => {
   return (
-    <nav className="sticky top-0 right-0 left-0 z-10 flex h-15 w-full bg-gray-100 shadow-md">
-      <div
-        className="flex flex-1 cursor-pointer flex-col justify-center"
+    <header className="sticky top-0 right-0 left-0 z-10 flex h-15 w-full bg-gray-100 shadow-md">
+      <button
+        type="button"
+        aria-label="Shot Gobbler – home"
+        className={`flex flex-1 cursor-pointer flex-col justify-center border-0 bg-transparent p-0 ${focusRing}`}
         onClick={() => setActiveTab("docs")}
       >
-        <img src={shot_gobbler} alt="Shot Gobbler" className="h-20 w-25" />
-      </div>
-      <div className="flex flex-1 cursor-pointer flex-row items-center justify-center text-gray-500">
-        <div
-          className={`flex flex-1 cursor-pointer flex-col items-center justify-center ${
-            activeTab === "docs" ? "font-bold text-blue-500" : "text-gray-500"
-          }`}
-          onClick={() => setActiveTab("docs")}
-        >
-          <span className="mb-1 text-2xl">📖</span>
-          <span className="text-xs">Docs</span>
-        </div>
-        <div
-          className={`flex flex-1 cursor-pointer flex-col items-center justify-center ${
-            activeTab === "shots" ? "font-bold text-blue-500" : "text-gray-500"
-          }`}
-          onClick={() => setActiveTab("shots")}
-        >
-          <span className="mb-1 text-2xl">⚽</span>
-          <span className="text-xs">Shots</span>
-        </div>
-        <div
-          className={`flex flex-1 cursor-pointer flex-col items-center justify-center ${
-            activeTab === "touches"
-              ? "font-bold text-blue-500"
-              : "text-gray-500"
-          }`}
-          onClick={() => setActiveTab("touches")}
-        >
-          <span className="mb-1 text-2xl">👟</span>
-          <span className="text-xs">Touches</span>
-        </div>
-        <div
-          className={`flex flex-1 cursor-pointer flex-col items-center justify-center ${
-            activeTab === "pass-chains"
-              ? "font-bold text-blue-500"
-              : "text-gray-500"
-          }`}
-          onClick={() => setActiveTab("pass-chains")}
-        >
-          <span className="mb-1 text-2xl">🔗</span>
-          <span className="text-xs">Chains</span>
-        </div>
-      </div>
-    </nav>
+        <img src={shot_gobbler} alt="" className="h-20 w-25" />
+      </button>
+      <nav
+        aria-label="Main"
+        className="flex flex-1 flex-row items-center justify-center text-gray-500"
+      >
+        {TABS.map(({ id, icon, label }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-current={isActive ? "page" : undefined}
+              className={`flex flex-1 cursor-pointer flex-col items-center justify-center border-0 bg-transparent p-0 ${focusRing} ${
+                isActive ? "font-bold text-blue-500" : "text-gray-500"
+              }`}
+              onClick={() => setActiveTab(id)}
+            >
+              <span aria-hidden="true" className="mb-1 text-2xl">
+                {icon}
+              </span>
+              <span className="text-xs">{label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </header>
   );
 };
 
