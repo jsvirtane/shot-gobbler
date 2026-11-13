@@ -52,7 +52,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
         setSelectedOutcome("won");
         break;
       case "block":
-        setSelectedOutcome("posession-won");
+        setSelectedOutcome("possession-won");
         break;
       case "clearance":
         setSelectedOutcome("cleared");
@@ -225,8 +225,8 @@ const ActionForm: React.FC<ActionFormProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setSelectedOutcome("posession-won")}
-              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "posession-won")}`}
+              onClick={() => setSelectedOutcome("possession-won")}
+              className={`rounded px-4 py-2 text-sm ${getOutcomeButtonStyle(selectedOutcome === "possession-won")}`}
             >
               🔄 Possession Won
             </button>

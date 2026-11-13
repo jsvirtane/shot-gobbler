@@ -29,9 +29,19 @@ export type Migration = (data: unknown[]) => unknown[];
 /** v0 → v1: bare array wrapped in an envelope; items are unchanged. */
 const wrapInEnvelope: Migration = (data) => data;
 
+/** Touches v1 → v2: outcome "posession-won" renamed to "possession-won". */
+export const fixPossessionWonTypo: Migration = (data) =>
+  data.map((item) =>
+    typeof item === "object" &&
+    item !== null &&
+    (item as Record<string, unknown>).outcome === "posession-won"
+      ? { ...item, outcome: "possession-won" }
+      : item,
+  );
+
 export const MIGRATIONS: Record<DataType, readonly Migration[]> = {
   shots: [wrapInEnvelope],
-  touches: [wrapInEnvelope],
+  touches: [wrapInEnvelope, fixPossessionWonTypo],
   "pass-chains": [wrapInEnvelope],
 };
 

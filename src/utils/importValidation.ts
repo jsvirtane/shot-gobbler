@@ -55,7 +55,7 @@ const ACTION_OUTCOMES: readonly ActionOutcome[] = [
   "blocked",
   "won",
   "lost",
-  "posession-won",
+  "possession-won",
   "cleared",
 ];
 

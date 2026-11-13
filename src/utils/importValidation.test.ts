@@ -179,4 +179,28 @@ describe("validateImport", () => {
       ).toBe(false);
     });
   });
+
+  describe("old possession-won typo", () => {
+    const oldBlock = {
+      ...validAction,
+      category: "defensive",
+      actionType: "block",
+      outcome: "posession-won",
+    };
+
+    it("imports an old bare-array file as possession-won", () => {
+      const result = validateImport([oldBlock], "touches");
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.items[0].outcome).toBe("possession-won");
+    });
+
+    it("imports a v1 envelope as possession-won", () => {
+      const result = validateImport(
+        { app: "shot-gobbler", type: "touches", version: 1, data: [oldBlock] },
+        "touches",
+      );
+      expect(result.ok && result.items[0].outcome).toBe("possession-won");
+    });
+  });
 });

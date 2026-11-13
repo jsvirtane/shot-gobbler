@@ -28,6 +28,41 @@ describe("dataSchema", () => {
     it("leaves data from a newer version unchanged", () => {
       expect(migrate("shots", items, 99)).toEqual(items);
     });
+
+    describe("touches v1 → v2", () => {
+      const oldBlock = {
+        id: "b",
+        actionType: "block",
+        outcome: "posession-won",
+      };
+      const tackle = { id: "t", actionType: "tackle", outcome: "won" };
+
+      it("renames posession-won to possession-won", () => {
+        expect(MIGRATIONS.touches[1]([oldBlock, tackle, null])).toEqual([
+          { ...oldBlock, outcome: "possession-won" },
+          tackle,
+          null,
+        ]);
+      });
+
+      it("is applied to old bare-array storage and v1 envelopes", () => {
+        const fixed = [{ ...oldBlock, outcome: "possession-won" }];
+        expect(parseStored(JSON.stringify([oldBlock]), "touches")).toEqual(
+          fixed,
+        );
+        expect(
+          unwrapAndMigrate(
+            { app: APP_ID, type: "touches", version: 1, data: [oldBlock] },
+            "touches",
+          ),
+        ).toEqual({ ok: true, data: fixed });
+      });
+
+      it("is not applied again to current data", () => {
+        expect(CURRENT_VERSION.touches).toBe(2);
+        expect(migrate("touches", [oldBlock], 2)).toEqual([oldBlock]);
+      });
+    });
   });
 
   describe("createEnvelope", () => {
