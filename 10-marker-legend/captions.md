@@ -1,0 +1,3 @@
+shots-pitch: Shots switch from yellow/red/blue/purple dots with dashed borders to colour-blind-safe markers (Arsenal blue, Chelsea orange; star = goal, filled circle = saved, triangle = blocked, ring = miss; size grows with xG, white outline), with a new legend under the pitch.
+touches-pitch: Touch markers now get a white outline with filled = successful and hollow = unsuccessful (previously a black border), and a colour/fill legend appears under the pitch.
+docs-markers: The docs' Shot Markers section now shows the real on-pitch markers on green swatches, grouped by team colour, result shape and xG size, in place of the old dot-and-border examples.

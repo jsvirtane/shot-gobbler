@@ -1,0 +1,2 @@
+invalid-tab: With `?tab=foo`, the before page is blank under the nav bar with no tab highlighted; after, the app falls back to the Docs tab and highlights "Docs".
+keyboard-focus: After pressing Tab four times on the Shots page, the after build shows a blue focus ring on the "Touches" nav tab; in the before build the nav tabs can't take focus, so focus skips the nav bar and lands on the "All Shots" filter button with only a faint outline.

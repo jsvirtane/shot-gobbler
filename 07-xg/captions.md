@@ -1,0 +1,2 @@
+shot-card: The card's Position tile changes from raw pitch percentages ("X: 50.0%, Y: 10.9%") to distance and angle to goal ("9.1 m · 44°"), a new "Expected goals (xG)" tile shows 0.22, and a per-team xG total line ("Home 1.36 xG · Away 0.72 xG") appears above the card.
+shot-list: Each row in "Recorded Shots" now shows its xG on the right, with the penalty at a flat 0.76; the rest come from the distance/angle model.

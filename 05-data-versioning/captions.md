@@ -1,0 +1,2 @@
+touch-list: Touches list view on the same seeded data; the BLOCK action's outcome reads "Posession-Won" before and the corrected "Possession-Won" after, because old stored values are migrated on load.
+stored-data: After-only view of localStorage["shot-gobbler-touches-data"] after the app loads a bare-array seed; it is rewritten as a versioned envelope (app/type/version 2/data), and the old "posession-won" value is stored as "possession-won".
