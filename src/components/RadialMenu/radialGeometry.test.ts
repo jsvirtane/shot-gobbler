@@ -13,7 +13,6 @@ import {
   segmentAngles,
   segmentArcWidth,
   segmentStep,
-  SECTION_GAP_UNITS,
 } from "./radialGeometry";
 
 const IPHONE = { width: 390, height: 590 };
@@ -44,13 +43,11 @@ describe("segmentAngles", () => {
       expect(segments).toHaveLength(items);
       expect(secs).toHaveLength(sections);
       segments.forEach((s) => expect(s.end - s.start).toBeCloseTo(step));
-      const gaps = sections > 1 ? sections * SECTION_GAP_UNITS * step : 0;
-      expect(items * step + gaps).toBeCloseTo(TAU);
+      expect(items * step).toBeCloseTo(TAU);
       // The last option ends where the first one starts, one turn later
-      const last =
-        segments[segments.length - 1].end +
-        (sections > 1 ? SECTION_GAP_UNITS * step : 0);
-      expect(last - segments[0].start).toBeCloseTo(TAU);
+      expect(segments[segments.length - 1].end - segments[0].start).toBeCloseTo(
+        TAU,
+      );
     },
   );
 
@@ -62,12 +59,10 @@ describe("segmentAngles", () => {
     },
   );
 
-  it("leaves a wider gap between sections than between options", () => {
-    const { step, segments } = segmentAngles([3, 2]);
+  it("puts sections next to each other with no extra gap", () => {
+    const { segments } = segmentAngles([3, 2]);
     expect(segments[1].start - segments[0].end).toBeCloseTo(0);
-    expect(segments[3].start - segments[2].end).toBeCloseTo(
-      SECTION_GAP_UNITS * step,
-    );
+    expect(segments[3].start - segments[2].end).toBeCloseTo(0);
   });
 
   it("skips empty sections but keeps their indices", () => {
@@ -83,15 +78,15 @@ describe("segmentAngles", () => {
 
 describe("outerRadius", () => {
   it("uses 118, 128 and 136 px for few, more and many options", () => {
-    expect(outerRadius(4, 1, IPHONE)).toBe(118);
-    expect(outerRadius(7, 2, IPHONE)).toBe(128);
-    expect(outerRadius(10, 1, IPHONE)).toBe(136);
+    expect(outerRadius(4, IPHONE)).toBe(118);
+    expect(outerRadius(7, IPHONE)).toBe(128);
+    expect(outerRadius(10, IPHONE)).toBe(136);
   });
 
   it("grows for many options, but not past a narrow container", () => {
-    expect(outerRadius(12, 4, IPHONE)).toBeGreaterThan(136);
-    expect(outerRadius(12, 4, IPHONE)).toBeLessThanOrEqual(160);
-    expect(outerRadius(12, 4, { width: 300, height: 500 })).toBe(136);
+    expect(outerRadius(12, IPHONE)).toBeGreaterThan(136);
+    expect(outerRadius(12, IPHONE)).toBeLessThanOrEqual(160);
+    expect(outerRadius(12, { width: 300, height: 500 })).toBe(136);
   });
 });
 
@@ -258,7 +253,7 @@ describe("sectionLabelPosition", () => {
 });
 
 describe("segmentStep", () => {
-  it("ignores the section gap for a single section", () => {
-    expect(segmentStep(8, 1)).toBeCloseTo(TAU / 8);
+  it("gives every option an equal slice", () => {
+    expect(segmentStep(8)).toBeCloseTo(TAU / 8);
   });
 });
