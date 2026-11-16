@@ -35,6 +35,16 @@ export const getTeamOptions = (
     icon: TEAM_ICONS[team],
   }));
 
+/**
+ * Short team name for tight spots (the radial menu centre, the focus bar):
+ * names up to five letters as they are, longer ones as three capitals,
+ * e.g. "Arsenal" -> "ARS".
+ */
+export const shortTeamName = (name: string): string => {
+  const trimmed = name.trim();
+  return trimmed.length <= 5 ? trimmed : trimmed.slice(0, 3).toUpperCase();
+};
+
 /** "🏠 Home" style text for summaries. */
 export const formatTeam = (
   team: Team,

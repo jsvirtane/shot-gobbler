@@ -115,13 +115,13 @@ describe("ShotMap Component", () => {
     fireEvent.click(pitchDiv!, { clientX: 50, clientY: 50 });
 
     // Should convert to relative coordinates (50%, 50%)
-    expect(mockOnPitchClick).toHaveBeenCalledWith(50, 50);
+    expect(mockOnPitchClick).toHaveBeenCalledWith(50, 50, { x: 50, y: 50 });
 
     // Click at another position (25,75)
     fireEvent.click(pitchDiv!, { clientX: 25, clientY: 75 });
 
     // Should call with correct relative coordinates
-    expect(mockOnPitchClick).toHaveBeenCalledWith(25, 75);
+    expect(mockOnPitchClick).toHaveBeenCalledWith(25, 75, { x: 25, y: 75 });
   });
 
   it("passes clicks on read-only markers through to the pitch", () => {
@@ -205,14 +205,16 @@ describe("ShotMap Component", () => {
     it("tapping a marker opens that shot and does not create a new one", () => {
       renderInteractive();
       fireEvent.click(screen.getByRole("button", { name: /Set Piece/ }));
-      expect(onShotClick).toHaveBeenCalledWith(mockShots[1]);
+      // With the marker's point on screen, to open a menu there
+      expect(onShotClick).toHaveBeenCalledWith(mockShots[1], { x: 50, y: 75 });
       expect(mockOnPitchClick).not.toHaveBeenCalled();
     });
 
     it("passes the stored shot when tapping a mirrored marker", () => {
       renderInteractive("half-top");
       fireEvent.click(screen.getByRole("button", { name: /Set Piece/ }));
-      expect(onShotClick).toHaveBeenCalledWith(mockShots[1]);
+      // Shown mirrored at (50, 25): halfway down the visible half
+      expect(onShotClick).toHaveBeenCalledWith(mockShots[1], { x: 50, y: 50 });
     });
 
     it("long-press then drag moves the shot to the drop point", () => {

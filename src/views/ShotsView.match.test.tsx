@@ -46,7 +46,8 @@ const Harness: React.FC<{ initial: Shot[]; stamp: EventStamp }> = ({
   );
 };
 
-const minuteInput = () => screen.getByLabelText("Minute:") as HTMLInputElement;
+const pick = (name: string) =>
+  fireEvent.click(screen.getByRole("button", { name }));
 
 describe("ShotsView with a match", () => {
   beforeEach(() => {
@@ -54,6 +55,14 @@ describe("ShotsView with a match", () => {
     window.history.replaceState({}, "", "/?tab=shots");
     mockRect(100, 100);
     vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  it("shows the team in the ring's centre", () => {
+    render(<Harness initial={[]} stamp={{ matchId: "m1" }} />);
+    fireEvent.click(screen.getByAltText("Football Pitch"));
+    expect(
+      screen.getByRole("button", { name: "Team Leeds. Tap to switch team" }),
+    ).toBeTruthy();
   });
 
   it("shows the team names on the pitch and in the filter", () => {
@@ -71,8 +80,7 @@ describe("ShotsView with a match", () => {
       />,
     );
     fireEvent.click(screen.getByAltText("Football Pitch"));
-    expect(minuteInput().value).toBe("23");
-    fireEvent.click(screen.getByRole("button", { name: "Add Shot" }));
+    pick("Saved");
 
     expect(latestShots[0]).toMatchObject({
       matchId: "m1",
@@ -89,9 +97,8 @@ describe("ShotsView with a match", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Set Piece - Head/ }));
-    expect(minuteInput().value).toBe("67");
-    fireEvent.click(screen.getByRole("radio", { name: /Goal/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByRole("button", { name: "Minute 67" })).toBeTruthy();
+    pick("Goal");
 
     expect(latestShots[0]).toMatchObject({
       result: "Goal",

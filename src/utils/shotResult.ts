@@ -14,3 +14,14 @@ export const shotResultTextColors: Record<ShotResult, string> = {
   Blocked: "text-gray-600",
   Miss: "text-red-600",
 };
+
+/**
+ * Fill of each result in the radial menu (hex, drawn in SVG): green, cyan,
+ * gray and red, apart from the blue / orange team colours.
+ */
+export const SHOT_RESULT_FILLS: Record<ShotResult, string> = {
+  Goal: "#16a34a", // green-600
+  Saved: "#0891b2", // cyan-600
+  Blocked: "#4b5563", // gray-600
+  Miss: "#dc2626", // red-600
+};

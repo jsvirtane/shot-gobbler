@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Team } from "../types/common";
 import { Shot } from "../types/Shot";
 import { ToastProvider } from "../components/Toast";
 import ShotsView from "./ShotsView";
@@ -41,41 +40,6 @@ vi.mock("../components/ShotList/ShotList", () => ({
       ))}
     </div>
   ),
-}));
-
-vi.mock("../components/ShotForm/ShotForm", () => ({
-  default: ({
-    isOpen,
-    defaultTeam,
-    onSubmit,
-    onClose,
-  }: {
-    isOpen: boolean;
-    defaultTeam: Team;
-    onSubmit: (details: Omit<Shot, "id" | "timestamp">) => void;
-    onClose: () => void;
-  }) =>
-    isOpen ? (
-      <div data-testid="shot-form">
-        <span data-testid="form-default-team">{defaultTeam}</span>
-        <button
-          onClick={() => {
-            onSubmit({
-              x: 50,
-              y: 50,
-              isGoal: false,
-              result: "Miss",
-              bodyPart: "Foot",
-              shotType: "Open Play",
-              team: "away",
-            });
-            onClose();
-          }}
-        >
-          Submit away shot
-        </button>
-      </div>
-    ) : null,
 }));
 
 vi.mock("../components/ViewToggle/ViewToggle", () => ({
@@ -236,39 +200,6 @@ describe("ShotsView", () => {
     });
   });
 
-  describe("Form default team", () => {
-    beforeEach(() => {
-      urlDefaults.view = "pitch";
-    });
-
-    it("keeps the last-used team when switching back to All Shots", () => {
-      render(<ShotsView shots={[]} setShots={mockSetShots} />);
-
-      // Record an away shot while filtering by Away
-      fireEvent.click(screen.getByRole("radio", { name: "Away" }));
-      fireEvent.click(screen.getByTestId("shot-map"));
-      expect(screen.getByTestId("form-default-team").textContent).toBe("away");
-      fireEvent.click(screen.getByText("Submit away shot"));
-
-      // Back to All Shots: the form should still default to Away
-      fireEvent.click(screen.getByText("All Shots"));
-      fireEvent.click(screen.getByTestId("shot-map"));
-      expect(screen.getByTestId("form-default-team").textContent).toBe("away");
-    });
-
-    it("pre-selects the filtered team when filtering by Home or Away", () => {
-      render(<ShotsView shots={[]} setShots={mockSetShots} />);
-
-      fireEvent.click(screen.getByRole("radio", { name: "Away" }));
-      fireEvent.click(screen.getByTestId("shot-map"));
-      fireEvent.click(screen.getByText("Submit away shot"));
-
-      fireEvent.click(screen.getByRole("radio", { name: "Home" }));
-      fireEvent.click(screen.getByTestId("shot-map"));
-      expect(screen.getByTestId("form-default-team").textContent).toBe("home");
-    });
-  });
-
   describe("Undo", () => {
     const makeShot = (id: string): Shot => ({
       id,
@@ -330,7 +261,7 @@ describe("ShotsView", () => {
       render(<Harness initial={[makeShot("a")]} />);
 
       fireEvent.click(screen.getByTestId("shot-map"));
-      fireEvent.click(screen.getByText("Submit away shot"));
+      fireEvent.click(screen.getByRole("button", { name: "Miss" }));
       expect(ids()?.split(",")).toHaveLength(2);
       expect(screen.getByRole("status").textContent).toContain("Shot added");
 

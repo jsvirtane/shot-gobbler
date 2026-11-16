@@ -17,7 +17,7 @@ polyfillPointerEvent();
 const SHOT: Shot = {
   id: "s1",
   x: 40,
-  y: 20,
+  y: 70,
   isGoal: false,
   result: "Saved",
   bodyPart: "Head",
@@ -25,9 +25,10 @@ const SHOT: Shot = {
   team: "away",
   playerName: "9",
   timestamp: 1,
+  matchId: "m1",
+  minute: 67,
+  period: "2H",
 };
-
-const BOTTOM_SHOT: Shot = { ...SHOT, id: "s2", x: 30, y: 80, playerName: "" };
 
 let latestShots: Shot[] = [];
 
@@ -43,17 +44,23 @@ const Harness: React.FC<{ initial: Shot[] }> = ({ initial }) => {
 
 const marker = (name: RegExp = /Set Piece - Head - Saved - 9/) =>
   screen.getByRole("button", { name });
-const checked = (group: string) =>
-  within(screen.getByRole("radiogroup", { name: group }))
-    .getAllByRole("radio")
-    .find((r) => r.getAttribute("aria-checked") === "true")?.textContent;
+const ring = () => screen.getByTestId("radial-menu");
+const option = (name: string) => within(ring()).getByRole("button", { name });
+const pick = (name: string) => fireEvent.click(option(name));
+const tapPitch = (x: number, y: number) =>
+  fireEvent.click(document.getElementById("share-pitch")!, {
+    clientX: x,
+    clientY: y,
+  });
+const undo = () =>
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
 
 describe("ShotsView marker editing", () => {
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState({}, "", "/?tab=shots");
+    latestShots = [];
     mockRect(100, 100);
-    vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -61,83 +68,167 @@ describe("ShotsView marker editing", () => {
     vi.restoreAllMocks();
   });
 
-  it("tapping a marker opens the edit form pre-filled, without adding a shot", () => {
+  it("tapping a marker opens the ring with its values, without adding a shot", () => {
     render(<Harness initial={[SHOT]} />);
     fireEvent.click(marker());
 
     expect(screen.getByRole("dialog", { name: "Edit shot" })).toBeTruthy();
-    expect(checked("Team")).toBe("🚌 Away");
-    expect(checked("Result")).toBe("🧤 Saved");
-    expect(checked("Body part")).toBe("👤 Head");
-    expect(checked("Shot type")).toBe("Set Piece");
+    expect(option("Saved").getAttribute("aria-current")).toBe("true");
+    expect(option("Goal").getAttribute("aria-current")).toBeNull();
+    expect(option("Header").getAttribute("aria-pressed")).toBe("true");
+    expect(option("Set piece").getAttribute("aria-pressed")).toBe("true");
+    expect(option("Penalty").getAttribute("aria-pressed")).toBe("false");
+    expect(option("Shirt number 9")).toBeTruthy();
+    expect(option("Minute 67")).toBeTruthy();
+    expect(option("Move")).toBeTruthy();
+    expect(option("Delete")).toBeTruthy();
     expect(
-      (screen.getByPlaceholderText("e.g., Ronaldo or 7") as HTMLInputElement)
-        .value,
-    ).toBe("9");
-    expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
-    expect(latestShots).toHaveLength(1);
+      screen.getByTestId("radial-center").getAttribute("aria-label"),
+    ).toContain("Away");
+    expect(latestShots).toEqual([SHOT]);
   });
 
-  it("opens the full form even in quick entry mode", () => {
-    render(<Harness initial={[SHOT]} />);
-    fireEvent.click(screen.getByRole("switch", { name: /Quick entry/ }));
-    fireEvent.click(marker());
-    expect(screen.getByRole("dialog", { name: "Edit shot" })).toBeTruthy();
-  });
-
-  it("Save updates the shot in place", () => {
+  it("a result saves the changes in place, keeping id, match, minute and period", () => {
     render(<Harness initial={[SHOT]} />);
     fireEvent.click(marker());
-    fireEvent.click(screen.getByRole("radio", { name: "⚽ Goal" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    pick("Header");
+    pick("Goal");
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
     expect(latestShots).toHaveLength(1);
-    expect(latestShots[0]).toMatchObject({
-      id: "s1",
-      timestamp: 1,
-      x: 40,
-      y: 20,
+    expect(latestShots[0]).toEqual({
+      ...SHOT,
       result: "Goal",
       isGoal: true,
-      team: "away",
+      bodyPart: "Foot",
     });
+    expect(screen.getByRole("status").textContent).toContain("Shot updated");
+
+    undo();
+    expect(latestShots).toEqual([SHOT]);
   });
 
-  it("Cancel leaves the shot unchanged", () => {
+  it("closing the ring leaves the shot unchanged", () => {
     render(<Harness initial={[SHOT]} />);
     fireEvent.click(marker());
-    fireEvent.click(screen.getByRole("radio", { name: "⚽ Goal" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    pick("Header");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
     expect(latestShots).toEqual([SHOT]);
+  });
+
+  it("switching the team of a shot mirrors it into the other attacking half", () => {
+    render(<Harness initial={[SHOT]} />);
+    fireEvent.click(marker());
+    fireEvent.click(screen.getByTestId("radial-center"));
+    pick("Saved");
+    expect(latestShots[0]).toMatchObject({ team: "home", x: 60, y: 30 });
+
+    undo();
+    expect(latestShots).toEqual([SHOT]);
+  });
+
+  it("changes the shirt number on the dial", () => {
+    render(<Harness initial={[SHOT]} />);
+    fireEvent.click(marker());
+    pick("Shirt number 9");
+    pick("Delete digit");
+    pick("1");
+    pick("1");
+    pick("Done");
+    pick("Saved");
+    expect(latestShots[0]).toMatchObject({ playerName: "11" });
+
+    undo();
+    expect(latestShots[0].playerName).toBe("9");
+  });
+
+  it("changes the minute on the dial, keeping the period", () => {
+    render(<Harness initial={[SHOT]} />);
+    fireEvent.click(marker());
+    pick("Minute 67");
+    expect(screen.getByRole("dialog", { name: "Minute" })).toBeTruthy();
+    pick("Delete digit");
+    pick("Delete digit");
+    pick("7");
+    pick("2");
+    pick("Done");
+    expect(option("Minute 72")).toBeTruthy();
+    pick("Saved");
+    expect(latestShots[0]).toMatchObject({ minute: 72, period: "2H" });
+
+    undo();
+    expect(latestShots[0].minute).toBe(67);
+  });
+
+  it("the minute dial's centre clears the minute", () => {
+    render(<Harness initial={[SHOT]} />);
+    fireEvent.click(marker());
+    pick("Minute 67");
+    fireEvent.click(screen.getByRole("button", { name: "Clear minute" }));
+    pick("Saved");
+    expect(latestShots[0].minute).toBeUndefined();
+  });
+
+  it("Move: the next pitch tap moves the shot, with Undo", () => {
+    render(<Harness initial={[SHOT]} />);
+    fireEvent.click(marker());
+    pick("Move");
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
+    expect(screen.getByTestId("pitch-hint").textContent).toContain(
+      "Tap the new spot",
+    );
+
+    tapPitch(30, 80);
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
+    expect(latestShots).toHaveLength(1);
+    expect(latestShots[0]).toMatchObject({ id: "s1", x: 30, y: 80 });
+    expect(screen.getByRole("status").textContent).toContain("Shot moved");
+
+    // The next tap records a new shot again
+    tapPitch(50, 60);
+    expect(screen.getByRole("dialog", { name: "New shot" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    undo();
+    expect(latestShots[0]).toMatchObject({ x: 40, y: 70 });
+  });
+
+  it("Move to the other half keeps the team and its attacking coordinates", () => {
+    render(<Harness initial={[SHOT]} />);
+    fireEvent.click(marker());
+    pick("Move");
+    tapPitch(30, 20);
+    expect(latestShots[0]).toMatchObject({ team: "away", x: 70, y: 80 });
   });
 
   it("Delete removes the shot and Undo restores it", () => {
     render(<Harness initial={[SHOT]} />);
     fireEvent.click(marker());
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    pick("Delete");
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
     expect(latestShots).toHaveLength(0);
     expect(screen.getByRole("status").textContent).toContain("Shot removed");
 
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    undo();
     expect(latestShots).toEqual([SHOT]);
   });
 
-  it("a new shot after editing gets a fresh form", () => {
+  it("a new shot after editing starts fresh", () => {
     render(<Harness initial={[SHOT]} />);
     fireEvent.click(marker());
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(document, { key: "Escape" });
 
-    fireEvent.click(document.getElementById("share-pitch")!, {
-      clientX: 80,
-      clientY: 80,
-    });
-    expect(screen.getByRole("dialog", { name: "New Shot" })).toBeTruthy();
-    expect(checked("Result")).toBe("❌ Miss");
+    tapPitch(80, 80);
+    expect(screen.getByRole("dialog", { name: "New shot" })).toBeTruthy();
+    expect(option("Header").getAttribute("aria-pressed")).toBe("false");
+    expect(within(ring()).queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(
+      within(ring())
+        .getAllByRole("button")
+        .some((b) => b.getAttribute("aria-current") === "true"),
+    ).toBe(false);
   });
 
   it("long-press drag moves the shot, with Undo", () => {
@@ -145,19 +236,20 @@ describe("ShotsView marker editing", () => {
     render(<Harness initial={[SHOT]} />);
     longPressDrag(marker(), { clientX: 70, clientY: 60 });
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
     expect(latestShots).toHaveLength(1);
     expect(latestShots[0]).toMatchObject({ id: "s1", x: 70, y: 60 });
     expect(screen.getByRole("status").textContent).toContain("Shot moved");
 
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(latestShots[0]).toMatchObject({ x: 40, y: 20 });
+    undo();
+    expect(latestShots[0]).toMatchObject({ x: 40, y: 70 });
   });
 
   it("moving a mirrored shot in half view keeps it where it was dropped", () => {
     vi.useFakeTimers();
     window.history.replaceState({}, "", "/?tab=shots&pitch=half");
-    render(<Harness initial={[BOTTOM_SHOT]} />);
+    const bottom: Shot = { ...SHOT, x: 30, y: 80, playerName: undefined };
+    render(<Harness initial={[bottom]} />);
     const m = marker(/Set Piece - Head - Saved$/);
     // Shown mirrored at (70, 20)
     expect(m.style.left).toBe("70%");
