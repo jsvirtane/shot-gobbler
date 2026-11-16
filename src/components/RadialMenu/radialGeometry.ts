@@ -32,8 +32,6 @@ export const MAX_OUTER_RADIUS = 160;
 export const MIN_SEGMENT_ARC = 48;
 /** Gap (px) between neighbouring options. */
 export const ITEM_GAP = 2;
-/** Gap between sections, as a share of one option's angle. */
-export const SECTION_GAP_UNITS = 0.45;
 /** Width (px) of the white backdrop showing around the ring. */
 export const RING_RIM = 5;
 /** Space (px) kept between the ring and the container edge (room for labels). */
@@ -49,33 +47,27 @@ export const LEADER_MIN_DISTANCE = 10;
 export const baseOuterRadius = (itemCount: number): number =>
   itemCount > 9 ? 136 : itemCount > 6 ? 128 : 118;
 
-/** Angle (radians) of one option, including its share of the section gaps. */
-export const segmentStep = (
-  itemCount: number,
-  sectionCount: number,
-): number => {
-  const gapUnits = sectionCount > 1 ? SECTION_GAP_UNITS * sectionCount : 0;
-  return (2 * Math.PI) / (itemCount + gapUnits);
-};
+/**
+ * Angle (radians) of one option. Every option gets an equal slice; sections
+ * are told apart by colour and their labels, not by extra space.
+ */
+export const segmentStep = (itemCount: number): number =>
+  (2 * Math.PI) / itemCount;
 
 /**
  * Outer radius for the ring: the spec's base radius, grown (up to
  * MAX_OUTER_RADIUS and what fits the container) until each option is about
  * MIN_SEGMENT_ARC wide along its middle arc.
  */
-export const outerRadius = (
-  itemCount: number,
-  sectionCount: number,
-  bounds?: Size,
-): number => {
-  const step = segmentStep(itemCount, sectionCount);
+export const outerRadius = (itemCount: number, bounds?: Size): number => {
+  const step = segmentStep(itemCount);
   const needed = (2 * MIN_SEGMENT_ARC) / step - INNER_RADIUS;
   let max = MAX_OUTER_RADIUS;
   if (bounds && bounds.width > 0) {
     max = Math.min(max, Math.floor(bounds.width / 2) - EDGE_PAD);
   }
   const base = baseOuterRadius(itemCount);
-  return Math.round(Math.max(base, Math.min(needed, max)));
+  return Math.max(base, Math.min(Math.ceil(needed), max));
 };
 
 const clamp = (value: number, min: number, max: number) =>
@@ -126,8 +118,7 @@ export const segmentAngles = (
   const sizes = sectionSizes.filter((n) => n > 0);
   const itemCount = sizes.reduce((sum, n) => sum + n, 0);
   if (itemCount === 0) return { step: 0, segments: [], sections: [] };
-  const step = segmentStep(itemCount, sizes.length);
-  const gap = sizes.length > 1 ? SECTION_GAP_UNITS * step : 0;
+  const step = segmentStep(itemCount);
   const segments: SegmentLayout[] = [];
   const sections: SectionLayout[] = [];
   // Slot start of the first option, so that the first section is centred at the top
@@ -146,7 +137,6 @@ export const segmentAngles = (
       a += step;
     }
     sections.push({ start, end: a, mid: (start + a) / 2 });
-    a += gap;
   });
   return { step, segments, sections };
 };
@@ -254,8 +244,7 @@ export const layoutRadial = ({
   insets?: Insets;
 }): RadialLayout => {
   const { step, segments, sections } = segmentAngles(sectionSizes);
-  const nonEmpty = sectionSizes.filter((n) => n > 0).length;
-  const outer = outerRadius(segments.length, nonEmpty, bounds);
+  const outer = outerRadius(segments.length, bounds);
   const center = clampCenter(anchor, outer, bounds, insets);
   const moved =
     Math.hypot(center.x - anchor.x, center.y - anchor.y) > LEADER_MIN_DISTANCE;
