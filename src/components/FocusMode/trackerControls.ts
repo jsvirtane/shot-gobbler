@@ -25,6 +25,8 @@ export type TrackerControls = {
   canUndo: boolean;
   /** Half/full pitch switch, for trackers that have one. */
   pitch?: { half: boolean; toggle: () => void };
+  /** Team for new events in the half pitch view, shown with a switch. */
+  team?: { name: string; color: string; toggle: () => void };
 };
 
 type Register = (controls: TrackerControls | null) => void;
@@ -46,6 +48,8 @@ export function useTrackerControls(controls: TrackerControls) {
   const { canUndo } = controls;
   const hasPitch = controls.pitch !== undefined;
   const half = controls.pitch?.half ?? false;
+  const teamName = controls.team?.name;
+  const teamColor = controls.team?.color;
   useEffect(() => {
     register({
       undo: () => latest.current.undo(),
@@ -53,8 +57,16 @@ export function useTrackerControls(controls: TrackerControls) {
       pitch: hasPitch
         ? { half, toggle: () => latest.current.pitch?.toggle() }
         : undefined,
+      team:
+        teamName !== undefined && teamColor !== undefined
+          ? {
+              name: teamName,
+              color: teamColor,
+              toggle: () => latest.current.team?.toggle(),
+            }
+          : undefined,
     });
-  }, [register, canUndo, hasPitch, half]);
+  }, [register, canUndo, hasPitch, half, teamName, teamColor]);
 
   useEffect(() => () => register(null), [register]);
 }

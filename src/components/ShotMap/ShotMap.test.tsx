@@ -152,27 +152,53 @@ describe("ShotMap Component", () => {
     expect(mockOnPitchClick).not.toHaveBeenCalled();
   });
 
-  it("mirrors bottom-half shots into the top half in half view", () => {
+  it("mirrors top-half shots into the bottom half in half view", () => {
     render(
       <ShotMap
         onPitchClick={mockOnPitchClick}
         shots={mockShots}
-        variant="half-top"
+        variant="half"
       />,
     );
 
     const [home, away] = screen.getAllByTestId("shot-marker");
-    expect(home.style.top).toBe("25%");
-    // Away shot at (50, 75) is shown at (50, 25)
-    expect(away.style.left).toBe("50%");
-    expect(away.style.top).toBe("25%");
+    // Home shot at (50, 25) is shown at (50, 75), attacking the bottom goal
+    expect(home.style.left).toBe("50%");
+    expect(home.style.top).toBe("75%");
+    expect(away.style.top).toBe("75%");
+  });
+
+  it("reports half view taps where the finger is", () => {
+    render(
+      <ShotMap onPitchClick={mockOnPitchClick} shots={[]} variant="half" />,
+    );
+    fireEvent.click(document.getElementById("share-pitch")!, {
+      clientX: 30,
+      clientY: 80,
+    });
+    // 100px of visible height covers y 50-100
+    expect(mockOnPitchClick).toHaveBeenCalledWith(30, 90, { x: 30, y: 80 });
+  });
+
+  it("marks a shot being recorded, mirrored like the others", () => {
+    render(
+      <ShotMap
+        onPitchClick={mockOnPitchClick}
+        shots={[]}
+        variant="half"
+        pending={{ x: 30, y: 10, team: "home" }}
+      />,
+    );
+    const pending = screen.getByTestId("pending-shot");
+    expect(pending.style.left).toBe("70%");
+    expect(pending.style.top).toBe("90%");
   });
 
   describe("interactive markers", () => {
     const onShotClick = vi.fn();
     const onShotMove = vi.fn();
 
-    const renderInteractive = (variant: "full" | "half-top" = "full") =>
+    const renderInteractive = (variant: "full" | "half" = "full") =>
       render(
         <ShotMap
           onPitchClick={mockOnPitchClick}
@@ -211,10 +237,10 @@ describe("ShotMap Component", () => {
     });
 
     it("passes the stored shot when tapping a mirrored marker", () => {
-      renderInteractive("half-top");
-      fireEvent.click(screen.getByRole("button", { name: /Set Piece/ }));
-      // Shown mirrored at (50, 25): halfway down the visible half
-      expect(onShotClick).toHaveBeenCalledWith(mockShots[1], { x: 50, y: 50 });
+      renderInteractive("half");
+      fireEvent.click(screen.getByRole("button", { name: /Open Play/ }));
+      // Shown mirrored at (50, 75): halfway down the visible half
+      expect(onShotClick).toHaveBeenCalledWith(mockShots[0], { x: 50, y: 50 });
     });
 
     it("long-press then drag moves the shot to the drop point", () => {
@@ -274,14 +300,14 @@ describe("ShotMap Component", () => {
 
     it("keeps a mirrored shot where it was dropped in half view", () => {
       vi.useFakeTimers();
-      renderInteractive("half-top");
-      // The visible half maps 100px of height to y 0-50
-      longPressDrag(screen.getByRole("button", { name: /Set Piece/ }), {
+      renderInteractive("half");
+      // The visible half maps 100px of height to y 50-100
+      longPressDrag(screen.getByRole("button", { name: /Open Play/ }), {
         clientX: 30,
         clientY: 40,
       });
-      // Dropped at (30, 20) on screen; stored mirrored in the bottom half
-      expect(onShotMove).toHaveBeenCalledWith("2", 70, 80);
+      // Dropped at (30, 70) on screen; stored mirrored in the top half
+      expect(onShotMove).toHaveBeenCalledWith("1", 70, 30);
     });
   });
 });

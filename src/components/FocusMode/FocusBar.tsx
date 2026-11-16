@@ -3,6 +3,7 @@ import { useNow } from "../../hooks/useNow";
 import { MatchClock } from "../../types/Match";
 import { DataTab } from "../../types/Tab";
 import { formatClock } from "../../utils/matchClock";
+import { shortTeamName } from "../../utils/teamLabels";
 import { FADE_AFTER_MS, nextTracker, TrackerControls } from "./trackerControls";
 
 const TRACKERS: Record<DataTab, { icon: string; label: string }> = {
@@ -87,6 +88,8 @@ const FocusBar: React.FC<FocusBarProps> = ({
   const current = TRACKERS[tracker];
   const next = TRACKERS[nextTracker(tracker)];
   const pitch = controls?.pitch;
+  // Only in the half pitch view
+  const team = pitch?.half ? controls?.team : undefined;
 
   return (
     <div
@@ -142,7 +145,7 @@ const FocusBar: React.FC<FocusBarProps> = ({
               {pitch.half ? (
                 <rect
                   x="6"
-                  y="3"
+                  y="12"
                   width="12"
                   height="9"
                   fill="currentColor"
@@ -155,7 +158,23 @@ const FocusBar: React.FC<FocusBarProps> = ({
           </button>
         )}
 
-        {/* Team toggle for the half pitch goes here (#88) */}
+        {team && (
+          <button
+            type="button"
+            onClick={team.toggle}
+            aria-label={`Team for new shots: ${team.name}. Switch team`}
+            title="Switch team"
+            data-testid="focus-team"
+            className={`${buttonClass} ${offColors} max-w-24 gap-1.5 px-3 text-sm font-semibold`}
+          >
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: team.color }}
+            />
+            <span className="truncate">{shortTeamName(team.name)}</span>
+          </button>
+        )}
 
         <button
           type="button"

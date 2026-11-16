@@ -1,6 +1,10 @@
 import { Team } from "../types/common";
 
-export type PitchVariant = "full" | "half-top";
+/**
+ * "full" shows the whole pitch. "half" shows one half with the attacked
+ * goal at the bottom of the screen, under the thumb.
+ */
+export type PitchVariant = "full" | "half";
 
 export interface PitchPoint {
   x: number;
@@ -10,14 +14,15 @@ export interface PitchPoint {
 /**
  * The part of the full pitch each variant shows, in full-pitch % (y from
  * the top goal line): `top` is where the visible area starts and `height`
- * how much of the pitch it shows.
+ * how much of the pitch it shows. The half view shows the bottom half,
+ * so the goal there is at the bottom of the screen.
  */
 export const PITCH_WINDOW: Record<
   PitchVariant,
   { top: number; height: number }
 > = {
   full: { top: 0, height: 100 },
-  "half-top": { top: 0, height: 50 },
+  half: { top: 50, height: 50 },
 };
 
 /**
@@ -30,6 +35,18 @@ export const toVisibleShare = (
 ): PitchPoint => {
   const { top, height } = PITCH_WINDOW[variant];
   return { x: point.x / 100, y: (point.y - top) / height };
+};
+
+/**
+ * Inverse of `toVisibleShare`: the displayed full-pitch % point at shares
+ * (0-1) of the visible area's width and height.
+ */
+export const fromVisibleShare = (
+  share: PitchPoint,
+  variant: PitchVariant,
+): PitchPoint => {
+  const { top, height } = PITCH_WINDOW[variant];
+  return { x: share.x * 100, y: top + share.y * height };
 };
 
 /** The point rotated 180 degrees around the centre spot. */
@@ -57,34 +74,35 @@ export const toAttackingHalf = <T extends PitchPoint>(
 ): T => (teamForPoint(point) === team ? point : mirrorPoint(point));
 
 /**
- * Maps a point stored in full-pitch % coordinates into the top half of the
- * pitch (y 0-50), the half shown by the "half-top" pitch variant.
+ * Maps a point stored in full-pitch % coordinates into the bottom half of
+ * the pitch (y 50-100), the half shown by the "half" pitch variant.
  *
- * Points in the bottom half are rotated 180 degrees around the centre spot
+ * Points in the top half are rotated 180 degrees around the centre spot
  * (x -> 100 - x, y -> 100 - y) so that shots at either goal are shown
- * attacking the top goal. Points already in the top half are unchanged.
+ * attacking the bottom goal. Points already in the bottom half are
+ * unchanged.
  */
-export const mirrorToTopHalf = <T extends PitchPoint>(point: T): T =>
-  point.y > 50 ? mirrorPoint(point) : point;
+export const mirrorToBottomHalf = <T extends PitchPoint>(point: T): T =>
+  point.y < 50 ? mirrorPoint(point) : point;
 
 /** Where a stored point is drawn in the variant. */
 export const storedToDisplay = <T extends PitchPoint>(
   point: T,
   variant: PitchVariant,
-): T => (variant === "half-top" ? mirrorToTopHalf(point) : point);
+): T => (variant === "half" ? mirrorToBottomHalf(point) : point);
 
 /**
  * Converts a point dropped on the pitch (as displayed) back to stored
  * coordinates for an item stored at `stored`. In the half view a mirrored
- * item stays in the bottom half, so it is shown exactly where it was dropped.
+ * item stays in the top half, so it is shown exactly where it was dropped.
  */
 export const displayToStored = (
   stored: PitchPoint,
   dropped: PitchPoint,
   variant: PitchVariant,
 ): PitchPoint => {
-  const wasMirrored = variant === "half-top" && stored.y > 50;
-  return wasMirrored && dropped.y < 50
-    ? { x: 100 - dropped.x, y: 100 - dropped.y }
+  const wasMirrored = variant === "half" && stored.y < 50;
+  return wasMirrored && dropped.y > 50
+    ? mirrorPoint({ x: dropped.x, y: dropped.y })
     : { x: dropped.x, y: dropped.y };
 };

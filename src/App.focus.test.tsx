@@ -111,10 +111,47 @@ describe("App - focus mode", () => {
     expect(params().get("pitch")).toBe("half");
     expect(
       document.getElementById("share-pitch")?.getAttribute("data-variant"),
-    ).toBe("half-top");
+    ).toBe("half");
 
     fireEvent.click(button(/Switch to Touches/));
     expect(screen.queryByRole("button", { name: "Half pitch" })).toBeNull();
+  });
+
+  it("shows a team toggle in the bar on the half pitch, used for new shots", () => {
+    mockRect(100, 100);
+    render(<App />);
+    enterFocus();
+    expect(screen.queryByTestId("focus-team")).toBeNull();
+    fireEvent.click(button("Half pitch"));
+
+    const team = screen.getByTestId("focus-team");
+    expect(team.getAttribute("aria-label")).toBe(
+      "Team for new shots: Home. Switch team",
+    );
+    expect(screen.getByTestId("pitch-label-bottom").textContent).toBe(
+      "Goal ↓ · Home",
+    );
+    fireEvent.click(team);
+    expect(team.textContent).toContain("Away");
+    expect(screen.getByTestId("pitch-label-bottom").textContent).toBe(
+      "Goal ↓ · Away",
+    );
+
+    // A tap near the goal at the bottom records an Away shot there
+    fireEvent.click(document.getElementById("share-pitch")!, {
+      clientX: 40,
+      clientY: 80,
+    });
+    expect(
+      screen.getByRole("button", { name: "Team Away. Tap to switch team" }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Goal" }));
+    const marker = screen.getByTestId("shot-marker");
+    expect(marker.style.left).toBe("40%");
+    expect(marker.style.top).toBe("90%");
+
+    fireEvent.click(button("Half pitch"));
+    expect(screen.queryByTestId("focus-team")).toBeNull();
   });
 
   it("labels the goal ends with the team names on the full pitch", () => {

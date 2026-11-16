@@ -271,4 +271,84 @@ describe("ShotsView radial shot entry", () => {
     pick("Saved");
     expect(latestShots).toHaveLength(1);
   });
+
+  describe("half pitch", () => {
+    beforeEach(() => {
+      window.history.replaceState({}, "", "/?tab=shots&pitch=half");
+    });
+
+    const teamToggle = () =>
+      screen.getByRole("button", { name: /^Team for new shots/ });
+    const marker = () => screen.getByTestId("shot-marker");
+
+    it("puts the goal at the bottom and records shots for the toggle's team", () => {
+      render(<Harness />);
+      expect(screen.getByTestId("pitch-label-bottom").textContent).toBe(
+        "Goal ↓ · Arsenal",
+      );
+      // 100px of visible height covers y 50-100: a tap near the bottom goal
+      tapPitch(40, 80);
+      expect(centre().getAttribute("aria-label")).toContain("Arsenal");
+      pick("Goal");
+
+      // Stored attacking the top goal (home), shown where it was tapped
+      expect(latestShots[0]).toMatchObject({ team: "home", x: 60, y: 10 });
+      expect(marker().style.left).toBe("40%");
+      expect(marker().style.top).toBe("90%");
+    });
+
+    it("the team toggle switches the team for the next shots", () => {
+      render(<Harness />);
+      fireEvent.click(teamToggle());
+      expect(teamToggle().textContent).toContain("Leeds");
+      expect(screen.getByTestId("pitch-label-bottom").textContent).toBe(
+        "Goal ↓ · Leeds",
+      );
+      tapPitch(40, 80);
+      pick("Saved");
+      tapPitch(60, 70);
+      pick("Miss");
+      expect(latestShots.map((s) => [s.team, s.x, s.y])).toEqual([
+        ["away", 40, 90],
+        ["away", 60, 85],
+      ]);
+    });
+
+    it("the ring's centre still switches the team of one shot", () => {
+      render(<Harness />);
+      tapPitch(40, 80);
+      fireEvent.click(centre());
+      pick("Saved");
+      tapPitch(40, 80);
+      pick("Saved");
+      expect(latestShots.map((s) => s.team)).toEqual(["away", "home"]);
+      // Both are shown where they were tapped
+      for (const m of screen.getAllByTestId("shot-marker")) {
+        expect(m.style.left).toBe("40%");
+        expect(m.style.top).toBe("90%");
+      }
+    });
+
+    it("a shot from the half view is in the right place on the full pitch", () => {
+      render(<Harness />);
+      tapPitch(40, 80);
+      pick("Goal");
+      fireEvent.click(screen.getByRole("button", { name: "Full pitch" }));
+      // A home shot near the top goal on the full pitch
+      expect(marker().style.left).toBe("60%");
+      expect(marker().style.top).toBe("10%");
+    });
+
+    it("Move in the half view puts the shot where the finger is", () => {
+      render(<Harness />);
+      tapPitch(40, 80);
+      pick("Goal");
+      fireEvent.click(marker());
+      pick("Move");
+      tapPitch(20, 60);
+      expect(latestShots[0]).toMatchObject({ team: "home", x: 80, y: 20 });
+      expect(marker().style.left).toBe("20%");
+      expect(marker().style.top).toBe("80%");
+    });
+  });
 });
