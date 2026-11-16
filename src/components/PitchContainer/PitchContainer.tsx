@@ -56,9 +56,25 @@ interface PitchContainerProps {
    * left out of shared images.
    */
   hint?: React.ReactNode;
+  /**
+   * Fill the parent instead of the viewport (focus mode): the pitch is as
+   * large as the space the parent's flex layout gives it, keeping its
+   * ratio. Takes `flex-1` in a column parent; `reservedHeight` is ignored.
+   */
+  fill?: boolean;
+  /**
+   * Small labels drawn inside the pitch at the top and bottom goal ends
+   * (e.g. team names). Left out of shared images.
+   */
+  endLabels?: { top?: React.ReactNode; bottom?: React.ReactNode };
   /** Markers positioned with `left: x%` / `top: y%` of the full pitch. */
   children?: React.ReactNode;
 }
+
+const END_LABEL_CLASS =
+  "pointer-events-none absolute inset-x-0 z-20 flex justify-center px-2";
+const END_LABEL_TEXT_CLASS =
+  "max-w-[70%] truncate rounded-full bg-white/85 px-2 py-0.5 text-xs font-semibold text-gray-800 shadow-sm";
 
 export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
   (
@@ -69,6 +85,8 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
       legend,
       belowPitch,
       hint,
+      fill = false,
+      endLabels,
       children,
     },
     ref,
@@ -78,8 +96,11 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
 
     const visibleHeight = VISIBLE_HEIGHT[variant];
     const aspectRatio = PITCH_RATIO / visibleHeight;
-    // Shrink the width when the height would overflow the viewport
-    const pitchWidth = `min(100%, calc((100dvh - ${reservedHeight} - ${SAFE_AREA_HEIGHT}) * ${aspectRatio}))`;
+    // Shrink the width when the height would overflow: the parent's height
+    // (a size container, so cq units are its real size) or the viewport's
+    const pitchWidth = fill
+      ? `min(100cqw, calc(100cqh * ${aspectRatio}))`
+      : `min(100%, calc((100dvh - ${reservedHeight} - ${SAFE_AREA_HEIGHT}) * ${aspectRatio}))`;
 
     // Time until which pitch clicks are ignored (set when a marker drag ends)
     const suppressClickUntil = useRef(0);
@@ -128,7 +149,14 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     );
 
     return (
-      <div className="flex w-full justify-center">
+      <div
+        className={
+          fill
+            ? "[container-type:size] flex min-h-0 w-full flex-1 items-center justify-center"
+            : "flex w-full justify-center"
+        }
+        data-fill={fill || undefined}
+      >
         <div
           // Captured for shared images: the pitch plus its legend
           id="share-pitch"
@@ -137,7 +165,9 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
           style={{
             // At least wide enough for a compact legend, even when the pitch
             // is narrow
-            width: `max(min(100%, ${LEGEND_MIN_WIDTH}), ${pitchWidth})`,
+            width: fill
+              ? pitchWidth
+              : `max(min(100%, ${LEGEND_MIN_WIDTH}), ${pitchWidth})`,
           }}
           // Clicks outside the pitch (on the legend) are ignored
           onClick={handleClick}
@@ -171,6 +201,24 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
                 <p className="max-w-[16rem] rounded-lg border border-blue-200 bg-blue-50/95 px-3 py-2 text-center text-sm text-blue-800 shadow-md">
                   {hint}
                 </p>
+              </div>
+            )}
+            {endLabels?.top && (
+              <div
+                data-html2canvas-ignore="true"
+                data-testid="pitch-label-top"
+                className={`${END_LABEL_CLASS} top-1`}
+              >
+                <span className={END_LABEL_TEXT_CLASS}>{endLabels.top}</span>
+              </div>
+            )}
+            {endLabels?.bottom && (
+              <div
+                data-html2canvas-ignore="true"
+                data-testid="pitch-label-bottom"
+                className={`${END_LABEL_CLASS} bottom-1`}
+              >
+                <span className={END_LABEL_TEXT_CLASS}>{endLabels.bottom}</span>
               </div>
             )}
           </div>

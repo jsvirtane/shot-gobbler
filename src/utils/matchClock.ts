@@ -162,6 +162,17 @@ export const normalizeEventTime = (
   ...(isPeriod(item.period) ? { period: item.period } : {}),
 });
 
+/** E.g. "23' 1H"; "–' 1H" before the clock is first used. */
+export const formatClock = (clock: MatchClock | undefined, now: number) => {
+  if (!clock) return "–' 1H";
+  if (clock.period === "PEN") return "PEN";
+  return `${formatMinute(clockMinute(clock, now), clock.period)} ${clock.period}`;
+};
+
+/** Starts a paused clock or pauses a running one. */
+export const toggleClock = (clock: MatchClock, now: number): MatchClock =>
+  clock.running ? pauseClock(clock, now) : startClock(clock, now);
+
 /** `{ minute }` for a valid typed minute, otherwise nothing. */
 export const parseMinuteInput = (value: string): { minute?: number } => {
   const minute = Number(value);

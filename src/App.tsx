@@ -1,13 +1,21 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import FocusBar from "./components/FocusMode/FocusBar";
+import {
+  TrackerControls,
+  TrackerControlsContext,
+} from "./components/FocusMode/trackerControls";
 import MatchBar from "./components/MatchBar";
 import NavBar from "./components/NavBar/NavBar";
 import ShareButton from "./components/ShareButton";
 import { ToastProvider } from "./components/Toast";
 import { PASS_CHAINS_TAB, SHOTS_TAB, TOUCHES_TAB } from "./config/dataTabs";
+import { useFocusMode } from "./hooks/useFocusMode";
 import { useMatchData } from "./hooks/useMatchData";
 import { useUrlState } from "./hooks/useUrlState";
 import { DataTab, Tab, TABS } from "./types/Tab";
+import { MatchClock } from "./types/Match";
 import { DataTabHandle, toDataTabHandle } from "./utils/dataTransfer";
+import { NEW_CLOCK, toggleClock } from "./utils/matchClock";
 import { getTeamNames, isMatchExport } from "./utils/matches";
 import { notify } from "./utils/notify";
 import DocsView from "./views/DocsView";
@@ -39,6 +47,27 @@ function AppContent() {
     getEventStamp,
   } = matchData;
   const teamNames = getTeamNames(currentMatch);
+
+  // Focus mode: only the pitch and a floating bar, on the data tabs. It is
+  // not tab-specific, so it stays on when switching trackers.
+  const [focusMode, setFocusMode] = useFocusMode();
+  const isFocused = focusMode && activeTab !== "docs";
+  // Undo and pitch controls of the active view, for the focus bar
+  const [trackerControls, setTrackerControls] =
+    useState<TrackerControls | null>(null);
+
+  const { updateClock } = matchData;
+  const clock = currentMatch.clock;
+  // Starting the clock (from anywhere) switches to focus mode
+  const handleClockChange = useCallback(
+    (change: (clock: MatchClock, now: number) => MatchClock | undefined) => {
+      const before = clock ?? NEW_CLOCK;
+      const after = change(before, Date.now());
+      updateClock(change);
+      if (after?.running && !before.running) setFocusMode(true);
+    },
+    [clock, updateClock, setFocusMode],
+  );
 
   const dataTabs: Record<DataTab, DataTabHandle> = {
     shots: toDataTabHandle({ ...SHOTS_TAB, data: shots, setData: setShots }),
@@ -132,17 +161,31 @@ function AppContent() {
   }, []);
 
   return (
-    <>
+    <TrackerControlsContext.Provider value={setTrackerControls}>
       {/* On phones the bottom padding keeps content clear of the fixed
-          bottom tab bar (3.75rem plus the safe area) */}
-      <div className="mx-auto flex h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
-        <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
+          bottom tab bar (3.75rem plus the safe area). In focus mode it
+          keeps the pitch clear of the floating bar (3.5rem plus margins).
+          The tree stays the same in both modes, so views keep their state
+          (e.g. a chain being recorded). */}
+      <div
+        data-focus-mode={isFocused || undefined}
+        className={`mx-auto flex h-dvh flex-col bg-gray-100 pt-[env(safe-area-inset-top)] ${
+          isFocused
+            ? "pb-[calc(4.75rem+env(safe-area-inset-bottom))]"
+            : "pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0"
+        }`}
+      >
+        {!isFocused && (
+          <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        )}
         <div className="relative min-h-0 flex-1">
           <main
             id="main-content"
-            className="flex h-full w-full flex-col overflow-y-auto bg-gray-100 p-5"
+            className={`flex h-full w-full flex-col bg-gray-100 ${
+              isFocused ? "overflow-hidden" : "overflow-y-auto p-5"
+            }`}
           >
-            {activeDataTab && (
+            {activeDataTab && !isFocused && (
               // The data menu sits at the end of the match row, so it never
               // covers the view controls or the pitch
               <div className="flex shrink-0 items-start gap-2">
@@ -156,7 +199,8 @@ function AppContent() {
                     onDuplicate={matchData.duplicateMatch}
                     onDelete={matchData.deleteMatch}
                     onExport={matchData.exportMatch}
-                    onClockChange={matchData.updateClock}
+                    onClockChange={handleClockChange}
+                    onTrack={() => setFocusMode(true)}
                   />
                 </div>
                 <ShareButton
@@ -177,6 +221,7 @@ function AppContent() {
                 setShots={setShots}
                 teamNames={teamNames}
                 getEventStamp={getEventStamp}
+                focus={isFocused}
               />
             )}
             {activeTab === "touches" && (
@@ -184,6 +229,7 @@ function AppContent() {
                 actions={actions}
                 setActions={setActions}
                 getEventStamp={getEventStamp}
+                focus={isFocused}
               />
             )}
             {activeTab === "pass-chains" && (
@@ -191,12 +237,23 @@ function AppContent() {
                 passChains={passChains}
                 setPassChains={setPassChains}
                 getEventStamp={getEventStamp}
+                focus={isFocused}
               />
             )}
           </main>
         </div>
       </div>
-    </>
+      {isFocused && (
+        <FocusBar
+          tracker={activeTab}
+          onSwitchTracker={setActiveTab}
+          clock={clock}
+          onToggleClock={() => handleClockChange(toggleClock)}
+          controls={trackerControls}
+          onExit={() => setFocusMode(false)}
+        />
+      )}
+    </TrackerControlsContext.Provider>
   );
 }
 

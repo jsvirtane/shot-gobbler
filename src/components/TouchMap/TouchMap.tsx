@@ -12,6 +12,8 @@ interface TouchMapProps {
   onActionMove?: (id: string, x: number, y: number) => void;
   /** Empty-state hint over the pitch. */
   hint?: React.ReactNode;
+  /** Focus mode: fill the parent, no legend. */
+  focus?: boolean;
 }
 
 export const TouchMap = ({
@@ -20,14 +22,16 @@ export const TouchMap = ({
   onActionClick,
   onActionMove,
   hint,
+  focus = false,
 }: TouchMapProps) => {
   return (
     // Reserved height includes the match bar and the two-row legend
     <PitchContainer
       onCoordinateClick={onPitchClick}
       reservedHeight="15.75rem"
-      legend={<TouchLegend />}
+      legend={!focus && <TouchLegend />}
       hint={hint}
+      fill={focus}
     >
       {actions.map((action) => (
         <ActionMarker
