@@ -1,3 +1,4 @@
+import React from "react";
 import { Action } from "../../types/Action";
 import { TouchLegend } from "../MapLegend/MapLegend";
 import PitchContainer from "../PitchContainer/PitchContainer";
@@ -14,6 +15,8 @@ interface TouchMapProps {
   hint?: React.ReactNode;
   /** Focus mode: fill the parent, no legend. */
   focus?: boolean;
+  /** The pitch element, e.g. to place a menu at a pitch point. */
+  pitchRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const TouchMap = ({
@@ -23,10 +26,12 @@ export const TouchMap = ({
   onActionMove,
   hint,
   focus = false,
+  pitchRef,
 }: TouchMapProps) => {
   return (
     // Reserved height includes the match bar and the two-row legend
     <PitchContainer
+      ref={pitchRef as React.Ref<HTMLDivElement>}
       onCoordinateClick={onPitchClick}
       reservedHeight="15.75rem"
       legend={!focus && <TouchLegend />}
