@@ -1,5 +1,6 @@
 import React from "react";
 import { Action } from "../../types/Action";
+import { Pulse, pulseKeyFor } from "../../utils/feedback";
 import { TouchLegend } from "../MapLegend/MapLegend";
 import PitchContainer from "../PitchContainer/PitchContainer";
 import ActionMarker from "./ActionMarker";
@@ -17,6 +18,8 @@ interface TouchMapProps {
   focus?: boolean;
   /** The pitch element, e.g. to place a menu at a pitch point. */
   pitchRef?: React.RefObject<HTMLDivElement | null>;
+  /** The action saved or edited last, whose marker pulses once. */
+  pulse?: Pulse | null;
 }
 
 export const TouchMap = ({
@@ -27,6 +30,7 @@ export const TouchMap = ({
   hint,
   focus = false,
   pitchRef,
+  pulse,
 }: TouchMapProps) => {
   return (
     // Reserved height includes the match bar and the two-row legend
@@ -42,6 +46,7 @@ export const TouchMap = ({
         <ActionMarker
           key={action.id}
           action={action}
+          pulseKey={pulseKeyFor(pulse, action.id)}
           onTap={onActionClick && (() => onActionClick(action))}
           onMove={onActionMove && ((x, y) => onActionMove(action.id, x, y))}
         />

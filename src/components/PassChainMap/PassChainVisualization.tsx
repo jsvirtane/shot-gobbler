@@ -10,6 +10,8 @@ type PassChainVisualizationProps = {
   isCurrentChain?: boolean;
   /** Tap on any of the chain's markers. */
   onMarkerTap?: () => void;
+  /** Changes when the chain was just saved: its end marker pulses once. */
+  pulseKey?: number;
 };
 
 export const PassChainVisualization: React.FC<PassChainVisualizationProps> = ({
@@ -17,6 +19,7 @@ export const PassChainVisualization: React.FC<PassChainVisualizationProps> = ({
   actions,
   isCurrentChain = false,
   onMarkerTap,
+  pulseKey,
 }) => {
   const actionsToRender = chain?.actions || actions || [];
 
@@ -101,6 +104,7 @@ export const PassChainVisualization: React.FC<PassChainVisualizationProps> = ({
           terminationReason={chain.terminationReason}
           isCurrentChain={isCurrentChain}
           onTap={onMarkerTap}
+          pulseKey={pulseKey}
         />
       )}
     </>

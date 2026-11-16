@@ -1,4 +1,5 @@
 import { ChainAction, PassChain } from "../../types/PassChain";
+import { Pulse, pulseKeyFor } from "../../utils/feedback";
 import { PassChainLegend } from "../MapLegend/MapLegend";
 import PitchContainer from "../PitchContainer/PitchContainer";
 import PassChainVisualization from "./PassChainVisualization";
@@ -15,6 +16,8 @@ type PassChainMapProps = {
   hint?: React.ReactNode;
   /** Focus mode: fill the parent, no legend. */
   focus?: boolean;
+  /** The chain saved last, whose end marker pulses once. */
+  pulse?: Pulse | null;
 };
 
 export const PassChainMap: React.FC<PassChainMapProps> = ({
@@ -25,6 +28,7 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
   onChainClick,
   hint,
   focus = false,
+  pulse,
 }) => {
   const hasActiveCurrentChain = currentPassChain && currentPassChain.length > 0;
   const hasSelection =
@@ -55,6 +59,7 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
             <PassChainVisualization
               chain={chain}
               isCurrentChain={!hasActiveCurrentChain}
+              pulseKey={pulseKeyFor(pulse, chain.id)}
               onMarkerTap={
                 !hasActiveCurrentChain && onChainClick
                   ? () => onChainClick(chain.id)

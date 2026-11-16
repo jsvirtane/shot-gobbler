@@ -1,5 +1,6 @@
 import html2canvas from "html2canvas-pro";
 import React, { useEffect, useRef, useState } from "react";
+import { hapticsEnabled, setHapticsEnabled } from "../../utils/feedback";
 
 interface ShareButtonProps {
   targetElementId?: string;
@@ -41,6 +42,8 @@ const ICONS = {
   match:
     "M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3 4.9 3 6V20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V10H19V20ZM19 8H5V6H19V8ZM11 18H13V15H16L12 11L8 15H11V18Z",
   import: "M9 16V10H5L12 3L19 10H15V16H9ZM5 20V18H19V20H5Z",
+  vibrate:
+    "M0 15H2V9H0V15ZM3 17H5V7H3V17ZM22 9V15H24V9H22ZM19 17H21V7H19V17ZM16.5 3H7.5C6.67 3 6 3.67 6 4.5V19.5C6 20.33 6.67 21 7.5 21H16.5C17.33 21 18 20.33 18 19.5V4.5C18 3.67 17.33 3 16.5 3ZM16 19H8V5H16V19Z",
 };
 
 /**
@@ -60,6 +63,12 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   onBeforeShare,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Vibrate on save, move and delete (where the phone supports it)
+  const [haptics, setHaptics] = useState(hapticsEnabled);
+  const toggleHaptics = () => {
+    setHapticsEnabled(!haptics);
+    setHaptics(!haptics);
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -257,6 +266,30 @@ const ShareButton: React.FC<ShareButtonProps> = ({
             >
               <MenuIcon path={ICONS.import} />
               <span>Import</span>
+            </button>
+            <div role="separator" className="my-1 border-t border-gray-100" />
+            {/* Stays open so the switch is seen to change */}
+            <button
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={haptics}
+              onClick={toggleHaptics}
+              className={menuItemClass}
+            >
+              <MenuIcon path={ICONS.vibrate} />
+              <span className="flex-1">Vibrate on save</span>
+              <span
+                aria-hidden="true"
+                className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                  haptics ? "bg-blue-600" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-[left] ${
+                    haptics ? "left-4.5" : "left-0.5"
+                  }`}
+                />
+              </span>
             </button>
           </div>
         </>

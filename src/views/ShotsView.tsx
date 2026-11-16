@@ -19,6 +19,7 @@ import { TEAM_MARKER_COLORS } from "../constants/markerColors";
 import { Team } from "../types/common";
 import { DEFAULT_MATCH_ID, EventStamp, TeamNames } from "../types/Match";
 import { Shot, ShotResult } from "../types/Shot";
+import { shotSummary } from "../utils/feedbackSummary";
 import {
   PitchVariant,
   teamForPoint,
@@ -167,16 +168,18 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   const handleSave = (result: ShotResult) => {
     if (!ring) return;
     const fields = draftToShotFields(ring.draft, result);
+    const summarise = (shot: Shot) => shotSummary(shot, teamNames);
     if (ring.editing) {
       // Keeps the shot's id, match and period
-      shotList.update(ring.editing.id, fields);
+      shotList.update(ring.editing.id, fields, undefined, summarise);
     } else {
-      shotList.add({
+      const shot: Shot = {
         ...(ring.stamp ?? getEventStamp()),
         ...fields,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         timestamp: Date.now(),
-      });
+      };
+      shotList.add(shot, summarise(shot));
     }
     setRing(null);
   };
@@ -253,6 +256,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     // Focus mode has no team filter, so it shows every shot
     shots: focus ? shots : filteredShots,
     variant,
+    pulse: shotList.pulse,
     onShotClick: handleShotClick,
     onShotMove: handleShotMove,
     teamLabels: teamNames,
@@ -279,8 +283,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({
       onMove={handleRingMove}
       onDelete={handleRingDelete}
       onClose={() => setRing(null)}
-      // Clear of toasts at the top, and of the focus bar or the tab bar
-      insets={{ top: 64, bottom: focus ? 84 : 68 }}
+      // Clear of the focus bar or the tab bar (toasts hide meanwhile)
+      insets={{ top: 8, bottom: focus ? 84 : 68 }}
     />
   );
 

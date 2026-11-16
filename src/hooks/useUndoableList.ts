@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useToast } from "../components/Toast";
 import { ToastOptions } from "../components/Toast/toastContext";
+import { Pulse, vibrateOnSave } from "../utils/feedback";
+import { FeedbackSummary } from "../utils/feedbackSummary";
 
 type Nouns = {
   /** Capitalised singular, e.g. "Shot". */
@@ -36,6 +38,10 @@ const MAX_HISTORY = 50;
  * The changes are also kept in a history, so `undoLast` (e.g. the focus
  * mode bar's undo button) reverts them one by one, newest first. A toast's
  * own Undo button reverts its change and takes it out of the history.
+ *
+ * Every add, update and remove also vibrates briefly (if switched on), and
+ * `pulse` names the item added or updated last so its marker can pulse.
+ * Pass a summary to show it in the toast instead of "Shot added".
  */
 export function useUndoableList<T extends { id: string }>(
   items: T[],
@@ -50,6 +56,10 @@ export function useUndoableList<T extends { id: string }>(
   const history = useRef<HistoryEntry[]>([]);
   const nextEntryId = useRef(1);
   const [historySize, setHistorySize] = useState(0);
+  const [pulse, setPulse] = useState<Pulse | null>(null);
+  const markChanged = useCallback((id: string) => {
+    setPulse((prev) => ({ id, key: (prev?.key ?? 0) + 1 }));
+  }, []);
 
   // Changes belong to one match: a new (match-scoped) setter starts afresh
   useEffect(() => {
@@ -71,11 +81,20 @@ export function useUndoableList<T extends { id: string }>(
       message: string,
       revert: () => void,
       variant?: ToastOptions["variant"],
+      summary?: FeedbackSummary,
     ) => {
+      vibrateOnSave();
       const id = nextEntryId.current++;
       const toastId = showToast({
-        message,
-        variant,
+        // A summary gets the neutral toast, so its colour dot stands out
+        ...(summary
+          ? {
+              srLabel: message,
+              lead: summary.lead,
+              message: summary.message,
+              dot: summary.dot,
+            }
+          : { message, variant }),
         action: { label: "Undo", onClick: () => undoEntry(id) },
       });
       history.current = [
@@ -100,16 +119,18 @@ export function useUndoableList<T extends { id: string }>(
   }, [dismissToast, showToast]);
 
   const add = useCallback(
-    (item: T) => {
+    (item: T, summary?: FeedbackSummary) => {
       setItems((prev) => [...prev, item]);
+      markChanged(item.id);
       if (lastAddToast.current !== null) dismissToast(lastAddToast.current);
       lastAddToast.current = record(
         `${one} added`,
         () => setItems((prev) => prev.filter((i) => i.id !== item.id)),
         "success",
+        summary,
       );
     },
-    [setItems, dismissToast, record, one],
+    [setItems, dismissToast, record, markChanged, one],
   );
 
   const remove = useCallback(
@@ -144,7 +165,12 @@ export function useUndoableList<T extends { id: string }>(
   }, [items, setItems, record, one, many]);
 
   const update = useCallback(
-    (id: string, changes: Partial<T>, message = `${one} updated`) => {
+    (
+      id: string,
+      changes: Partial<T>,
+      message = `${one} updated`,
+      summary?: (updated: T) => FeedbackSummary,
+    ) => {
       const previous = items.find((i) => i.id === id);
       if (!previous) return;
       // Undo restores only the changed fields, keeping later edits to others
@@ -155,6 +181,7 @@ export function useUndoableList<T extends { id: string }>(
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, ...changes } : i)),
       );
+      markChanged(id);
       record(
         message,
         () =>
@@ -162,9 +189,10 @@ export function useUndoableList<T extends { id: string }>(
             prev.map((i) => (i.id === id ? { ...i, ...reverted } : i)),
           ),
         "success",
+        summary?.({ ...previous, ...changes }),
       );
     },
-    [items, setItems, record, one],
+    [items, setItems, record, markChanged, one],
   );
 
   return {
@@ -174,5 +202,6 @@ export function useUndoableList<T extends { id: string }>(
     update,
     undoLast,
     canUndo: historySize > 0,
+    pulse,
   };
 }

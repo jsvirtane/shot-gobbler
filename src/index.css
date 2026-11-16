@@ -35,3 +35,25 @@
   --color-duel-900: var(--color-yellow-900);
   --color-duel-950: var(--color-yellow-950);
 }
+/* One-shot pulse on a marker just saved, moved or edited */
+@keyframes marker-pulse {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.7);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.marker-pulse {
+  animation: marker-pulse 400ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marker-pulse {
+    animation: none;
+  }
+}

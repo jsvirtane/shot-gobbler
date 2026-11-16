@@ -2,7 +2,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { notify } from "../../utils/notify";
 import { ToastProvider } from "./ToastProvider";
-import { ToastOptions, useToast } from "./toastContext";
+import {
+  ToastOptions,
+  ToastPlacement,
+  useHideToasts,
+  useToast,
+  useToastPlacement,
+} from "./toastContext";
 
 const Trigger: React.FC<{ options: ToastOptions }> = ({ options }) => {
   const { showToast } = useToast();
@@ -98,5 +104,97 @@ describe("ToastProvider", () => {
     unmount();
     notify("No provider");
     expect(alertSpy).toHaveBeenCalledWith("No provider");
+  });
+
+  it("takes taps only on its buttons, so the pitch below gets the rest", () => {
+    renderWith({
+      message: "Saved",
+      action: { label: "Undo", onClick: () => {} },
+    });
+    fireEvent.click(screen.getByText("Show"));
+
+    expect(screen.getByTestId("toast-viewport").className).toContain(
+      "pointer-events-none",
+    );
+    expect(screen.getByRole("status").className).toContain(
+      "pointer-events-none",
+    );
+    expect(screen.getByRole("button", { name: "Undo" }).className).toContain(
+      "pointer-events-auto",
+    );
+    expect(screen.getByRole("button", { name: "Dismiss" }).className).toContain(
+      "pointer-events-auto",
+    );
+  });
+
+  it("shows a bold lead, a colour dot and a hidden label", () => {
+    renderWith({
+      message: "ARS · Head",
+      lead: "Miss",
+      dot: "#123456",
+      srLabel: "Shot added",
+    });
+    fireEvent.click(screen.getByText("Show"));
+
+    const toast = screen.getByRole("status");
+    expect(toast.querySelector("strong")?.textContent).toBe("Miss");
+    expect(toast.textContent).toContain("Shot added: Miss · ARS · Head");
+    expect(
+      (toast.querySelector("[aria-hidden=true]") as HTMLElement).style
+        .backgroundColor,
+    ).toBe("rgb(18, 52, 86)");
+  });
+
+  it("shows only the newest toast as a pill above the focus bar at the bottom", () => {
+    const Placed: React.FC<{ placement: ToastPlacement }> = ({ placement }) => {
+      useToastPlacement(placement);
+      return null;
+    };
+    const { rerender } = render(
+      <ToastProvider>
+        <Placed placement="bottom" />
+        <Trigger options={{ message: "One" }} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText("Show"));
+    fireEvent.click(screen.getByText("Show"));
+
+    const viewport = screen.getByTestId("toast-viewport");
+    expect(viewport.dataset.placement).toBe("bottom");
+    expect(viewport.className).toContain("bottom-[");
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+
+    rerender(
+      <ToastProvider>
+        <Placed placement="top" />
+        <Trigger options={{ message: "One" }} />
+      </ToastProvider>,
+    );
+    expect(viewport.dataset.placement).toBe("top");
+    expect(screen.getAllByRole("status")).toHaveLength(2);
+  });
+
+  it("hides toasts while a radial menu (or anything else) asks it to", () => {
+    const Hider: React.FC = () => {
+      useHideToasts();
+      return null;
+    };
+    const { rerender } = render(
+      <ToastProvider>
+        <Hider />
+        <Trigger options={{ message: "Saved" }} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText("Show"));
+    const viewport = screen.getByTestId("toast-viewport");
+    expect(viewport.className).toContain("invisible");
+
+    rerender(
+      <ToastProvider>
+        <Trigger options={{ message: "Saved" }} />
+      </ToastProvider>,
+    );
+    expect(viewport.className).not.toContain("invisible");
+    expect(screen.getByRole("status").textContent).toContain("Saved");
   });
 });

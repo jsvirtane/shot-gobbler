@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { TEAM_MARKER_COLORS } from "../../constants/markerColors";
 import { Shot } from "../../types/Shot";
 import { Team } from "../../types/common";
+import { Pulse, pulseKeyFor } from "../../utils/feedback";
 import {
   displayToStored,
   PitchPoint,
@@ -41,6 +42,8 @@ type ShotMapProps = {
   endLabels?: { top?: React.ReactNode; bottom?: React.ReactNode };
   /** A shot being recorded (stored coordinates), marked on the pitch. */
   pending?: PitchPoint & { team: Team };
+  /** The shot saved or edited last, whose marker pulses once. */
+  pulse?: Pulse | null;
 };
 
 export const ShotMap: React.FC<ShotMapProps> = ({
@@ -55,6 +58,7 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   focus = false,
   endLabels,
   pending,
+  pulse,
 }) => {
   const pitchRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +96,7 @@ export const ShotMap: React.FC<ShotMapProps> = ({
           <ShotMarker
             key={shot.id}
             shot={shown}
+            pulseKey={pulseKeyFor(pulse, shot.id)}
             onTap={onShotClick && (() => onShotClick(shot, toScreen(shown)))}
             onMove={
               onShotMove &&
