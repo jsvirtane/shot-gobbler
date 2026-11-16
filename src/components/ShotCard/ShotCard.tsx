@@ -31,7 +31,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
 
   return (
     <div
-      className={`rounded-lg border-2 ${shot.team === "home" ? "border-blue-600" : "border-red-600"} bg-white p-4 shadow-lg`}
+      className={`rounded-lg border-2 ${shot.team === "home" ? "border-blue-600" : "border-orange-600"} bg-white p-4 shadow-lg`}
     >
       {/* Header with navigation */}
       <div className="mb-4 flex items-center justify-between">
@@ -62,14 +62,14 @@ const ShotCard: React.FC<ShotCardProps> = ({
             <>
               <h3 className="text-lg font-bold">{shot.playerName}</h3>
               <span
-                className={`inline-block rounded px-2 py-1 text-xs font-semibold uppercase ${shot.team === "home" ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800"}`}
+                className={`inline-block rounded px-2 py-1 text-xs font-semibold uppercase ${shot.team === "home" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
               >
                 {shot.team} team
               </span>
             </>
           ) : (
             <span
-              className={`inline-block rounded px-2 py-1 text-xs font-semibold uppercase ${shot.team === "home" ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800"}`}
+              className={`inline-block rounded px-2 py-1 text-xs font-semibold uppercase ${shot.team === "home" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
             >
               {shot.team} team
             </span>

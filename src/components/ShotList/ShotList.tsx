@@ -26,7 +26,7 @@ const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
           {shots.map((shot) => (
             <li
               key={shot.id}
-              className={`mb-2 border-l-3 p-3 ${shot.team === "home" ? "border-l-blue-600" : "border-l-red-600"}`}
+              className={`mb-2 border-l-3 p-3 ${shot.team === "home" ? "border-l-blue-600" : "border-l-orange-600"}`}
             >
               <div className="flex items-center justify-between">
                 <div>
