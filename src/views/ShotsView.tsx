@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Accordion } from "../components/Accordion";
 import { ClearButton } from "../components/common";
 import ShotCard from "../components/ShotCard";
-import ShotForm from "../components/ShotForm/ShotForm";
 import ShotList from "../components/ShotList/ShotList";
 import XgTotals from "../components/ShotList/XgTotals";
-import ShotMap from "../components/ShotMap/ShotMap";
+import ShotMap, { ScreenPoint } from "../components/ShotMap/ShotMap";
+import ShotRadial from "../components/ShotRadial/ShotRadial";
 import ShotStatsPanel from "../components/Stats/ShotStatsPanel";
 import { ShotsSummaryBar } from "../components/Stats/SummaryBar";
 import SegmentedControl, {
@@ -15,17 +15,19 @@ import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
-import QuickShotSheet from "../components/QuickShotSheet/QuickShotSheet";
-import { Team } from "../types/common";
 import { DEFAULT_MATCH_ID, EventStamp, TeamNames } from "../types/Match";
 import { Shot, ShotResult } from "../types/Shot";
 import {
-  loadQuickMode,
-  loadShotDefaults,
-  saveQuickMode,
-  saveShotDefaults,
-  ShotDefaults,
-} from "../utils/shotEntryPrefs";
+  PitchVariant,
+  teamForPoint,
+  toAttackingHalf,
+} from "../utils/pitchView";
+import {
+  draftFromShot,
+  draftToShotFields,
+  newShotDraft,
+  ShotDraft,
+} from "../utils/shotDraft";
 import {
   DEFAULT_TEAM_LABELS,
   getTeamOptions,
@@ -38,6 +40,17 @@ const SHOTS_VIEWS = ["pitch", "list", "stats"] as const;
 type ShotsView = (typeof SHOTS_VIEWS)[number];
 const PITCH_VIEWS = ["full", "half"] as const;
 type PitchView = (typeof PITCH_VIEWS)[number];
+
+/** The radial menu open for a new or an existing shot. */
+type ShotRing = {
+  /** Where it opens, in viewport px. */
+  anchor: ScreenPoint;
+  draft: ShotDraft;
+  /** The shot being edited; null for a new one. */
+  editing: Shot | null;
+  /** Match fields of a new shot, taken at the tap. */
+  stamp: EventStamp | null;
+};
 
 interface ShotsViewProps {
   shots: Shot[];
@@ -59,12 +72,6 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   getEventStamp = defaultEventStamp,
   focus = false,
 }) => {
-  // Choices last used in the form (team, body part, type, player); sticky
-  // regardless of the display filter and remembered across reloads
-  const [shotDefaults, setShotDefaults] =
-    useState<ShotDefaults>(loadShotDefaults);
-  const [isQuickMode, setIsQuickMode] = useState<boolean>(loadQuickMode);
-
   const [shotsView, setShotsView] = useUrlState<ShotsView>(
     "view",
     "pitch",
@@ -80,9 +87,9 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     "full",
     PITCH_VIEWS,
   );
+  const variant: PitchVariant = pitchView === "half" ? "half-top" : "full";
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
-  const [pendingStamp, setPendingStamp] = useState<EventStamp | null>(null);
 
   const shotList = useUndoableList(shots, setShots, {
     one: "Shot",
@@ -97,18 +104,11 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     pitch: { half: pitchView === "half", toggle: togglePitchView },
   });
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // The shot open in the form for editing; null when adding a new one
-  const [editingShot, setEditingShot] = useState<Shot | null>(null);
-  const [isQuickSheetOpen, setIsQuickSheetOpen] = useState(false);
-  const [currentShotCoords, setCurrentShotCoords] = useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
-
-  // A Home/Away filter pre-selects that team; "All" keeps the last-used team
-  const formDefaultTeam: Team =
-    shotDisplayFilter === "all" ? shotDefaults.team : shotDisplayFilter;
+  // The open radial menu, if any
+  const [ring, setRing] = useState<ShotRing | null>(null);
+  // Shot whose Move was picked: the next pitch tap moves it
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const movingShot = shots.find((s) => s.id === movingId) ?? null;
 
   // Shot filtering
   const filteredShots = shots.filter((shot) => {
@@ -116,93 +116,66 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     return shot.team === shotDisplayFilter;
   });
 
-  // Modal/interaction handlers
-  const handlePitchClick = (x: number, y: number) => {
-    console.log(`Pitch clicked at: x=${x}, y=${y}`);
-    setCurrentShotCoords({ x, y });
-    // The shot happened at the tap, so take the match minute now
-    setPendingStamp(getEventStamp());
-    if (isQuickMode) {
-      setIsQuickSheetOpen(true);
-    } else {
-      setIsModalOpen(true);
+  // A tap on the pitch: a new shot, or the new spot of the shot being moved
+  const handlePitchClick = (x: number, y: number, screen?: ScreenPoint) => {
+    if (movingShot) {
+      const to = toAttackingHalf({ x, y }, movingShot.team);
+      shotList.update(movingShot.id, to, "Shot moved");
+      setMovingId(null);
+      return;
     }
+    // The team attacking the half tapped; the centre of the ring switches it
+    const team = teamForPoint({ x, y });
+    // The shot happened at the tap, so take the match minute now
+    const stamp = getEventStamp();
+    setRing({
+      anchor: screen ?? { x: 0, y: 0 },
+      draft: newShotDraft({ x, y }, team, stamp.minute),
+      editing: null,
+      stamp,
+    });
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingShot(null);
-  };
-
-  // Tapping a marker opens that shot in the full form, also in quick mode
-  const handleShotClick = (shot: Shot) => {
-    setEditingShot(shot);
-    setCurrentShotCoords({ x: shot.x, y: shot.y });
-    setIsQuickSheetOpen(false);
-    setIsModalOpen(true);
+  // Tapping a marker opens the same ring with its values and Edit options
+  const handleShotClick = (shot: Shot, screen?: ScreenPoint) => {
+    setMovingId(null);
+    setRing({
+      anchor: screen ?? { x: 0, y: 0 },
+      draft: draftFromShot(shot),
+      editing: shot,
+      stamp: null,
+    });
   };
 
   const handleShotMove = (id: string, x: number, y: number) => {
     shotList.update(id, { x, y }, "Shot moved");
   };
 
-  const handleFormSubmit = (details: Omit<Shot, "id" | "timestamp">) => {
-    if (editingShot) {
-      shotList.update(editingShot.id, details);
+  const handleSave = (result: ShotResult) => {
+    if (!ring) return;
+    const fields = draftToShotFields(ring.draft, result);
+    if (ring.editing) {
+      // Keeps the shot's id, match and period
+      shotList.update(ring.editing.id, fields);
     } else {
-      handleAddShot(details);
+      shotList.add({
+        ...(ring.stamp ?? getEventStamp()),
+        ...fields,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        timestamp: Date.now(),
+      });
     }
+    setRing(null);
   };
 
-  const handleDeleteEditingShot = () => {
-    if (editingShot) shotList.remove(editingShot.id);
-    handleCloseModal();
+  const handleRingMove = () => {
+    if (ring?.editing) setMovingId(ring.editing.id);
+    setRing(null);
   };
 
-  const handleToggleQuickMode = () => {
-    const next = !isQuickMode;
-    setIsQuickMode(next);
-    saveQuickMode(next);
-  };
-
-  // Quick mode: one tap on a result saves the shot with the remembered choices
-  const handleQuickResult = (result: ShotResult) => {
-    handleAddShot({
-      x: currentShotCoords.x,
-      y: currentShotCoords.y,
-      isGoal: result === "Goal",
-      result,
-      bodyPart: shotDefaults.bodyPart,
-      shotType: shotDefaults.shotType,
-      team: formDefaultTeam,
-      playerName: shotDefaults.playerName.trim() || undefined,
-    });
-    setIsQuickSheetOpen(false);
-  };
-
-  const handleQuickMoreDetails = () => {
-    setIsQuickSheetOpen(false);
-    setIsModalOpen(true);
-  };
-
-  // Shot "CRUD" operations
-  const handleAddShot = (details: Omit<Shot, "id" | "timestamp">) => {
-    const newShot: Shot = {
-      ...(pendingStamp ?? getEventStamp()),
-      ...details,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-      timestamp: Date.now(),
-    };
-    shotList.add(newShot);
-    const nextDefaults: ShotDefaults = {
-      team: details.team,
-      bodyPart: details.bodyPart,
-      shotType: details.shotType,
-      playerName: details.playerName ?? "",
-    };
-    setShotDefaults(nextDefaults);
-    saveShotDefaults(nextDefaults);
-    console.log("Added shot:", newShot);
+  const handleRingDelete = () => {
+    if (ring?.editing) shotList.remove(ring.editing.id);
+    setRing(null);
   };
 
   const handleRemoveShot = shotList.remove;
@@ -253,34 +226,6 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     </div>
   );
 
-  // Its own short row: the filter row has no room left at phone width.
-  // ShotMap reserves the extra height so the pitch still fits on screen.
-  const quickEntryToggleUI = (
-    <div className="-mt-2 mb-2 flex h-6 justify-center">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isQuickMode}
-        onClick={handleToggleQuickMode}
-        className="flex items-center gap-2 rounded-full px-2 text-sm font-medium text-gray-800"
-      >
-        <span
-          aria-hidden="true"
-          className={`relative inline-block h-4 w-7 rounded-full transition-colors ${
-            isQuickMode ? "bg-green-600" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
-              isQuickMode ? "translate-x-3" : ""
-            }`}
-          />
-        </span>
-        ⚡ Quick entry
-      </button>
-    </div>
-  );
-
   const viewOptions = [
     { id: "pitch", label: "Pitch View", icon: "⚽" },
     { id: "list", label: "List View", icon: "📋" },
@@ -294,39 +239,33 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     onPitchClick: handlePitchClick,
     // Focus mode has no team filter, so it shows every shot
     shots: focus ? shots : filteredShots,
-    variant: pitchView === "half" ? "half-top" : "full",
+    variant,
     onShotClick: handleShotClick,
     onShotMove: handleShotMove,
     teamLabels: teamNames,
-    hint: shots.length === 0 && "Tap where the shot was taken",
+    hint: movingShot
+      ? "Tap the new spot for the shot"
+      : shots.length === 0 && !ring && "Tap where the shot was taken",
+    pending:
+      ring && !ring.editing
+        ? { x: ring.draft.x, y: ring.draft.y, team: ring.draft.team }
+        : undefined,
   } as const;
 
-  const forms = (
-    <>
-      <ShotForm
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleFormSubmit}
-        initialCoords={currentShotCoords}
-        defaultTeam={formDefaultTeam}
-        defaultBodyPart={shotDefaults.bodyPart}
-        defaultShotType={shotDefaults.shotType}
-        defaultPlayerName={shotDefaults.playerName}
-        shot={editingShot ?? undefined}
-        onDelete={handleDeleteEditingShot}
-        // Edit mode shows the shot's own minute
-        defaultMinute={editingShot ? editingShot.minute : pendingStamp?.minute}
-        teamNames={teamNames}
-      />
-      <QuickShotSheet
-        isOpen={isQuickSheetOpen}
-        onClose={() => setIsQuickSheetOpen(false)}
-        onSelectResult={handleQuickResult}
-        onMoreDetails={handleQuickMoreDetails}
-        defaults={{ ...shotDefaults, team: formDefaultTeam }}
-        teamNames={teamNames}
-      />
-    </>
+  const radial = ring && (
+    <ShotRadial
+      anchor={ring.anchor}
+      draft={ring.draft}
+      onDraftChange={(draft) => setRing({ ...ring, draft })}
+      editing={ring.editing}
+      teamNames={teamNames}
+      onSave={handleSave}
+      onMove={handleRingMove}
+      onDelete={handleRingDelete}
+      onClose={() => setRing(null)}
+      // Clear of toasts at the top, and of the focus bar or the tab bar
+      insets={{ top: 64, bottom: focus ? 84 : 68 }}
+    />
   );
 
   if (focus) {
@@ -345,7 +284,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
               : undefined
           }
         />
-        {forms}
+        {radial}
       </>
     );
   }
@@ -359,7 +298,6 @@ const ShotsView: React.FC<ShotsViewProps> = ({
         className="mb-4"
       />
       {filterButtonsUI}
-      {shotsView === "pitch" && quickEntryToggleUI}
       {/* Not on the pitch view: the pitch has no vertical room to spare */}
       {shotsView !== "pitch" && (
         <ShotsSummaryBar
@@ -371,9 +309,8 @@ const ShotsView: React.FC<ShotsViewProps> = ({
 
       {shotsView === "pitch" ? (
         <>
-          {/* In half view both teams attack the top goal, so the team name
-              labels are hidden. Taps there are stored as top-half (y 0-50)
-              coordinates regardless of the selected team. */}
+          {/* In half view both teams attack the same goal, so the team name
+              labels are hidden */}
           <div className="relative flex min-h-6 items-end justify-center">
             {pitchView === "full" && (
               <p className="max-w-[60%] truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
@@ -439,7 +376,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
           )}
         </div>
       )}
-      {forms}
+      {radial}
     </>
   );
 };

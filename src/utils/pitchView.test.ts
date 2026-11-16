@@ -1,5 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { displayToStored, mirrorToTopHalf } from "./pitchView";
+import {
+  displayToStored,
+  mirrorToTopHalf,
+  teamForPoint,
+  toAttackingHalf,
+} from "./pitchView";
+
+describe("teamForPoint", () => {
+  it("is home in the top half and away in the bottom half", () => {
+    expect(teamForPoint({ x: 50, y: 10 })).toBe("home");
+    expect(teamForPoint({ x: 50, y: 90 })).toBe("away");
+  });
+});
+
+describe("toAttackingHalf", () => {
+  it("keeps a point already in the team's attacking half", () => {
+    const point = { x: 30, y: 20 };
+    expect(toAttackingHalf(point, "home")).toBe(point);
+    expect(toAttackingHalf({ x: 30, y: 80 }, "away")).toEqual({ x: 30, y: 80 });
+  });
+
+  it("rotates a point in the other half", () => {
+    expect(toAttackingHalf({ x: 30, y: 80 }, "home")).toEqual({ x: 70, y: 20 });
+    expect(toAttackingHalf({ x: 30, y: 20 }, "away")).toEqual({ x: 70, y: 80 });
+  });
+});
 
 describe("mirrorToTopHalf", () => {
   it("leaves points in the top half unchanged", () => {

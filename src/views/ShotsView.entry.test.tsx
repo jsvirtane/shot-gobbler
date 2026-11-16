@@ -1,186 +1,274 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "../components/Toast";
+import { mockRect } from "../test/pointerEvents";
+import { DEFAULT_MATCH_ID } from "../types/Match";
 import { Shot } from "../types/Shot";
-import {
-  QUICK_MODE_STORAGE_KEY,
-  SHOT_DEFAULTS_STORAGE_KEY,
-} from "../utils/shotEntryPrefs";
+import { penaltySpot } from "../utils/shotDraft";
+import { shotXg } from "../utils/xg";
 import ShotsView from "./ShotsView";
 
-// Replace the pitch with a button that "taps" it at a fixed position
-vi.mock("../components/ShotMap/ShotMap", () => ({
-  default: ({
-    onPitchClick,
-  }: {
-    onPitchClick: (x: number, y: number) => void;
-  }) => (
-    <button data-testid="pitch" onClick={() => onPitchClick(40, 60)}>
-      Pitch
-    </button>
-  ),
-}));
+vi.mock("../assets/football_pitch.svg", () => ({ default: "pitch.svg" }));
 
 let latestShots: Shot[] = [];
 
-const Harness: React.FC = () => {
+const Harness: React.FC<{ focus?: boolean }> = ({ focus }) => {
   const [shots, setShots] = useState<Shot[]>([]);
   latestShots = shots;
-  return <ShotsView shots={shots} setShots={setShots} />;
+  return (
+    <ToastProvider>
+      <ShotsView
+        shots={shots}
+        setShots={setShots}
+        teamNames={{ home: "Arsenal", away: "Leeds" }}
+        focus={focus}
+      />
+    </ToastProvider>
+  );
 };
 
-const isSelected = (text: string) =>
-  screen.getByText(text).className.includes("bg-blue-600");
+/** Taps the pitch at full-pitch % (the pitch is mocked as 100 x 100 px). */
+const tapPitch = (x: number, y: number) =>
+  fireEvent.click(document.getElementById("share-pitch")!, {
+    clientX: x,
+    clientY: y,
+  });
 
-describe("ShotsView shot entry", () => {
+const ring = () => screen.getByTestId("radial-menu");
+const option = (name: string) => within(ring()).getByRole("button", { name });
+const pick = (name: string) => fireEvent.click(option(name));
+const centre = () => screen.getByTestId("radial-center");
+
+describe("ShotsView radial shot entry", () => {
   beforeEach(() => {
     localStorage.clear();
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState({}, "", "/?tab=shots");
     latestShots = [];
-    vi.spyOn(console, "log").mockImplementation(() => {});
+    mockRect(100, 100);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe("remembered form choices", () => {
-    it("pre-fills the form with the last-used choices, resetting only the result", () => {
-      render(<Harness />);
+  it("has no quick entry switch", () => {
+    render(<Harness />);
+    expect(screen.queryByRole("switch", { name: /Quick entry/ })).toBeNull();
+  });
 
-      fireEvent.click(screen.getByTestId("pitch"));
-      fireEvent.click(screen.getByText("🚌 Away"));
-      fireEvent.click(screen.getByText("⚽ Goal"));
-      fireEvent.click(screen.getByText("👤 Head"));
-      fireEvent.click(screen.getByText("Set Piece"));
-      fireEvent.change(screen.getByPlaceholderText("e.g., Ronaldo or 7"), {
-        target: { value: "9" },
-      });
-      fireEvent.click(screen.getByText("Add Shot"));
+  it("records a shot with one tap on a result", () => {
+    render(<Harness />);
+    tapPitch(40, 20);
+    expect(screen.getByRole("dialog", { name: "New shot" })).toBeTruthy();
+    pick("Saved");
 
-      fireEvent.click(screen.getByTestId("pitch"));
-      expect(isSelected("🚌 Away")).toBe(true);
-      expect(isSelected("👤 Head")).toBe(true);
-      expect(isSelected("Set Piece")).toBe(true);
-      expect(isSelected("❌ Miss")).toBe(true);
-      expect(
-        (screen.getByPlaceholderText("e.g., Ronaldo or 7") as HTMLInputElement)
-          .value,
-      ).toBe("9");
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
+    expect(latestShots).toHaveLength(1);
+    expect(latestShots[0]).toMatchObject({
+      x: 40,
+      y: 20,
+      team: "home",
+      result: "Saved",
+      isGoal: false,
+      bodyPart: "Foot",
+      shotType: "Open Play",
+      matchId: DEFAULT_MATCH_ID,
     });
+    expect(latestShots[0].playerName).toBeUndefined();
+  });
 
-    it("persists the choices across reloads", () => {
-      const { unmount } = render(<Harness />);
-      fireEvent.click(screen.getByTestId("pitch"));
-      fireEvent.click(screen.getByText("🦵 Other"));
-      fireEvent.click(screen.getByText("Penalty"));
-      fireEvent.click(screen.getByText("Add Shot"));
-      unmount();
+  it("takes the team from the half tapped", () => {
+    render(<Harness />);
+    tapPitch(40, 20);
+    expect(centre().getAttribute("aria-label")).toContain("Arsenal");
+    expect(centre().textContent).toContain("ARS");
+    fireEvent.keyDown(document, { key: "Escape" });
 
-      expect(
-        JSON.parse(localStorage.getItem(SHOT_DEFAULTS_STORAGE_KEY) ?? "{}"),
-      ).toEqual({
-        team: "home",
-        bodyPart: "Other",
-        shotType: "Penalty",
-        playerName: "",
-      });
+    tapPitch(40, 80);
+    expect(centre().getAttribute("aria-label")).toContain("Leeds");
+    pick("Miss");
+    expect(latestShots[0]).toMatchObject({ team: "away", x: 40, y: 80 });
+  });
 
-      render(<Harness />);
-      fireEvent.click(screen.getByTestId("pitch"));
-      expect(isSelected("🦵 Other")).toBe(true);
-      expect(isSelected("Penalty")).toBe(true);
-    });
+  it("records a headed goal with Head then Goal", () => {
+    render(<Harness />);
+    tapPitch(50, 10);
+    pick("Header");
+    // The toggle keeps the ring open and shows as on
+    expect(option("Header").getAttribute("aria-pressed")).toBe("true");
+    expect(latestShots).toHaveLength(0);
+    pick("Goal");
 
-    it("works when storage is unavailable", () => {
-      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-        throw new Error("blocked");
-      });
-      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-        throw new Error("blocked");
-      });
-
-      render(<Harness />);
-      fireEvent.click(screen.getByRole("switch", { name: /Quick entry/ }));
-      fireEvent.click(screen.getByTestId("pitch"));
-      fireEvent.click(screen.getByRole("button", { name: /Goal/ }));
-
-      expect(latestShots).toHaveLength(1);
+    expect(latestShots[0]).toMatchObject({
+      bodyPart: "Head",
+      result: "Goal",
+      isGoal: true,
     });
   });
 
-  describe("quick mode", () => {
-    it("saves a shot with one tap using the remembered choices", () => {
-      localStorage.setItem(
-        SHOT_DEFAULTS_STORAGE_KEY,
-        JSON.stringify({
-          team: "away",
-          bodyPart: "Head",
-          shotType: "Set Piece",
-          playerName: "7",
-        }),
+  it("resets the toggles and shirt number after each save", () => {
+    render(<Harness />);
+    tapPitch(50, 10);
+    pick("Header");
+    pick("Set piece");
+    pick("Shirt number");
+    pick("7");
+    pick("Done");
+    pick("Miss");
+
+    tapPitch(50, 10);
+    expect(option("Header").getAttribute("aria-pressed")).toBe("false");
+    expect(option("Set piece").getAttribute("aria-pressed")).toBe("false");
+    expect(option("Shirt number")).toBeTruthy();
+    pick("Miss");
+    expect(latestShots[1]).toMatchObject({
+      bodyPart: "Foot",
+      shotType: "Open Play",
+    });
+    expect(latestShots[1].playerName).toBeUndefined();
+  });
+
+  it("Set piece and Penalty exclude each other; Penalty moves to the spot and clears Head", () => {
+    render(<Harness />);
+    tapPitch(30, 30);
+    pick("Header");
+    pick("Set piece");
+    pick("Penalty");
+    expect(option("Penalty").getAttribute("aria-pressed")).toBe("true");
+    expect(option("Set piece").getAttribute("aria-pressed")).toBe("false");
+    expect(option("Header").getAttribute("aria-pressed")).toBe("false");
+
+    pick("Set piece");
+    expect(option("Penalty").getAttribute("aria-pressed")).toBe("false");
+    pick("Penalty");
+    pick("Goal");
+
+    const spot = penaltySpot("home");
+    expect(latestShots[0]).toMatchObject({
+      shotType: "Penalty",
+      bodyPart: "Foot",
+      x: spot.x,
+      y: spot.y,
+    });
+  });
+
+  it("turning Penalty off puts the shot back where it was tapped", () => {
+    render(<Harness />);
+    tapPitch(30, 30);
+    pick("Penalty");
+    pick("Penalty");
+    pick("Miss");
+    expect(latestShots[0]).toMatchObject({
+      shotType: "Open Play",
+      x: 30,
+      y: 30,
+    });
+  });
+
+  it("switching the team from the centre stores attacking coordinates, so xG is right", () => {
+    render(<Harness />);
+    // A tap in the bottom half is an away shot; switch it to home
+    tapPitch(30, 85);
+    fireEvent.click(centre());
+    expect(centre().getAttribute("aria-label")).toContain("Arsenal");
+    pick("Saved");
+
+    const shot = latestShots[0];
+    expect(shot).toMatchObject({ team: "home", x: 70, y: 15 });
+    // Same distance and angle to the goal it attacks as the tap
+    expect(shotXg(shot)).toBeCloseTo(shotXg({ ...shot, x: 30, y: 85 }), 10);
+  });
+
+  it("switching back and forth returns to the tapped point", () => {
+    render(<Harness />);
+    tapPitch(30, 85);
+    fireEvent.click(centre());
+    fireEvent.click(centre());
+    pick("Saved");
+    expect(latestShots[0]).toMatchObject({ team: "away", x: 30, y: 85 });
+  });
+
+  it("enters a shirt number on the dial", () => {
+    render(<Harness />);
+    tapPitch(50, 20);
+    pick("Shirt number");
+    expect(screen.getByRole("dialog", { name: "Shirt number" })).toBeTruthy();
+    pick("1");
+    pick("0");
+    // Up to two digits
+    pick("4");
+    expect(centre().textContent).toContain("#10");
+    pick("Delete digit");
+    pick("7");
+    pick("Done");
+
+    expect(option("Shirt number 17")).toBeTruthy();
+    pick("Blocked");
+    expect(latestShots[0]).toMatchObject({ playerName: "17" });
+  });
+
+  it("the dial's centre clears the shirt number", () => {
+    render(<Harness />);
+    tapPitch(50, 20);
+    pick("Shirt number");
+    pick("9");
+    pick("Done");
+    pick("Shirt number 9");
+    fireEvent.click(screen.getByRole("button", { name: "Clear shirt number" }));
+    expect(option("Shirt number")).toBeTruthy();
+    pick("Miss");
+    expect(latestShots[0].playerName).toBeUndefined();
+  });
+
+  it("closing the ring records nothing", () => {
+    render(<Harness />);
+    tapPitch(50, 20);
+    pick("Header");
+    fireEvent.click(screen.getByTestId("radial-backdrop"));
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
+    expect(latestShots).toHaveLength(0);
+  });
+
+  it("stamps the shot with the minute and period at the tap", () => {
+    const stamp = vi.fn(() => ({
+      matchId: "m1",
+      minute: 23,
+      period: "1H" as const,
+    }));
+    const WithStamp: React.FC = () => {
+      const [shots, setShots] = useState<Shot[]>([]);
+      latestShots = shots;
+      return (
+        <ToastProvider>
+          <ShotsView shots={shots} setShots={setShots} getEventStamp={stamp} />
+        </ToastProvider>
       );
-      localStorage.setItem(QUICK_MODE_STORAGE_KEY, "true");
-      render(<Harness />);
-
-      fireEvent.click(screen.getByTestId("pitch"));
-      expect(screen.getByRole("dialog", { name: "Quick Shot" })).toBeTruthy();
-      expect(screen.getByTestId("quick-shot-summary").textContent).toBe(
-        "🚌 Away · 👤 Head · Set Piece · 7",
-      );
-
-      fireEvent.click(screen.getByRole("button", { name: /Goal/ }));
-
-      expect(screen.queryByRole("dialog")).toBeNull();
-      expect(latestShots).toHaveLength(1);
-      expect(latestShots[0]).toMatchObject({
-        x: 40,
-        y: 60,
-        result: "Goal",
-        isGoal: true,
-        team: "away",
-        bodyPart: "Head",
-        shotType: "Set Piece",
-        playerName: "7",
-      });
+    };
+    render(<WithStamp />);
+    tapPitch(50, 20);
+    stamp.mockReturnValue({ matchId: "m1", minute: 30, period: "1H" });
+    pick("Goal");
+    expect(latestShots[0]).toMatchObject({
+      matchId: "m1",
+      minute: 23,
+      period: "1H",
     });
+  });
 
-    it("switches to the full form via More details", () => {
-      localStorage.setItem(QUICK_MODE_STORAGE_KEY, "true");
-      render(<Harness />);
+  it("Undo removes a recorded shot", () => {
+    render(<Harness />);
+    tapPitch(50, 20);
+    pick("Goal");
+    expect(screen.getByRole("status").textContent).toContain("Shot added");
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(latestShots).toHaveLength(0);
+  });
 
-      fireEvent.click(screen.getByTestId("pitch"));
-      fireEvent.click(screen.getByText("More details…"));
-
-      expect(screen.getByRole("dialog", { name: "New Shot" })).toBeTruthy();
-      fireEvent.click(screen.getByText("Add Shot"));
-      expect(latestShots[0]).toMatchObject({ x: 40, y: 60 });
-    });
-
-    it("persists the quick entry toggle", () => {
-      const { unmount } = render(<Harness />);
-      const toggle = screen.getByRole("switch", { name: /Quick entry/ });
-      expect(toggle.getAttribute("aria-checked")).toBe("false");
-
-      fireEvent.click(toggle);
-      expect(toggle.getAttribute("aria-checked")).toBe("true");
-      expect(localStorage.getItem(QUICK_MODE_STORAGE_KEY)).toBe("true");
-      unmount();
-
-      render(<Harness />);
-      expect(
-        screen
-          .getByRole("switch", { name: /Quick entry/ })
-          .getAttribute("aria-checked"),
-      ).toBe("true");
-      fireEvent.click(screen.getByTestId("pitch"));
-      expect(screen.getByRole("dialog", { name: "Quick Shot" })).toBeTruthy();
-    });
-
-    it("opens the full form when quick entry is off", () => {
-      render(<Harness />);
-      fireEvent.click(screen.getByTestId("pitch"));
-      expect(screen.getByRole("dialog", { name: "New Shot" })).toBeTruthy();
-    });
+  it("works the same in focus mode", () => {
+    render(<Harness focus />);
+    tapPitch(50, 20);
+    pick("Saved");
+    expect(latestShots).toHaveLength(1);
   });
 });
