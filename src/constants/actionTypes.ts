@@ -2,7 +2,7 @@ import { ActionCategory, ActionOutcome, ActionType } from "../types/Action";
 
 /**
  * The touch tracker's action types and the outcomes of each: the one table
- * that the action form and the radial menu are both built from.
+ * that the touch rings, lists, legend and stats are all built from.
  */
 
 export type ActionTypeInfo = {

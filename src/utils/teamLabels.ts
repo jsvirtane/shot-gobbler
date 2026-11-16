@@ -44,9 +44,3 @@ export const shortTeamName = (name: string): string => {
   const trimmed = name.trim();
   return trimmed.length <= 5 ? trimmed : trimmed.slice(0, 3).toUpperCase();
 };
-
-/** "🏠 Home" style text for summaries. */
-export const formatTeam = (
-  team: Team,
-  labels: Record<Team, string> = DEFAULT_TEAM_LABELS,
-) => `${TEAM_ICONS[team]} ${labels[team]}`;

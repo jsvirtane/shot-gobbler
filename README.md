@@ -8,31 +8,36 @@ Shot Gobbler helps football analysts, fans, and data enthusiasts gather touch an
 
 ## Features
 
+### Recording
+
+- Pitch-first: tap where it happened and pick from a ring of options around the tap (no forms)
+- Focus mode: a full-screen pitch with a floating bar for the match clock, undo, tracker switch and half pitch
+- Tap a marker to edit it in the same ring (move, minute, delete); press and hold to drag it
+- Matches with team names and a running clock; events are stamped with minute and period
+
 ### Shot map
 
-- Record shot locations & relevant shot data
-- Visualization of shot map
-- Display shot data on list view
-- Filter shot data by all, home & away teams
-- Export shot data as JSON
-- Import shot data
+- Result ring (goal, saved, blocked, miss) with details: header, set piece, penalty, shirt number
+- Both teams on the full pitch, or one half with a remembered team toggle
+- xG per shot, shown by marker size, with totals
+- List, stats and team filters
 
 ### Touch map
 
-- Record single players touch locations & relevant touch data
-- Visualization of touch map
-- Display touch data on list view
-- Export touch data as JSON
-- Import touch data
+- Single player's touches: action ring (attack, defend, duel, more) then an outcome ring
+- List and stats, with pitch zones
 
 ### Pass chains map
 
-- Record sequences of actions (passes, carries, shots, crosses) that form attacking chains
-- Visualization of pass chains map
+- Tap each place the ball goes and pick the step (pass, carry, cross, shot)
+- End ring for how the chain ended (shot result, ball lost, stoppage), or cancel it
 - Pitch zone tracking (defensive/midfield/attacking × left/central/right)
-- Display pass chain data on list view with action sequences and termination details
-- Export pass chain data as JSON
-- Import pass chain data
+- List and stats with action sequences and termination details
+
+### Data
+
+- Share the map as an image (with its legend)
+- Export and import data as JSON
 
 ## Live demo
 

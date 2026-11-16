@@ -1,4 +1,4 @@
-// Common button styles used across multiple form components
+// Submit / cancel button colours (match dialog)
 export const CommonButtonColors = {
   action: {
     submit: "bg-green-600 hover:bg-green-700 text-white",

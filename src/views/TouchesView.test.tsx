@@ -31,12 +31,6 @@ vi.mock("../components/ViewToggle/ViewToggle", () => ({
   default: () => <div data-testid="view-toggle">View Toggle</div>,
 }));
 
-vi.mock("../components/Modal/Modal", () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="modal">{children}</div>
-  ),
-}));
-
 // Mock useUrlState hook
 vi.mock("../hooks/useUrlState", () => ({
   useUrlState: (key: string, defaultValue: string) => {
@@ -47,8 +41,6 @@ vi.mock("../hooks/useUrlState", () => ({
     return [defaultValue, vi.fn()];
   },
 }));
-
-import React from "react";
 
 describe("TouchesView", () => {
   const mockSetActions = vi.fn();

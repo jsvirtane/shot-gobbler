@@ -115,7 +115,7 @@ describe("matchClock", () => {
     });
   });
 
-  it("parses the minute typed in a form", () => {
+  it("parses the minute typed on the minute dial", () => {
     expect(parseMinuteInput("")).toEqual({});
     expect(parseMinuteInput("abc")).toEqual({});
     expect(parseMinuteInput("12.5")).toEqual({});
