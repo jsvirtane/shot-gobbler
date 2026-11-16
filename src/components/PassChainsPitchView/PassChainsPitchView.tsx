@@ -1,140 +1,231 @@
-import React from "react";
-import { ChainAction, ChainActionType, PassChain } from "../../types/PassChain";
-import ActionTypeSelection from "../PassChainMap/ActionTypeSelection";
+import React, { useRef, useState } from "react";
+import {
+  ChainAction,
+  ChainTerminationReason,
+  PassChain,
+} from "../../types/PassChain";
+import {
+  ChainEndItem,
+  ChainStepItem,
+  ChainStepType,
+  CLOSE_CHAIN_ID,
+  DELETE_CHAIN_ID,
+  END_CHAIN_ID,
+  endSections,
+  savedChainSections,
+  stepSections,
+} from "../PassChainMap/chainRadial";
 import { PassChainMap } from "../PassChainMap/PassChainMap";
+import RadialMenu, { Point, RadialItem } from "../RadialMenu";
 
 type PassChainsPitchViewProps = {
   passChains: PassChain[];
   currentPassChain: ChainAction[];
-  selectedActionType: ChainActionType;
-  onPitchClick: (x: number, y: number) => void;
-  onActionTypeChange: (actionType: ChainActionType) => void;
-  onEndChain: () => void;
-  onUndoLastAction: () => void;
-  onClearCurrentChain: () => void;
+  /** Step outlined in the Step ring. */
+  lastStep: ChainStepType | null;
+  /** First tap: starts a chain at the point. */
+  onStartChain: (x: number, y: number) => void;
+  /** A step picked in the Step ring adds the tapped point. */
+  onAddStep: (x: number, y: number, step: ChainStepType) => void;
+  /** An option picked in the End ring saves the chain. */
+  onEndChain: (reason: ChainTerminationReason) => void;
   /** Saved chain selected by tapping one of its markers. */
   selectedChainId?: string | null;
-  onChainClick?: (id: string) => void;
-  onDeleteSelectedChain?: () => void;
-  onCloseSelection?: () => void;
-  /**
-   * Focus mode: the pitch fills the parent under a compact row of chain
-   * controls; undo is in the focus bar.
-   */
+  onSelectChain?: (id: string | null) => void;
+  onDeleteChain?: (id: string) => void;
+  /** Focus mode: the pitch fills the parent. */
   focus?: boolean;
 };
+
+/** The open ring, with the tap point in pitch % for a step. */
+type Ring =
+  | { kind: "step"; x: number; y: number; anchor: Point }
+  | { kind: "end"; anchor: Point }
+  | { kind: "chain"; id: string; anchor: Point };
+
+const centerContent = (title: string, subtitle: string) => (
+  <>
+    <span className="font-semibold">{title}</span>
+    <span className="text-[10px] text-gray-500">{subtitle}</span>
+  </>
+);
 
 const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
   passChains,
   currentPassChain,
-  selectedActionType,
-  onPitchClick,
-  onActionTypeChange,
+  lastStep,
+  onStartChain,
+  onAddStep,
   onEndChain,
-  onUndoLastAction,
-  onClearCurrentChain,
   selectedChainId,
-  onChainClick,
-  onDeleteSelectedChain,
-  onCloseSelection,
+  onSelectChain,
+  onDeleteChain,
   focus = false,
 }) => {
   const isActivePassChain = currentPassChain.length > 0;
+  const [ring, setRing] = useState<Ring | null>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
+
+  /** Pitch % (full pitch) to px in the ring's container. */
+  const toAnchor = (x: number, y: number): Point => {
+    const area = areaRef.current;
+    const pitch = area?.querySelector<HTMLElement>("[data-testid=pitch]");
+    if (!area || !pitch) return { x: 0, y: 0 };
+    const a = area.getBoundingClientRect();
+    const p = pitch.getBoundingClientRect();
+    return {
+      x: p.left - a.left + (x / 100) * p.width,
+      y: p.top - a.top + (y / 100) * p.height,
+    };
+  };
+
+  const handlePitchClick = (x: number, y: number) => {
+    if (ring) return;
+    if (!isActivePassChain) {
+      // A tap elsewhere only clears a selection
+      if (selectedChainId && passChains.some((c) => c.id === selectedChainId))
+        onSelectChain?.(null);
+      else onStartChain(x, y);
+      return;
+    }
+    setRing({ kind: "step", x, y, anchor: toAnchor(x, y) });
+  };
+
+  // Where the latest press was, so a chain's ring opens at the tapped marker
+  const lastPress = useRef<Point | null>(null);
+  const handlePressCapture = (event: React.PointerEvent) => {
+    const area = areaRef.current;
+    if (!area) return;
+    const a = area.getBoundingClientRect();
+    lastPress.current = { x: event.clientX - a.left, y: event.clientY - a.top };
+  };
+
+  const handleChainClick = (id: string) => {
+    const chain = passChains.find((c) => c.id === id);
+    if (!chain) return;
+    const last = chain.actions[chain.actions.length - 1];
+    const pressed = lastPress.current;
+    lastPress.current = null;
+    onSelectChain?.(id);
+    setRing({
+      kind: "chain",
+      id,
+      // A keyboard press has no point: open at the chain's end
+      anchor: pressed ?? (last ? toAnchor(last.x, last.y) : { x: 0, y: 0 }),
+    });
+  };
+
+  const closeRing = () => {
+    if (ring?.kind === "chain") onSelectChain?.(null);
+    setRing(null);
+  };
+
+  const handlePick = (item: RadialItem) => {
+    if (!ring) return;
+    if (ring.kind === "step") {
+      if (item.id === END_CHAIN_ID) {
+        setRing({ kind: "end", anchor: ring.anchor });
+        return;
+      }
+      onAddStep(ring.x, ring.y, (item as ChainStepItem).step);
+    } else if (ring.kind === "end") {
+      onEndChain((item as ChainEndItem).reason);
+    } else {
+      if (item.id === DELETE_CHAIN_ID) onDeleteChain?.(ring.id);
+      else if (item.id === CLOSE_CHAIN_ID) onSelectChain?.(null);
+    }
+    setRing(null);
+  };
+
   const selectedIndex = passChains.findIndex((c) => c.id === selectedChainId);
-  const selectedChain = selectedIndex === -1 ? null : passChains[selectedIndex];
+  const ringChain =
+    ring?.kind === "chain" ? passChains.find((c) => c.id === ring.id) : null;
 
-  const controls = (
-    <>
-      {isActivePassChain && (
-        <ActionTypeSelection
-          selectedActionType={selectedActionType}
-          onActionTypeChange={onActionTypeChange}
-          onEndChain={onEndChain}
-          className={focus ? "mb-2 gap-2" : "mb-4"}
+  const renderRing = () => {
+    if (!ring) return null;
+    if (ring.kind === "step") {
+      return (
+        <RadialMenu
+          anchor={ring.anchor}
+          sections={stepSections(lastStep)}
+          ariaLabel="Chain step"
+          center={{
+            content: centerContent(
+              `Step ${currentPassChain.length}`,
+              "how did it get here?",
+            ),
+            ariaLabel: `Step ${currentPassChain.length}`,
+          }}
+          onPick={handlePick}
+          onClose={closeRing}
         />
-      )}
-
-      {selectedChain && !isActivePassChain && (
-        <div
-          role="toolbar"
-          aria-label="Selected pass chain"
-          className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm"
-        >
-          <span className="text-sm font-medium text-gray-800">
-            Chain {selectedIndex + 1} · {selectedChain.actions.length}{" "}
-            {selectedChain.actions.length === 1 ? "point" : "points"}
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onDeleteSelectedChain}
-              className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
-            >
-              Delete chain
-            </button>
-            <button
-              type="button"
-              onClick={onCloseSelection}
-              className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+      );
+    }
+    if (ring.kind === "end") {
+      return (
+        <RadialMenu
+          anchor={ring.anchor}
+          sections={endSections()}
+          ariaLabel="End chain"
+          center={{
+            content: centerContent("End", "how did it end?"),
+            ariaLabel: "End chain",
+          }}
+          onPick={handlePick}
+          onClose={closeRing}
+        />
+      );
+    }
+    if (!ringChain) return null;
+    const points = ringChain.actions.length;
+    return (
+      <RadialMenu
+        anchor={ring.anchor}
+        sections={savedChainSections()}
+        ariaLabel="Pass chain"
+        center={{
+          content: centerContent(
+            `Chain ${selectedIndex + 1}`,
+            `${points} ${points === 1 ? "point" : "points"}`,
+          ),
+          ariaLabel: `Chain ${selectedIndex + 1}, ${points} ${points === 1 ? "point" : "points"}`,
+        }}
+        onPick={handlePick}
+        onClose={closeRing}
+      />
+    );
+  };
 
   return (
-    <>
-      {focus
-        ? // A row above the pitch (which shrinks to fit), not over it, so
-          // the top goal stays tappable
-          (isActivePassChain || selectedChain) && (
-            <div className="shrink-0 px-2 pt-2">{controls}</div>
-          )
-        : controls}
-
+    // The ring is drawn over this area: the pitch (and legend)
+    <div
+      ref={areaRef}
+      className={focus ? "relative flex min-h-0 flex-1 flex-col" : "relative"}
+      data-testid="chain-pitch-area"
+      onPointerDownCapture={handlePressCapture}
+    >
       <PassChainMap
         focus={focus}
-        onPitchClick={onPitchClick}
+        onPitchClick={handlePitchClick}
         passChains={passChains}
         currentPassChain={currentPassChain}
-        selectedChainId={selectedChain?.id}
-        onChainClick={onChainClick}
+        selectedChainId={
+          selectedIndex === -1 ? null : passChains[selectedIndex].id
+        }
+        onChainClick={handleChainClick}
         hint={
           !isActivePassChain &&
           passChains.length === 0 && (
             <>
               <strong>Click on the pitch to start a new pass chain.</strong>
               <br />
-              The first action will automatically be marked as the start
-              position.
+              Then tap each place the ball goes, and pick how it got there.
             </>
           )
         }
       />
-
-      {isActivePassChain && !focus && (
-        <div className="mt-6 flex justify-center gap-4">
-          <button
-            onClick={onUndoLastAction}
-            disabled={currentPassChain.length === 0}
-            className="focus:ring-opacity-50 rounded-lg border-2 border-orange-200 bg-orange-50 px-6 py-3 text-orange-700 transition-all hover:border-orange-300 hover:bg-orange-100 focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            title="Undo last action"
-          >
-            <span className="flex items-center">Undo Last Action</span>
-          </button>
-          <button
-            onClick={onClearCurrentChain}
-            className="focus:ring-opacity-50 rounded-lg border-2 border-red-200 bg-red-50 px-6 py-3 text-red-700 transition-all hover:border-red-300 hover:bg-red-100 focus:ring-2 focus:ring-red-500 focus:outline-none"
-            title="Clear current pass chain"
-          >
-            <span className="flex items-center">Clear Current Chain</span>
-          </button>
-        </div>
-      )}
-    </>
+      {renderRing()}
+    </div>
   );
 };
 
