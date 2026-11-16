@@ -15,6 +15,7 @@ export type RadialIconName =
   | "move"
   | "trash"
   | "back"
+  | "erase"
   | "more"
   | "flag"
   | "swap";
@@ -54,6 +55,14 @@ const ICONS: Record<RadialIconName, React.ReactNode> = {
     />
   ),
   back: <path d="M15 5l-7 7 7 7" {...stroke} strokeWidth={3} />,
+  // Backspace key: delete the last digit typed
+  erase: (
+    <path
+      d="M9 5h11v14H9l-6-7zM12 9.5l5 5M17 9.5l-5 5"
+      {...stroke}
+      strokeWidth={2.2}
+    />
+  ),
   more: (
     <g fill="currentColor">
       <circle cx="5" cy="12" r="2.2" />

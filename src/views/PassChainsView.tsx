@@ -131,6 +131,25 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
     setChainStamp(null);
   };
 
+  // Drops the chain being recorded; the toast's Undo brings it back
+  const handleCancelChain = () => {
+    const actions = currentPassChain;
+    const stamp = chainStamp;
+    if (actions.length === 0) return;
+    setCurrentPassChain([]);
+    setChainStamp(null);
+    showToast({
+      message: "Chain cancelled",
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setChainStamp(stamp);
+          setCurrentPassChain(actions);
+        },
+      },
+    });
+  };
+
   const handleUndoLastAction = () => {
     setCurrentPassChain((prevChain) => prevChain.slice(0, -1));
   };
@@ -193,6 +212,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
           onStartChain={handleStartChain}
           onAddStep={handleAddStep}
           onEndChain={handleEndChain}
+          onCancelChain={handleCancelChain}
           selectedChainId={selectedChainId}
           onSelectChain={setSelectedChainId}
           onDeleteChain={handleDeleteChain}

@@ -13,11 +13,13 @@ import SegmentedControl, {
 } from "../components/SegmentedControl";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useTrackerControls } from "../components/FocusMode/trackerControls";
+import { useLocalStorageState } from "../hooks/useLocalStorageState";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { TEAM_MARKER_COLORS } from "../constants/markerColors";
 import { Team } from "../types/common";
 import { DEFAULT_MATCH_ID, EventStamp, TeamNames } from "../types/Match";
+import { StorageCodec } from "../utils/dataSchema";
 import { Shot, ShotResult } from "../types/Shot";
 import { shotSummary } from "../utils/feedbackSummary";
 import {
@@ -42,6 +44,14 @@ type DisplayFilter = (typeof DISPLAY_FILTERS)[number];
 const SHOTS_VIEWS = ["pitch", "list", "stats"] as const;
 type ShotsView = (typeof SHOTS_VIEWS)[number];
 const PITCH_VIEWS = ["full", "half"] as const;
+
+export const HALF_TEAM_STORAGE_KEY = "shot-gobbler-half-team";
+
+/** A stored team, or null for anything else (then "home" is used). */
+const teamCodec: StorageCodec<Team> = {
+  parse: (raw) => (raw === "home" || raw === "away" ? raw : null),
+  stringify: (team) => team,
+};
 type PitchView = (typeof PITCH_VIEWS)[number];
 
 /** The radial menu open for a new or an existing shot. */
@@ -92,8 +102,13 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   );
   const variant: PitchVariant = pitchView;
   const isHalf = pitchView === "half";
-  // Team of new shots in the half view, where both teams attack one goal
-  const [halfTeam, setHalfTeam] = useState<Team>("home");
+  // Team of new shots in the half view, where both teams attack one goal;
+  // remembered across reloads
+  const [halfTeam, setHalfTeam] = useLocalStorageState<Team>(
+    HALF_TEAM_STORAGE_KEY,
+    "home",
+    teamCodec,
+  );
   const toggleHalfTeam = () =>
     setHalfTeam((team) => (team === "home" ? "away" : "home"));
 

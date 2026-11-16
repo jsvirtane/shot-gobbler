@@ -7,7 +7,7 @@ import { DEFAULT_MATCH_ID } from "../types/Match";
 import { Shot } from "../types/Shot";
 import { penaltySpot } from "../utils/shotDraft";
 import { shotXg } from "../utils/xg";
-import ShotsView from "./ShotsView";
+import ShotsView, { HALF_TEAM_STORAGE_KEY } from "./ShotsView";
 
 vi.mock("../assets/football_pitch.svg", () => ({ default: "pitch.svg" }));
 
@@ -312,6 +312,22 @@ describe("ShotsView radial shot entry", () => {
         ["away", 40, 90],
         ["away", 60, 85],
       ]);
+    });
+
+    it("remembers the team choice across reloads", () => {
+      const { unmount } = render(<Harness />);
+      fireEvent.click(teamToggle());
+      expect(localStorage.getItem(HALF_TEAM_STORAGE_KEY)).toBe("away");
+      unmount();
+
+      render(<Harness />);
+      expect(teamToggle().textContent).toContain("Leeds");
+    });
+
+    it("ignores an unusable stored team", () => {
+      localStorage.setItem(HALF_TEAM_STORAGE_KEY, "referee");
+      render(<Harness />);
+      expect(teamToggle().textContent).toContain("Arsenal");
     });
 
     it("the ring's centre still switches the team of one shot", () => {
