@@ -12,6 +12,7 @@ import SegmentedControl, {
   SegmentedOption,
 } from "../components/SegmentedControl";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import QuickShotSheet from "../components/QuickShotSheet/QuickShotSheet";
@@ -45,6 +46,8 @@ interface ShotsViewProps {
   teamNames?: TeamNames;
   /** Match fields stamped on each new shot. */
   getEventStamp?: () => EventStamp;
+  /** Focus mode: only the pitch, filling the screen. */
+  focus?: boolean;
 }
 
 const defaultEventStamp = (): EventStamp => ({ matchId: DEFAULT_MATCH_ID });
@@ -54,6 +57,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   setShots,
   teamNames = DEFAULT_TEAM_LABELS,
   getEventStamp = defaultEventStamp,
+  focus = false,
 }) => {
   // Choices last used in the form (team, body part, type, player); sticky
   // regardless of the display filter and remembered across reloads
@@ -83,6 +87,14 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   const shotList = useUndoableList(shots, setShots, {
     one: "Shot",
     many: "shots",
+  });
+
+  const togglePitchView = () =>
+    setPitchView(pitchView === "full" ? "half" : "full");
+  useTrackerControls({
+    undo: shotList.undoLast,
+    canUndo: shotList.canUndo,
+    pitch: { half: pitchView === "half", toggle: togglePitchView },
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -278,6 +290,66 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   // Teams shown by the filter
   const shownTeams = shotDisplayFilter === "all" ? TEAMS : [shotDisplayFilter];
 
+  const shotMapProps = {
+    onPitchClick: handlePitchClick,
+    // Focus mode has no team filter, so it shows every shot
+    shots: focus ? shots : filteredShots,
+    variant: pitchView === "half" ? "half-top" : "full",
+    onShotClick: handleShotClick,
+    onShotMove: handleShotMove,
+    teamLabels: teamNames,
+    hint: shots.length === 0 && "Tap where the shot was taken",
+  } as const;
+
+  const forms = (
+    <>
+      <ShotForm
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleFormSubmit}
+        initialCoords={currentShotCoords}
+        defaultTeam={formDefaultTeam}
+        defaultBodyPart={shotDefaults.bodyPart}
+        defaultShotType={shotDefaults.shotType}
+        defaultPlayerName={shotDefaults.playerName}
+        shot={editingShot ?? undefined}
+        onDelete={handleDeleteEditingShot}
+        // Edit mode shows the shot's own minute
+        defaultMinute={editingShot ? editingShot.minute : pendingStamp?.minute}
+        teamNames={teamNames}
+      />
+      <QuickShotSheet
+        isOpen={isQuickSheetOpen}
+        onClose={() => setIsQuickSheetOpen(false)}
+        onSelectResult={handleQuickResult}
+        onMoreDetails={handleQuickMoreDetails}
+        defaults={{ ...shotDefaults, team: formDefaultTeam }}
+        teamNames={teamNames}
+      />
+    </>
+  );
+
+  if (focus) {
+    return (
+      <>
+        <ShotMap
+          {...shotMapProps}
+          focus
+          // In half view both teams attack the top goal, so no team ends
+          endLabels={
+            pitchView === "full"
+              ? {
+                  top: `${teamNames.home} ↑`,
+                  bottom: `${teamNames.away} ↓`,
+                }
+              : undefined
+          }
+        />
+        {forms}
+      </>
+    );
+  }
+
   return (
     <>
       <ViewToggle
@@ -310,22 +382,14 @@ const ShotsView: React.FC<ShotsViewProps> = ({
             )}
             <button
               type="button"
-              onClick={() =>
-                setPitchView(pitchView === "full" ? "half" : "full")
-              }
+              onClick={togglePitchView}
               className="absolute right-0 bottom-0 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-900 hover:bg-gray-100"
             >
               {pitchView === "full" ? "Half pitch" : "Full pitch"}
             </button>
           </div>
           <ShotMap
-            onPitchClick={handlePitchClick}
-            shots={filteredShots}
-            variant={pitchView === "half" ? "half-top" : "full"}
-            onShotClick={handleShotClick}
-            onShotMove={handleShotMove}
-            teamLabels={teamNames}
-            hint={shots.length === 0 && "Tap where the shot was taken"}
+            {...shotMapProps}
             // Right under the pitch, above the legend
             belowPitch={
               pitchView === "full" && (
@@ -375,29 +439,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
           )}
         </div>
       )}
-      <ShotForm
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleFormSubmit}
-        initialCoords={currentShotCoords}
-        defaultTeam={formDefaultTeam}
-        defaultBodyPart={shotDefaults.bodyPart}
-        defaultShotType={shotDefaults.shotType}
-        defaultPlayerName={shotDefaults.playerName}
-        shot={editingShot ?? undefined}
-        onDelete={handleDeleteEditingShot}
-        // Edit mode shows the shot's own minute
-        defaultMinute={editingShot ? editingShot.minute : pendingStamp?.minute}
-        teamNames={teamNames}
-      />
-      <QuickShotSheet
-        isOpen={isQuickSheetOpen}
-        onClose={() => setIsQuickSheetOpen(false)}
-        onSelectResult={handleQuickResult}
-        onMoreDetails={handleQuickMoreDetails}
-        defaults={{ ...shotDefaults, team: formDefaultTeam }}
-        teamNames={teamNames}
-      />
+      {forms}
     </>
   );
 };

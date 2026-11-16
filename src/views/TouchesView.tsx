@@ -6,6 +6,7 @@ import { TouchesSummaryBar } from "../components/Stats/SummaryBar";
 import { TouchList } from "../components/TouchList/TouchList";
 import TouchMap from "../components/TouchMap/TouchMap";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { Action } from "../types/Action";
@@ -19,6 +20,8 @@ interface TouchesViewProps {
   setActions: React.Dispatch<React.SetStateAction<Action[]>>;
   /** Match fields stamped on each new action. */
   getEventStamp?: () => EventStamp;
+  /** Focus mode: only the pitch, filling the screen. */
+  focus?: boolean;
 }
 
 const defaultEventStamp = (): EventStamp => ({ matchId: DEFAULT_MATCH_ID });
@@ -27,6 +30,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   actions,
   setActions,
   getEventStamp = defaultEventStamp,
+  focus = false,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   // The action open in the form for editing; null when adding a new one
@@ -42,6 +46,11 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   const actionList = useUndoableList(actions, setActions, {
     one: "Action",
     many: "actions",
+  });
+
+  useTrackerControls({
+    undo: actionList.undoLast,
+    canUndo: actionList.canUndo,
   });
 
   const handlePitchClick = (x: number, y: number) => {
@@ -100,16 +109,19 @@ const TouchesView: React.FC<TouchesViewProps> = ({
 
   return (
     <>
-      <ViewToggle
-        currentView={currentView}
-        options={viewOptions}
-        onViewChange={(view) => setCurrentView(view as TouchesView)}
-        className="mb-4"
-      />
+      {!focus && (
+        <ViewToggle
+          currentView={currentView}
+          options={viewOptions}
+          onViewChange={(view) => setCurrentView(view as TouchesView)}
+          className="mb-4"
+        />
+      )}
 
-      {currentView === "pitch" ? (
+      {focus || currentView === "pitch" ? (
         <>
           <TouchMap
+            focus={focus}
             onPitchClick={handlePitchClick}
             actions={actions}
             onActionClick={handleActionClick}

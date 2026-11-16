@@ -7,6 +7,7 @@ import PassChainsPitchView from "../components/PassChainsPitchView/PassChainsPit
 import PassChainStatsPanel from "../components/Stats/PassChainStatsPanel";
 import { ChainsSummaryBar } from "../components/Stats/SummaryBar";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
@@ -35,6 +36,8 @@ interface PassChainsViewProps {
   setPassChains: React.Dispatch<React.SetStateAction<PassChain[]>>;
   /** Match fields stamped on each new chain. */
   getEventStamp?: () => EventStamp;
+  /** Focus mode: only the pitch, filling the screen. */
+  focus?: boolean;
 }
 
 const defaultEventStamp = (): EventStamp => ({ matchId: DEFAULT_MATCH_ID });
@@ -43,6 +46,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
   passChains,
   setPassChains,
   getEventStamp = defaultEventStamp,
+  focus = false,
 }) => {
   const [currentView, setCurrentView] = useUrlState<PassChainsView>(
     "view",
@@ -131,6 +135,15 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
     setCurrentPassChain((prevChain) => prevChain.slice(0, -1));
   };
 
+  // The bar's undo takes back the in-progress chain's last point first
+  useTrackerControls({
+    undo: () => {
+      if (currentPassChain.length > 0) handleUndoLastAction();
+      else chainList.undoLast();
+    },
+    canUndo: isActivePassChain || chainList.canUndo,
+  });
+
   const handleClearAllPassChains = chainList.clearAll;
   const handleRemovePassChain = chainList.remove;
 
@@ -141,7 +154,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
 
   return (
     <>
-      {!isActivePassChain && (
+      {!isActivePassChain && !focus && (
         <>
           <ViewToggle
             currentView={currentView}
@@ -152,8 +165,9 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
         </>
       )}
 
-      {currentView === "pitch" ? (
+      {focus || currentView === "pitch" ? (
         <PassChainsPitchView
+          focus={focus}
           passChains={passChains}
           currentPassChain={currentPassChain}
           selectedActionType={selectedActionType}

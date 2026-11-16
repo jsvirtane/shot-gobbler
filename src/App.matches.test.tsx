@@ -397,6 +397,11 @@ describe("App - matches", () => {
     });
 
     const clockText = () => screen.getByTestId("match-clock").textContent;
+    // Starting the clock enters focus mode; these tests continue in review
+    const startClockAndExitFocus = () => {
+      fireEvent.click(screen.getByRole("button", { name: "Start clock" }));
+      fireEvent.click(screen.getByRole("button", { name: "Exit focus mode" }));
+    };
 
     it("records no minute before the clock is used", () => {
       render(<App />);
@@ -407,7 +412,7 @@ describe("App - matches", () => {
 
     it("stamps events with the minute and period and survives a reload", () => {
       const { unmount } = render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Start clock" }));
+      startClockAndExitFocus();
       expect(clockText()).toBe("1' 1H");
 
       vi.setSystemTime(T0 + 22 * MIN + 30_000);
@@ -424,7 +429,7 @@ describe("App - matches", () => {
 
     it("uses the last minute while paused, and next period / adjust", () => {
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Start clock" }));
+      startClockAndExitFocus();
       vi.setSystemTime(T0 + 10 * MIN);
       fireEvent.click(screen.getByRole("button", { name: "Pause clock" }));
       vi.setSystemTime(T0 + 40 * MIN);

@@ -17,6 +17,11 @@ type PassChainsPitchViewProps = {
   onChainClick?: (id: string) => void;
   onDeleteSelectedChain?: () => void;
   onCloseSelection?: () => void;
+  /**
+   * Focus mode: the pitch fills the parent under a compact row of chain
+   * controls; undo is in the focus bar.
+   */
+  focus?: boolean;
 };
 
 const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
@@ -32,22 +37,21 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
   onChainClick,
   onDeleteSelectedChain,
   onCloseSelection,
+  focus = false,
 }) => {
   const isActivePassChain = currentPassChain.length > 0;
   const selectedIndex = passChains.findIndex((c) => c.id === selectedChainId);
   const selectedChain = selectedIndex === -1 ? null : passChains[selectedIndex];
 
-  return (
+  const controls = (
     <>
-      {isActivePassChain && currentPassChain.length > 0 && (
-        <>
-          <ActionTypeSelection
-            selectedActionType={selectedActionType}
-            onActionTypeChange={onActionTypeChange}
-            onEndChain={onEndChain}
-            className="mb-4"
-          />
-        </>
+      {isActivePassChain && (
+        <ActionTypeSelection
+          selectedActionType={selectedActionType}
+          onActionTypeChange={onActionTypeChange}
+          onEndChain={onEndChain}
+          className={focus ? "mb-2 gap-2" : "mb-4"}
+        />
       )}
 
       {selectedChain && !isActivePassChain && (
@@ -78,8 +82,21 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
           </div>
         </div>
       )}
+    </>
+  );
+
+  return (
+    <>
+      {focus
+        ? // A row above the pitch (which shrinks to fit), not over it, so
+          // the top goal stays tappable
+          (isActivePassChain || selectedChain) && (
+            <div className="shrink-0 px-2 pt-2">{controls}</div>
+          )
+        : controls}
 
       <PassChainMap
+        focus={focus}
         onPitchClick={onPitchClick}
         passChains={passChains}
         currentPassChain={currentPassChain}
@@ -98,7 +115,7 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
         }
       />
 
-      {isActivePassChain && (
+      {isActivePassChain && !focus && (
         <div className="mt-6 flex justify-center gap-4">
           <button
             onClick={onUndoLastAction}

@@ -24,6 +24,10 @@ type ShotMapProps = {
   belowPitch?: React.ReactNode;
   /** Empty-state hint over the pitch. */
   hint?: React.ReactNode;
+  /** Focus mode: fill the parent, no legend or rows under the pitch. */
+  focus?: boolean;
+  /** Labels inside the pitch at the goal ends. */
+  endLabels?: { top?: React.ReactNode; bottom?: React.ReactNode };
 };
 
 export const ShotMap: React.FC<ShotMapProps> = ({
@@ -35,6 +39,8 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   teamLabels,
   belowPitch,
   hint,
+  focus = false,
+  endLabels,
 }) => {
   return (
     // Reserved height includes the match bar, the Shots view's quick
@@ -43,9 +49,11 @@ export const ShotMap: React.FC<ShotMapProps> = ({
       onCoordinateClick={onPitchClick}
       variant={variant}
       reservedHeight="23.25rem"
-      legend={<ShotLegend teamLabels={teamLabels} />}
-      belowPitch={belowPitch}
+      legend={!focus && <ShotLegend teamLabels={teamLabels} />}
+      belowPitch={!focus && belowPitch}
       hint={hint}
+      fill={focus}
+      endLabels={endLabels}
     >
       {shots.map((shot) => (
         <ShotMarker

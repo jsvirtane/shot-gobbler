@@ -13,6 +13,8 @@ type PassChainMapProps = {
   onChainClick?: (id: string) => void;
   /** Empty-state hint over the pitch. */
   hint?: React.ReactNode;
+  /** Focus mode: fill the parent, no legend. */
+  focus?: boolean;
 };
 
 export const PassChainMap: React.FC<PassChainMapProps> = ({
@@ -22,6 +24,7 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
   selectedChainId,
   onChainClick,
   hint,
+  focus = false,
 }) => {
   const hasActiveCurrentChain = currentPassChain && currentPassChain.length > 0;
   const hasSelection =
@@ -32,8 +35,9 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
     <PitchContainer
       onCoordinateClick={onPitchClick}
       reservedHeight="23rem"
-      legend={<PassChainLegend />}
+      legend={!focus && <PassChainLegend />}
       hint={hint}
+      fill={focus}
     >
       {/* Render completed pass chains */}
       {passChains.map((chain) => {

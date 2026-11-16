@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useNow } from "../../hooks/useNow";
 import { Match, MatchClock, MatchDetails } from "../../types/Match";
 import {
   getCancelButtonStyle,
@@ -6,13 +7,11 @@ import {
 } from "../../utils/buttonStyles";
 import {
   adjustClock,
-  clockMinute,
-  formatMinute,
+  formatClock,
   nextPeriod,
   nextPeriodOf,
-  pauseClock,
   PERIOD_LABELS,
-  startClock,
+  toggleClock,
 } from "../../utils/matchClock";
 import { formatMatchTitle, todayIso } from "../../utils/matches";
 import Modal from "../Modal";
@@ -34,25 +33,8 @@ export type MatchBarProps = {
   onClockChange: (
     change: (clock: MatchClock, now: number) => MatchClock | undefined,
   ) => void;
-};
-
-/** The current time, updated every second while `ticking`. */
-const useNow = (ticking: boolean) => {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    setNow(Date.now());
-    if (!ticking) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [ticking]);
-  return now;
-};
-
-/** E.g. "23' 1H"; "–' 1H" before the clock is first used. */
-const formatClock = (clock: MatchClock | undefined, now: number) => {
-  if (!clock) return "–' 1H";
-  if (clock.period === "PEN") return "PEN";
-  return `${formatMinute(clockMinute(clock, now), clock.period)} ${clock.period}`;
+  /** Enters focus mode (full-screen pitch); no button without it. */
+  onTrack?: () => void;
 };
 
 type SheetMode =
@@ -169,6 +151,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
   onDelete,
   onExport,
   onClockChange,
+  onTrack,
 }) => {
   const [mode, setMode] = useState<SheetMode>({ kind: "closed" });
   const clock = currentMatch.clock;
@@ -212,11 +195,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
       <div className="flex h-full shrink-0 items-center rounded-md border border-gray-200 bg-white shadow-sm">
         <button
           type="button"
-          onClick={() =>
-            onClockChange((c, at) =>
-              c.running ? pauseClock(c, at) : startClock(c, at),
-            )
-          }
+          onClick={() => onClockChange(toggleClock)}
           disabled={clock?.period === "PEN"}
           aria-label={running ? "Pause clock" : "Start clock"}
           className="flex h-full w-9 items-center justify-center rounded-l-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-30"
@@ -233,6 +212,18 @@ const MatchBar: React.FC<MatchBarProps> = ({
           {clockText}
         </button>
       </div>
+      {onTrack && (
+        <button
+          type="button"
+          onClick={onTrack}
+          aria-label="Track: full-screen pitch"
+          title="Full-screen pitch for tracking"
+          className="flex h-full shrink-0 items-center gap-1 rounded-md bg-blue-600 px-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          <span aria-hidden="true">⤢</span>
+          Track
+        </button>
+      )}
 
       <Modal
         isOpen={mode.kind !== "closed"}
