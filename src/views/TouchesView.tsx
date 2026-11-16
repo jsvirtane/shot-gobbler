@@ -13,6 +13,7 @@ import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { Action, ActionOutcome, ActionType } from "../types/Action";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
+import { actionSummary } from "../utils/feedbackSummary";
 
 const TOUCHES_VIEWS = ["pitch", "list", "stats"] as const;
 type TouchesView = (typeof TOUCHES_VIEWS)[number];
@@ -110,9 +111,14 @@ const TouchesView: React.FC<TouchesViewProps> = ({
     if (!radial) return;
     const { category } = actionTypeInfo(actionType);
     if (radial.editing) {
-      actionList.update(radial.editing.id, { category, actionType, outcome });
+      actionList.update(
+        radial.editing.id,
+        { category, actionType, outcome },
+        undefined,
+        actionSummary,
+      );
     } else {
-      actionList.add({
+      const action: Action = {
         ...(pendingStamp ?? getEventStamp()),
         ...radial.at,
         category,
@@ -120,7 +126,8 @@ const TouchesView: React.FC<TouchesViewProps> = ({
         outcome,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         timestamp: Date.now(),
-      });
+      };
+      actionList.add(action, actionSummary(action));
     }
     closeRadial();
   };
@@ -153,6 +160,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
             focus={focus}
             onPitchClick={handlePitchClick}
             actions={actions}
+            pulse={actionList.pulse}
             onActionClick={handleActionClick}
             onActionMove={handleActionMove}
             pitchRef={pitchRef}
@@ -182,6 +190,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
         <TouchRadial
           anchor={radial.anchor}
           editing={editing}
+          // Clear of the focus bar or the tab bar (toasts hide meanwhile)
           insets={{ top: 8, bottom: focus ? 80 : 64 }}
           onSave={handleSave}
           onMove={() => {

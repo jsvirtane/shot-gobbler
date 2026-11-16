@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useHideToasts } from "../Toast";
 import { RadialIcon, RadialIconName } from "./RadialIcons";
 import {
   Insets,
@@ -150,6 +151,9 @@ function RadialMenu<T extends RadialItem = RadialItem>({
 
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+
+  // Toasts would cover options and catch taps meant for the ring
+  useHideToasts();
 
   // Measure the container the overlay fills, and follow resizes
   useLayoutEffect(() => {

@@ -7,7 +7,7 @@ import {
 import MatchBar from "./components/MatchBar";
 import NavBar from "./components/NavBar/NavBar";
 import ShareButton from "./components/ShareButton";
-import { ToastProvider } from "./components/Toast";
+import { ToastProvider, useToastPlacement } from "./components/Toast";
 import { PASS_CHAINS_TAB, SHOTS_TAB, TOUCHES_TAB } from "./config/dataTabs";
 import { useFocusMode } from "./hooks/useFocusMode";
 import { useMatchData } from "./hooks/useMatchData";
@@ -52,6 +52,8 @@ function AppContent() {
   // not tab-specific, so it stays on when switching trackers.
   const [focusMode, setFocusMode] = useFocusMode();
   const isFocused = focusMode && activeTab !== "docs";
+  // In focus mode toasts sit above the floating bar, clear of the top goal
+  useToastPlacement(isFocused ? "bottom" : "top");
   // Undo and pitch controls of the active view, for the focus bar
   const [trackerControls, setTrackerControls] =
     useState<TrackerControls | null>(null);

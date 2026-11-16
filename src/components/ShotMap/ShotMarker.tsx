@@ -3,6 +3,7 @@ import { Shot } from "../../types/Shot";
 import { getShotMarkerStyle } from "../../utils/markerStyle";
 import { getShotResult } from "../../utils/shotResult";
 import MarkerShape from "../Markers/MarkerShape";
+import Pulse from "../Markers/Pulse";
 import PitchMarker from "../PitchContainer/PitchMarker";
 
 interface ShotMarkerProps {
@@ -11,12 +12,15 @@ interface ShotMarkerProps {
   onTap?: () => void;
   /** Long-press drag ended at this displayed point. */
   onMove?: (x: number, y: number) => void;
+  /** Changes when the shot was just saved or edited: pulses once. */
+  pulseKey?: number;
 }
 
 export const ShotMarker: React.FC<ShotMarkerProps> = ({
   shot,
   onTap,
   onMove,
+  pulseKey,
 }) => {
   const result = getShotResult(shot);
   const style = getShotMarkerStyle(shot);
@@ -32,7 +36,9 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({
       onMove={onMove}
       testId="shot-marker"
     >
-      <MarkerShape {...style} />
+      <Pulse pulseKey={pulseKey}>
+        <MarkerShape {...style} />
+      </Pulse>
     </PitchMarker>
   );
 };

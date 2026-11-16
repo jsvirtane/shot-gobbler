@@ -4,6 +4,7 @@ import {
   ChainTerminationReason,
   PassChain,
 } from "../../types/PassChain";
+import { Pulse } from "../../utils/feedback";
 import {
   ChainEndItem,
   ChainStepItem,
@@ -35,6 +36,8 @@ type PassChainsPitchViewProps = {
   onDeleteChain?: (id: string) => void;
   /** Focus mode: the pitch fills the parent. */
   focus?: boolean;
+  /** The chain saved last, whose end marker pulses once. */
+  pulse?: Pulse | null;
 };
 
 /** The open ring, with the tap point in pitch % for a step. */
@@ -61,6 +64,7 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
   onSelectChain,
   onDeleteChain,
   focus = false,
+  pulse,
 }) => {
   const isActivePassChain = currentPassChain.length > 0;
   const [ring, setRing] = useState<Ring | null>(null);
@@ -209,6 +213,7 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
         onPitchClick={handlePitchClick}
         passChains={passChains}
         currentPassChain={currentPassChain}
+        pulse={pulse}
         selectedChainId={
           selectedIndex === -1 ? null : passChains[selectedIndex].id
         }

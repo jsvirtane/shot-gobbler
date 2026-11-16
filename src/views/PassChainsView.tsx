@@ -11,6 +11,7 @@ import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
+import { chainSummary } from "../utils/feedbackSummary";
 import {
   ChainAction,
   ChainActionType,
@@ -111,8 +112,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
       ...prev,
       makeAction(x, y, prev.length, step),
     ]);
-    // No toast per step: the new point shows on the pitch, and a toast at
-    // the top would cover the far goal where the next tap often goes
+    // No toast per step: the new point shows on the pitch
   };
 
   const handleEndChain = (terminationReason: ChainTerminationReason) => {
@@ -125,7 +125,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
       isCompleted: true,
       zones: getZonesFromPassChain(currentPassChain),
     };
-    chainList.add(newChain);
+    chainList.add(newChain, chainSummary(newChain));
     reopenable.current = newChain;
     setCurrentPassChain([]);
     setChainStamp(null);
@@ -186,6 +186,7 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
       {focus || currentView === "pitch" ? (
         <PassChainsPitchView
           focus={focus}
+          pulse={chainList.pulse}
           passChains={passChains}
           currentPassChain={currentPassChain}
           lastStep={lastStep}
