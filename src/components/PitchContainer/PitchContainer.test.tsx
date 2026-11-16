@@ -65,44 +65,45 @@ describe("PitchContainer", () => {
     expect(getVisiblePitch().contains(legend as HTMLElement)).toBe(false);
   });
 
-  describe("half-top variant", () => {
-    it("maps clicks in the visible top half to full-pitch coordinates", () => {
+  describe("half variant", () => {
+    it("maps clicks in the visible bottom half to full-pitch coordinates", () => {
       mockRect(200, 200);
-      render(<PitchContainer onCoordinateClick={onClick} variant="half-top" />);
+      render(<PitchContainer onCoordinateClick={onClick} variant="half" />);
 
-      // Top-left corner -> top-left corner of the pitch
+      // Top-left corner of the visible area -> halfway line, left touchline
       fireEvent.click(getPitch(), { clientX: 10, clientY: 20 });
-      expect(onClick).toHaveBeenLastCalledWith(0, 0);
+      expect(onClick).toHaveBeenLastCalledWith(0, 50);
 
-      // Bottom edge of the visible area -> halfway line
+      // Bottom edge -> the bottom goal line
       fireEvent.click(getPitch(), { clientX: 60, clientY: 220 });
-      expect(onClick).toHaveBeenLastCalledWith(25, 50);
+      expect(onClick).toHaveBeenLastCalledWith(25, 100);
 
       fireEvent.click(getPitch(), { clientX: 160, clientY: 70 });
-      expect(onClick).toHaveBeenLastCalledWith(75, 12.5);
+      expect(onClick).toHaveBeenLastCalledWith(75, 62.5);
     });
 
     it("ignores clicks outside the visible area", () => {
       mockRect(200, 200);
-      render(<PitchContainer onCoordinateClick={onClick} variant="half-top" />);
+      render(<PitchContainer onCoordinateClick={onClick} variant="half" />);
 
       fireEvent.click(getPitch(), { clientX: 60, clientY: 230 });
       fireEvent.click(getPitch(), { clientX: 5, clientY: 50 });
       expect(onClick).not.toHaveBeenCalled();
     });
 
-    it("crops to the top half so children keep full-pitch positions", () => {
+    it("crops to the bottom half so children keep full-pitch positions", () => {
       render(
-        <PitchContainer onCoordinateClick={onClick} variant="half-top">
-          <span data-testid="marker" style={{ left: "50%", top: "25%" }} />
+        <PitchContainer onCoordinateClick={onClick} variant="half">
+          <span data-testid="marker" style={{ left: "50%", top: "75%" }} />
         </PitchContainer>,
       );
       expect(getVisiblePitch().style.aspectRatio).toBe(String(74 / 55));
       expect(getVisiblePitch().className).toContain("overflow-hidden");
-      // Content box is twice the visible height, so top: 25% of the full
-      // pitch lands halfway down the visible half
+      // Content box is twice the visible height and shifted up by one
+      // visible height, so top: 75% of the full pitch lands halfway down
       const content = getVisiblePitch().firstElementChild as HTMLElement;
       expect(content.style.height).toBe("200%");
+      expect(content.style.top).toBe("-100%");
       expect(content.querySelector("[data-testid=marker]")).not.toBeNull();
     });
   });

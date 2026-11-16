@@ -248,19 +248,25 @@ describe("ShotsView marker editing", () => {
   it("moving a mirrored shot in half view keeps it where it was dropped", () => {
     vi.useFakeTimers();
     window.history.replaceState({}, "", "/?tab=shots&pitch=half");
-    const bottom: Shot = { ...SHOT, x: 30, y: 80, playerName: undefined };
-    render(<Harness initial={[bottom]} />);
+    const top: Shot = {
+      ...SHOT,
+      team: "home",
+      x: 30,
+      y: 20,
+      playerName: undefined,
+    };
+    render(<Harness initial={[top]} />);
     const m = marker(/Set Piece - Head - Saved$/);
-    // Shown mirrored at (70, 20)
+    // Shown mirrored at (70, 80), attacking the goal at the bottom
     expect(m.style.left).toBe("70%");
-    expect(m.style.top).toBe("20%");
+    expect(m.style.top).toBe("80%");
 
-    // 100px of visible height covers y 0-50
+    // 100px of visible height covers y 50-100
     longPressDrag(m, { clientX: 25, clientY: 40 });
 
-    expect(latestShots[0]).toMatchObject({ x: 75, y: 80 });
+    expect(latestShots[0]).toMatchObject({ x: 75, y: 30 });
     const moved = marker(/Set Piece - Head - Saved$/);
     expect(moved.style.left).toBe("25%");
-    expect(moved.style.top).toBe("20%");
+    expect(moved.style.top).toBe("70%");
   });
 });

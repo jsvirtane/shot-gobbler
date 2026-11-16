@@ -1,16 +1,14 @@
 import React, { forwardRef, useCallback, useMemo, useRef } from "react";
 import football_pitch from "../../assets/football_pitch.svg";
-import { PitchVariant } from "../../utils/pitchView";
+import {
+  fromVisibleShare,
+  PITCH_WINDOW,
+  PitchVariant,
+} from "../../utils/pitchView";
 import { PitchApi, PitchContext } from "./pitchContext";
 
 /** Width:height ratio of the full pitch image. */
 const PITCH_RATIO = 74 / 110;
-
-/** Share of the full pitch height shown by each variant. */
-const VISIBLE_HEIGHT: Record<PitchVariant, number> = {
-  full: 1,
-  "half-top": 0.5,
-};
 
 /**
  * Default vertical space (the 3.75rem nav bar, page padding, view controls
@@ -31,9 +29,10 @@ interface PitchContainerProps {
   /** Called with full-pitch % coordinates (0-100) of the clicked point. */
   onCoordinateClick: (x: number, y: number) => void;
   /**
-   * "full" shows the whole pitch. "half-top" crops to the top half (y 0-50),
-   * zoomed to fill the width. Coordinates (clicks and child positions) are
-   * always in full-pitch % in both variants.
+   * "full" shows the whole pitch. "half" crops to the bottom half (y 50-100),
+   * zoomed to fill the width, so the goal there is at the bottom of the
+   * screen. Coordinates (clicks and child positions) are always in
+   * full-pitch % in both variants.
    */
   variant?: PitchVariant;
   /**
@@ -94,7 +93,9 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     const localRef = useRef<HTMLDivElement>(null);
     const pitchRef = (ref || localRef) as React.RefObject<HTMLDivElement>;
 
-    const visibleHeight = VISIBLE_HEIGHT[variant];
+    const pitchWindow = PITCH_WINDOW[variant];
+    // Share of the full pitch height that is visible
+    const visibleHeight = pitchWindow.height / 100;
     const aspectRatio = PITCH_RATIO / visibleHeight;
     // Shrink the width when the height would overflow: the parent's height
     // (a size container, so cq units are its real size) or the viewport's
@@ -115,12 +116,12 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
       const y = event.clientY - rect.top;
 
       if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-        // Visible area starts at the top goal line, so scaling by the visible
-        // share gives full-pitch % coordinates
-        onCoordinateClick(
-          (x / rect.width) * 100,
-          (y / rect.height) * 100 * visibleHeight,
+        // Full-pitch % of the point in the visible window
+        const point = fromVisibleShare(
+          { x: x / rect.width, y: y / rect.height },
+          variant,
         );
+        onCoordinateClick(point.x, point.y);
       }
     };
 
@@ -130,12 +131,15 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
         const rect = pitchRef.current.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return null;
         const clamp = (v: number) => Math.min(1, Math.max(0, v));
-        return {
-          x: clamp((clientX - rect.left) / rect.width) * 100,
-          y: clamp((clientY - rect.top) / rect.height) * 100 * visibleHeight,
-        };
+        return fromVisibleShare(
+          {
+            x: clamp((clientX - rect.left) / rect.width),
+            y: clamp((clientY - rect.top) / rect.height),
+          },
+          variant,
+        );
       },
-      [pitchRef, visibleHeight],
+      [pitchRef, variant],
     );
 
     const pitchApi = useMemo<PitchApi>(
@@ -152,7 +156,11 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
       <div
         className={
           fill
-            ? "[container-type:size] flex min-h-0 w-full flex-1 items-center justify-center"
+            ? // The half pitch sits at the bottom, so its goal is under the
+              // thumb
+              `[container-type:size] flex min-h-0 w-full flex-1 justify-center ${
+                variant === "half" ? "items-end" : "items-center"
+              }`
             : "flex w-full justify-center"
         }
         data-fill={fill || undefined}
@@ -178,10 +186,14 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
             className="relative cursor-crosshair overflow-hidden"
             style={{ aspectRatio, width: pitchWidth }}
           >
-            {/* Full pitch; taller than the visible area when cropped */}
+            {/* Full pitch; taller than the visible area when cropped, and
+                shifted up so the visible window shows */}
             <div
-              className="absolute inset-x-0 top-0"
-              style={{ height: `${100 / visibleHeight}%` }}
+              className="absolute inset-x-0"
+              style={{
+                height: `${100 / visibleHeight}%`,
+                top: `${-pitchWindow.top / visibleHeight}%`,
+              }}
             >
               <img
                 src={football_pitch}

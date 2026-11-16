@@ -15,6 +15,8 @@ import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
+import { TEAM_MARKER_COLORS } from "../constants/markerColors";
+import { Team } from "../types/common";
 import { DEFAULT_MATCH_ID, EventStamp, TeamNames } from "../types/Match";
 import { Shot, ShotResult } from "../types/Shot";
 import {
@@ -87,7 +89,12 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     "full",
     PITCH_VIEWS,
   );
-  const variant: PitchVariant = pitchView === "half" ? "half-top" : "full";
+  const variant: PitchVariant = pitchView;
+  const isHalf = pitchView === "half";
+  // Team of new shots in the half view, where both teams attack one goal
+  const [halfTeam, setHalfTeam] = useState<Team>("home");
+  const toggleHalfTeam = () =>
+    setHalfTeam((team) => (team === "home" ? "away" : "home"));
 
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
 
@@ -101,7 +108,12 @@ const ShotsView: React.FC<ShotsViewProps> = ({
   useTrackerControls({
     undo: shotList.undoLast,
     canUndo: shotList.canUndo,
-    pitch: { half: pitchView === "half", toggle: togglePitchView },
+    pitch: { half: isHalf, toggle: togglePitchView },
+    team: {
+      name: teamNames[halfTeam],
+      color: TEAM_MARKER_COLORS[halfTeam],
+      toggle: toggleHalfTeam,
+    },
   });
 
   // The open radial menu, if any
@@ -124,8 +136,9 @@ const ShotsView: React.FC<ShotsViewProps> = ({
       setMovingId(null);
       return;
     }
-    // The team attacking the half tapped; the centre of the ring switches it
-    const team = teamForPoint({ x, y });
+    // On the full pitch the team attacking the half tapped, on the half
+    // pitch the bar's team; the centre of the ring switches it
+    const team = isHalf ? halfTeam : teamForPoint({ x, y });
     // The shot happened at the tap, so take the match minute now
     const stamp = getEventStamp();
     setRing({
@@ -252,6 +265,9 @@ const ShotsView: React.FC<ShotsViewProps> = ({
         : undefined,
   } as const;
 
+  // Both teams attack the goal at the bottom; new shots are the bar's team
+  const halfEndLabels = { bottom: `Goal ↓ · ${teamNames[halfTeam]}` };
+
   const radial = ring && (
     <ShotRadial
       anchor={ring.anchor}
@@ -276,12 +292,12 @@ const ShotsView: React.FC<ShotsViewProps> = ({
           focus
           // In half view both teams attack the top goal, so no team ends
           endLabels={
-            pitchView === "full"
-              ? {
+            isHalf
+              ? halfEndLabels
+              : {
                   top: `${teamNames.home} ↑`,
                   bottom: `${teamNames.away} ↓`,
                 }
-              : undefined
           }
         />
         {radial}
@@ -309,13 +325,28 @@ const ShotsView: React.FC<ShotsViewProps> = ({
 
       {shotsView === "pitch" ? (
         <>
-          {/* In half view both teams attack the same goal, so the team name
-              labels are hidden */}
+          {/* In half view both teams attack the goal at the bottom, so the
+              team name labels give way to the team of new shots */}
           <div className="relative flex min-h-6 items-end justify-center">
             {pitchView === "full" && (
               <p className="max-w-[60%] truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
                 {teamNames.home}
               </p>
+            )}
+            {isHalf && (
+              <button
+                type="button"
+                onClick={toggleHalfTeam}
+                aria-label={`Team for new shots: ${teamNames[halfTeam]}. Switch team`}
+                className="absolute bottom-0 left-0 flex max-w-[45%] items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-900 hover:bg-gray-100"
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: TEAM_MARKER_COLORS[halfTeam] }}
+                />
+                <span className="truncate">{teamNames[halfTeam]}</span>
+              </button>
             )}
             <button
               type="button"
@@ -327,6 +358,7 @@ const ShotsView: React.FC<ShotsViewProps> = ({
           </div>
           <ShotMap
             {...shotMapProps}
+            endLabels={isHalf ? halfEndLabels : undefined}
             // Right under the pitch, above the legend
             belowPitch={
               pitchView === "full" && (
