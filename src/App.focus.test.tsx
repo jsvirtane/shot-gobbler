@@ -133,19 +133,15 @@ describe("App - focus mode", () => {
 
     const pitch = document.getElementById("share-pitch")!;
     fireEvent.click(pitch, { clientX: 100, clientY: 100 });
-    fireEvent.click(pitch, { clientX: 150, clientY: 200 });
     expect((undo as HTMLButtonElement).disabled).toBe(false);
-    // The chain controls show above the pitch
-    expect(
-      screen.getByRole("radiogroup", { name: "Next action type" }),
-    ).toBeTruthy();
+    // The next point's step is picked from a ring over the pitch
+    fireEvent.click(pitch, { clientX: 150, clientY: 200 });
+    fireEvent.click(button("Pass"));
+    expect(screen.queryByTestId("radial-menu")).toBeNull();
 
     fireEvent.click(undo);
     fireEvent.click(undo);
     expect((undo as HTMLButtonElement).disabled).toBe(true);
-    expect(
-      screen.queryByRole("radiogroup", { name: "Next action type" }),
-    ).toBeNull();
   });
 
   it("fades the bar after 3.5 s without input and brings it back on a touch", () => {
