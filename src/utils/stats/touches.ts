@@ -9,7 +9,7 @@ export const ACTION_CATEGORIES: readonly ActionCategory[] = [
   "duel",
 ];
 
-/** Action types in the order of the action form. */
+/** Action types in the order of the touch rings. */
 export const ACTION_TYPES: readonly ActionType[] = [
   "pass",
   "cross",

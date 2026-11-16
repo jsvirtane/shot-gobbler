@@ -16,12 +16,40 @@ import { PassChainTerminationMarker } from "../components/PassChainMap/PassChain
 import { ShotMarker } from "../components/ShotMap/ShotMarker";
 import { ActionMarker } from "../components/TouchMap/ActionMarker";
 import {
+  CATEGORY_RING_COLORS,
+  CATEGORY_RING_LABELS,
+  OUTCOME_RING_COLORS,
+} from "../components/TouchMap/touchRings";
+import { ActionCategory } from "../types/Action";
+import { ShotResult } from "../types/Shot";
+import { SHOT_RESULT_FILLS } from "../utils/shotResult";
+import {
   actionMarkerSamples,
   arrowSamples,
   passChainMarkerSamples,
   shotMarkerSamples,
   xgSizeSamples,
 } from "./DocsView.samples";
+
+const SHOT_RESULTS: ShotResult[] = ["Goal", "Saved", "Blocked", "Miss"];
+const ACTION_CATEGORIES: ActionCategory[] = ["attacking", "defensive", "duel"];
+
+/** A row of ring option colours, as they look in the ring. */
+const RingSwatches: React.FC<{ items: { label: string; color: string }[] }> = ({
+  items,
+}) => (
+  <div className="mt-3 flex flex-wrap gap-2" aria-label="Ring colours">
+    {items.map(({ label, color }) => (
+      <span
+        key={label}
+        className="rounded-md px-2.5 py-1 text-sm font-semibold text-white"
+        style={{ backgroundColor: color }}
+      >
+        {label}
+      </span>
+    ))}
+  </div>
+);
 
 const DocsView: React.FC = () => {
   return (
@@ -40,66 +68,189 @@ const DocsView: React.FC = () => {
       {/* Features Section */}
       <section className="rounded-lg bg-white p-6 shadow-md">
         <h2 className="mb-4 text-2xl font-bold text-gray-800">✨ Features</h2>
+        <ul className="ml-6 list-disc space-y-1 text-gray-600">
+          <li>
+            Three trackers: <b>⚽ Shots</b> (both teams, with xG),{" "}
+            <b>👟 Touches</b> (one player&apos;s actions) and <b>🔗 Chains</b>{" "}
+            (passing sequences and how they ended)
+          </li>
+          <li>
+            Pitch-first recording: tap where it happened, pick from a ring
+            around your thumb. No forms to fill in
+          </li>
+          <li>
+            Focus mode: a full-screen pitch with the match clock, undo and
+            tracker switch in one floating bar
+          </li>
+          <li>
+            Matches with team names and a running clock; every event is stamped
+            with its minute and period
+          </li>
+          <li>Lists, stats, filters and map legends for reviewing a match</li>
+          <li>Share the map as an image; export and import data as JSON</li>
+        </ul>
+      </section>
+
+      {/* Focus Mode Section */}
+      <section className="rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800">📱 Focus Mode</h2>
+        <p className="mb-4 text-gray-600">
+          Built for tracking at the ground with the phone in one hand. Tap{" "}
+          <b>Track</b> in the match bar (or start the match clock) and the pitch
+          fills the screen. The floating bar holds everything else:
+        </p>
+        <ul className="ml-6 list-disc space-y-1 text-gray-600">
+          <li>
+            <b>Tracker</b>: switch between Shots, Touches and Chains
+          </li>
+          <li>
+            <b>Clock</b>: start or pause the match clock
+          </li>
+          <li>
+            <b>Half pitch</b> (shots): one half with the goal at the bottom, and
+            a team toggle for whose shots you are recording. The team you pick
+            is remembered
+          </li>
+          <li>
+            <b>Undo</b>: takes back the last change, including deletes
+          </li>
+          <li>
+            <b>Exit</b> (arrows pointing in): back to review mode
+          </li>
+        </ul>
+      </section>
+
+      {/* Rings Section */}
+      <section className="rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800">
+          🎯 Recording with the Rings
+        </h2>
+        <p className="mb-6 text-gray-600">
+          Tap the pitch where it happened and a ring of options opens around the
+          tap. Pick an option to save; tap outside the ring (or press Esc) to
+          close it without saving. The rings work the same in focus mode and
+          review mode.
+        </p>
+        <p className="mb-6 text-gray-600">
+          Each save, move or delete gives quick feedback: the phone vibrates
+          briefly (switch it off with <b>Vibrate on save</b> in the ⋯ data
+          menu), the marker pulses once, and a short toast sums up what was
+          recorded, with an <b>Undo</b> button to take it back.
+        </p>
 
         <div className="space-y-6">
-          {/* Shot Map Features */}
           <div>
-            <h3 className="mb-2 flex items-center text-xl font-semibold text-gray-700">
-              <span className="mr-2 text-2xl">⚽</span>
-              Shot Map
+            <h3 className="mb-2 text-xl font-semibold text-gray-700">
+              ⚽ Shots
             </h3>
-            <ul className="ml-8 list-disc space-y-1 text-gray-600">
-              <li>Record shot locations & relevant shot data</li>
-              <li>Visualization of shot map</li>
-              <li>Display shot data on list view</li>
-              <li>Filter shot data by all, home & away teams</li>
-              <li>Export shot data as JSON</li>
-              <li>Import shot data</li>
+            <ul className="ml-6 list-disc space-y-1 text-gray-600">
+              <li>
+                The ring&apos;s <b>Result</b> section saves the shot: Goal,
+                Saved, Blocked or Miss
+              </li>
+              <li>
+                Set <b>Details</b> first if needed: Head, Set piece, Penalty and
+                the shirt number (a number dial)
+              </li>
+              <li>
+                The team comes from the half you tap; the ring&apos;s centre
+                switches it
+              </li>
+            </ul>
+            <RingSwatches
+              items={SHOT_RESULTS.map((result) => ({
+                label: result,
+                color: SHOT_RESULT_FILLS[result],
+              }))}
+            />
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-xl font-semibold text-gray-700">
+              👟 Touches
+            </h3>
+            <ul className="ml-6 list-disc space-y-1 text-gray-600">
+              <li>
+                Pick the action from the Attack, Defend or Duel section;{" "}
+                <b>More</b> holds the rest (shot, throw-in, …)
+              </li>
+              <li>
+                A second ring asks for the outcome, which saves the touch.{" "}
+                <b>Back</b> returns to the actions
+              </li>
+            </ul>
+            <RingSwatches
+              items={[
+                ...ACTION_CATEGORIES.map((category) => ({
+                  label: CATEGORY_RING_LABELS[category],
+                  color: CATEGORY_RING_COLORS[category],
+                })),
+                { label: "Success", color: OUTCOME_RING_COLORS.success },
+                { label: "Fail", color: OUTCOME_RING_COLORS.failure },
+              ]}
+            />
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-xl font-semibold text-gray-700">
+              🔗 Chains
+            </h3>
+            <ul className="ml-6 list-disc space-y-1 text-gray-600">
+              <li>The first tap starts a chain where the ball is</li>
+              <li>
+                Each next tap opens the <b>Step</b> ring: how the ball got there
+                (Pass, Carry, Cross or Shot)
+              </li>
+              <li>
+                <b>End chain</b> opens the End ring (a shot&apos;s result, a
+                loss of the ball, or a stoppage), which saves the chain
+              </li>
+              <li>
+                <b>Cancel</b> drops the chain being recorded; the toast&apos;s
+                Undo brings it back
+              </li>
             </ul>
           </div>
 
-          {/* Touch Map Features */}
           <div>
-            <h3 className="mb-2 flex items-center text-xl font-semibold text-gray-700">
-              <span className="mr-2 text-2xl">👟</span>
-              Touch Map
+            <h3 className="mb-2 text-xl font-semibold text-gray-700">
+              ✏️ Editing
             </h3>
-            <ul className="ml-8 list-disc space-y-1 text-gray-600">
+            <ul className="ml-6 list-disc space-y-1 text-gray-600">
               <li>
-                Record single player's touch locations & relevant touch data
-              </li>
-              <li>Visualization of touch map</li>
-              <li>Display touch data on list view</li>
-              <li>Export touch data as JSON</li>
-              <li>Import touch data</li>
-            </ul>
-          </div>
-
-          {/* Pass Chains Features */}
-          <div>
-            <h3 className="mb-2 flex items-center text-xl font-semibold text-gray-700">
-              <span className="mr-2 text-2xl">🔗</span>
-              Pass Chains Map
-            </h3>
-            <ul className="ml-8 list-disc space-y-1 text-gray-600">
-              <li>
-                Record sequences of actions (passes, carries, shots, crosses)
-                that form attacking chains
-              </li>
-              <li>Visualization of pass chains map</li>
-              <li>
-                Pitch zone tracking (defensive/midfield/attacking ×
-                left/central/right)
+                Tap a marker to open its ring with the current choices outlined;
+                pick a new one to change it
               </li>
               <li>
-                Display pass chain data on list view with action sequences and
-                termination details
+                The <b>Edit</b> section has <b>Move</b> (the next pitch tap
+                places it), <b>Minute</b> and <b>Delete</b>
               </li>
-              <li>Export pass chain data as JSON</li>
-              <li>Import pass chain data</li>
+              <li>Press and hold a marker to drag it somewhere else</li>
+              <li>Tap a saved chain to delete it</li>
             </ul>
           </div>
         </div>
+      </section>
+
+      {/* Review Mode Section */}
+      <section className="rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800">
+          📋 Review Mode
+        </h2>
+        <ul className="ml-6 list-disc space-y-1 text-gray-600">
+          <li>
+            The pitch with its legend, plus list and stats views for each
+            tracker
+          </li>
+          <li>Filter shots by team and see xG totals</li>
+          <li>
+            The match bar: pick or create a match, set team names and run the
+            clock
+          </li>
+          <li>
+            The data menu: share the map as an image, export or import JSON
+          </li>
+        </ul>
       </section>
 
       {/* Marker Legend Section */}
@@ -110,9 +261,10 @@ const DocsView: React.FC = () => {
 
         <p className="mb-6 text-gray-600">
           Each map shows a compact legend under the pitch, which is also
-          included in shared images. Colours were chosen to stay distinct for
-          common types of colour blindness, and shape or fill carries the same
-          information as colour.
+          included in shared images. Shot results use the same colours here, in
+          the ring and in the shot list. Colours were chosen to stay distinct
+          for common types of colour blindness, and shape or fill carries the
+          same information as colour.
         </p>
 
         {/* Shot Markers */}
@@ -338,22 +490,6 @@ const DocsView: React.FC = () => {
             <PassChainLegend />
           </DocsLegendPreview>
         </div>
-      </section>
-
-      {/* How to Use Section */}
-      <section className="rounded-lg bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-2xl font-bold text-gray-800">📱 How to Use</h2>
-        <ol className="ml-6 list-decimal space-y-2 text-gray-600">
-          <li>
-            Select your desired view from the navigation (Shots, Touches, or
-            Chains)
-          </li>
-          <li>Click on the pitch to record data at specific locations</li>
-          <li>Fill in the relevant details in the form that appears</li>
-          <li>View your data in both map and list views</li>
-          <li>Export your data as JSON for further analysis</li>
-          <li>Import previously saved data to continue your work</li>
-        </ol>
       </section>
 
       {/* About Section */}
