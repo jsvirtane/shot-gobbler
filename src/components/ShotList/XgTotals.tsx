@@ -30,7 +30,7 @@ const XgTotals: React.FC<XgTotalsProps> = ({
         <React.Fragment key={t.team}>
           {i > 0 && " · "}
           <span
-            className={t.team === "home" ? "text-blue-700" : "text-red-700"}
+            className={t.team === "home" ? "text-blue-700" : "text-orange-700"}
           >
             {t.label}{" "}
             <span className="font-semibold">{formatXg(totalXg(t.shots))}</span>{" "}
