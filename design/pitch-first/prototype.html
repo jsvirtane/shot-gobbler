@@ -1,0 +1,680 @@
+<title>Shot Gobbler Pitch-First</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-sized app; in focus mode the pitch fills it and a floating bar sits under the thumb. Notes panel beside it on wide screens. */
+:root {
+  --bg: #e7ece8;
+  --surface: #ffffff;
+  --surface-2: #f2f5f3;
+  --fg: #142019;
+  --muted: #5b6a61;
+  --line: #d4ddd6;
+  --frame: #0c140f;
+  --ink: rgba(10,18,13,.86);
+  --home: #2563eb;
+  --away: #ea580c;
+  --good: #16a34a;
+  --bad: #dc2626;
+  --grass-a: #2e7a39;
+  --grass-b: #297033;
+  --grass-edge: #1f5c29;
+  --chalk: rgba(255,255,255,.9);
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b110d; --surface: #151e18; --surface-2: #1c2720; --fg: #e5ece7; --muted: #98a79e; --line: #28352c; --frame: #000;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0b110d; --surface: #151e18; --surface-2: #1c2720; --fg: #e5ece7; --muted: #98a79e; --line: #28352c; --frame: #000;
+  color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+#stage { height: 100%; display: flex; align-items: center; justify-content: center; gap: 48px;
+  padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+
+#phone { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--frame);
+  display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+@media (min-width: 600px) and (min-height: 780px) {
+  #phone { width: 390px; height: 820px; border-radius: 46px; box-shadow: 0 0 0 11px #1a241d, 0 0 0 12px #2c3a30, 0 40px 80px rgba(0,0,0,.35); }
+}
+
+/* ---------- Review mode ---------- */
+#review { flex: none; background: var(--surface); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; display: grid; gap: 12px; }
+#phone.focus #review, #phone.focus #reviewFoot { display: none; }
+.head { display: flex; align-items: center; gap: 10px; }
+.match { flex: 1; min-width: 0; }
+.match .teams { font: 700 22px/1 var(--font-display); letter-spacing: .01em; display: flex; align-items: center; gap: 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.match .meta { margin-top: 4px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track { font: 700 15px var(--font-display); letter-spacing: .08em; text-transform: uppercase; border: 0; border-radius: 12px; padding: 11px 14px;
+  background: var(--fg); color: var(--surface); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.track svg { width: 16px; height: 16px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface-2); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { font: 600 13px var(--font-body); padding: 8px 4px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.seg button svg { width: 15px; height: 15px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+#reviewFoot { flex: none; background: var(--surface); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 4px; }
+#reviewFoot .lbl { font: 600 11px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+#reviewFoot .stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; font-variant-numeric: tabular-nums; }
+#reviewFoot .stats b { font: 700 18px var(--font-display); }
+
+/* ---------- Pitch ---------- */
+#pitchWrap { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--grass-edge); }
+#pitch { display: block; touch-action: none; }
+#pitch .mk { cursor: pointer; }
+.endlabel { position: absolute; font: 700 12px var(--font-display); letter-spacing: .14em; color: rgba(255,255,255,.82);
+  text-transform: uppercase; pointer-events: none; display: flex; align-items: center; gap: 6px; }
+#hint { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); pointer-events: none; text-align: center;
+  background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 16px; transition: opacity .4s; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+#hint b { display: block; font: 700 17px var(--font-display); letter-spacing: .04em; }
+#hint span { font-size: 12px; opacity: .75; }
+
+/* ---------- Floating bar ---------- */
+#pill { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 2px; padding: 5px; border-radius: 999px; background: var(--ink);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 28px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.08);
+  transition: opacity .5s; z-index: 5; }
+#phone:not(.focus) #pill { display: none; }
+#pill.dim { opacity: .5; }
+#pill button { min-width: 46px; height: 46px; border: 0; border-radius: 999px; background: transparent; color: #fff; cursor: pointer;
+  font: 600 13px var(--font-body); display: grid; place-items: center; padding: 0 10px; transition: background .15s; }
+#pill button:active { background: rgba(255,255,255,.16); }
+#pill svg { width: 21px; height: 21px; }
+#pill .clock { font: 700 22px var(--font-display); font-variant-numeric: tabular-nums; min-width: 66px; display: flex; gap: 5px; align-items: center; }
+#pill .clock i { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.25); }
+#pill .clock.paused { color: #fbbf24; }
+#pill .clock.paused i { background: #fbbf24; box-shadow: none; }
+#pill .team { font: 700 15px var(--font-display); letter-spacing: .06em; display: flex; gap: 6px; align-items: center; }
+#pill .sep { width: 1px; height: 24px; background: rgba(255,255,255,.16); margin: 0 3px; }
+
+/* ---------- Saved message ---------- */
+#chip { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -10px); opacity: 0;
+  background: var(--ink); color: #fff; padding: 9px 14px 9px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px; transition: opacity .25s, transform .25s; pointer-events: none; z-index: 6;
+  box-shadow: 0 8px 22px rgba(0,0,0,.3); }
+#chip.show { opacity: 1; transform: translate(-50%, 0); }
+#chip .dot { width: 10px; height: 10px; }
+
+/* ---------- Radial menu ---------- */
+#scrim { position: absolute; inset: 0; background: rgba(4,10,6,.38); z-index: 8; animation: fade .15s ease-out both; }
+#radial { position: absolute; inset: 0; z-index: 9; pointer-events: none; }
+#radial svg.deco { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+#radial .center { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; border: 0;
+  display: grid; place-items: center; align-content: center; text-align: center; font-family: var(--font-body); }
+#radial svg.deco { pointer-events: none; }
+#radial .ring { animation: grow .18s cubic-bezier(.2,.9,.3,1.15) both; }
+#radial .seg { pointer-events: auto; cursor: pointer; outline: none; }
+#radial .seg .shape { transition: filter .1s; }
+#radial .seg:hover .shape { filter: brightness(1.08); }
+#radial .seg:active .shape { filter: brightness(.85); }
+#radial .seg:focus-visible .shape { stroke: #facc15; stroke-width: 3; }
+#radial .slabel { font: 600 11px/1 var(--font-body); pointer-events: none; }
+#radial .seg use { pointer-events: none; }
+#radial .glabel { font: 700 9.5px var(--font-body); letter-spacing: 1.3px; fill: rgba(255,255,255,.85); paint-order: stroke; stroke: rgba(6,12,8,.75); stroke-width: 3px; }
+@keyframes grow { from { transform: scale(.6); opacity: 0; } }
+#radial .center { width: 80px; height: 80px; border-radius: 50%; background: #0c140f; color: #fff; font-size: 11px; line-height: 1.2;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4); animation: pop .15s ease-out both; }
+#radial .center b { display: block; font: 700 18px/1 var(--font-display); letter-spacing: .06em; }
+#radial .center small { display: flex; align-items: center; gap: 3px; justify-content: center; opacity: .7; font-size: 10px; margin-top: 3px; }
+#radial .center small svg { width: 11px; height: 11px; }
+#radial .center.team { box-shadow: 0 0 0 4px var(--team), 0 6px 18px rgba(0,0,0,.4); }
+#radial .center.static { cursor: default; }
+@keyframes pop { from { transform: translate(-50%, -50%) scale(.55); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #radial .ring, #radial .center, #scrim { animation: none; } #chip, #pill, #hint { transition: none; } }
+button:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+
+/* ---------- Notes ---------- */
+#notes { display: none; width: 330px; font-size: 14px; line-height: 1.55; }
+@media (min-width: 920px) and (min-height: 780px) { #notes { display: block; } }
+#notes .eyebrow { font: 700 12px var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+#notes h1 { font: 700 40px/1 var(--font-display); margin: 6px 0 10px; text-wrap: balance; }
+#notes .lede { color: var(--muted); margin: 0 0 20px; }
+#notes h2 { font: 700 13px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 20px 0 8px; }
+#notes ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+#notes li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; }
+#notes li::before { content: "›"; color: var(--good); font-weight: 700; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5l3.8 2.8-1.4 4.4H9.6L8.2 10.3z" fill="currentColor"/><path d="M12 3v4.5M20.6 9.3l-4.8 1M17.3 19.3l-2.9-4.6M6.7 19.3l2.9-4.6M3.4 9.3l4.8 1" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-boot" viewBox="0 0 24 24"><path d="M4 6h5l1 5 8 2.5c1.7.5 2.5 1.6 2.5 3V18H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 15h16.5M8 18v1.5M13 18v1.5M17.5 18v1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-chain" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2.5" fill="currentColor"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/><circle cx="19" cy="5" r="2.5" fill="currentColor"/><path d="M6.6 16 10.4 11M14.2 7.8l2.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M14 10l6-6M15 4h5v5M10 14l-6 6M4 15v5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-half" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 12h14" stroke="currentColor" stroke-width="2"/><rect x="5" y="12" width="14" height="9" fill="currentColor" opacity=".45"/><path d="M9 21v-3h6v3" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-full" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 12h14" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-star" viewBox="-10 -10 20 20"><polygon points="0,-9 2.4,-3.3 8.6,-2.8 3.9,1.3 5.3,7.3 0,4.2 -5.3,7.3 -3.9,1.3 -8.6,-2.8 -2.4,-3.3" fill="currentColor"/></symbol>
+    <symbol id="i-disc" viewBox="-10 -10 20 20"><circle r="7" fill="currentColor"/></symbol>
+    <symbol id="i-tri" viewBox="-10 -10 20 20"><polygon points="0,-8 7.5,6 -7.5,6" fill="currentColor"/></symbol>
+    <symbol id="i-ring" viewBox="-10 -10 20 20"><circle r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3 9 6M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div id="stage">
+  <aside id="notes">
+    <div class="eyebrow">Shot Gobbler · design mockup v2</div>
+    <h1>Pitch-first tracking</h1>
+    <p class="lede">The pitch fills the phone. Every event is entered on a ring that opens where you tap. Lists, stats and filters wait in review mode.</p>
+    <h2>Try it</h2>
+    <ul>
+      <li><span>Tap the pitch. The half you tap picks the team; tap the team in the middle of the ring to switch it.</span></li>
+      <li><span>Tap <b>Saved</b> for a one-tap shot. Tap <b>Head</b>, then <b>Goal</b>, for a headed goal.</span></li>
+      <li><span>Tap outside the ring to cancel.</span></li>
+      <li><span>Tap an existing marker to edit, move or delete it.</span></li>
+      <li><span>Bottom bar: tracker, clock, half pitch, undo, leave focus.</span></li>
+    </ul>
+    <h2>What changed in v2</h2>
+    <ul>
+      <li><span>Rings are split into labelled sections</span></li>
+      <li><span>Team switch in the middle of the shot ring</span></li>
+      <li><span>Icons match the pitch markers</span></li>
+    </ul>
+    <h2>Not in this mockup</h2>
+    <ul><li><span>Saving, matches, stats and export. Data resets on reload.</span></li></ul>
+  </aside>
+
+  <div id="phone" class="focus">
+    <div id="review">
+      <div class="head">
+        <div class="match">
+          <div class="teams"><span class="dot" style="background:var(--home)"></span>Arsenal <span style="color:var(--muted);font-weight:500">v</span> Chelsea<span class="dot" style="background:var(--away)"></span></div>
+          <div class="meta" id="reviewClock"></div>
+        </div>
+        <button class="track" id="enterFocus"><svg><use href="#i-focus"/></svg>Track</button>
+      </div>
+      <div class="seg" role="group" aria-label="Tracker">
+        <button data-tracker="shots" aria-pressed="true"><svg><use href="#i-ball"/></svg>Shots</button>
+        <button data-tracker="touches" aria-pressed="false"><svg><use href="#i-boot"/></svg>Touches</button>
+        <button data-tracker="chains" aria-pressed="false"><svg><use href="#i-chain"/></svg>Chains</button>
+      </div>
+    </div>
+
+    <div id="pitchWrap">
+      <svg id="pitch" role="img" aria-label="Football pitch. Tap to record an event."></svg>
+      <div class="endlabel" id="labelTop"></div>
+      <div class="endlabel" id="labelBottom"></div>
+      <div id="hint"><b>Tap where it happened</b><span>Tap outside the ring to cancel</span></div>
+    </div>
+
+    <div id="reviewFoot"></div>
+
+    <div id="pill" role="toolbar" aria-label="Tracking controls">
+      <button id="pTracker" aria-label="Switch tracker"></button>
+      <span class="sep"></span>
+      <button id="pClock" class="clock" aria-label="Pause or resume the match clock"></button>
+      <button id="pView" aria-label="Toggle half pitch"></button>
+      <button id="pTeam" class="team" aria-label="Team for half-pitch shots" hidden></button>
+      <span class="sep"></span>
+      <button id="pUndo" aria-label="Undo"><svg><use href="#i-undo"/></svg></button>
+      <button id="pExit" aria-label="Leave focus mode"><svg><use href="#i-exit"/></svg></button>
+    </div>
+
+    <div id="chip" role="status" aria-live="polite"></div>
+    <div id="scrim" hidden></div>
+    <div id="radial" hidden></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- constants (metres; pitch 68 x 105, attacking the top goal at y = 0) ----------
+  const W = 68, L = 105, M = 3;
+  const TEAMS = { home: { name: "Arsenal", short: "ARS", color: "#2563eb" }, away: { name: "Chelsea", short: "CHE", color: "#ea580c" } };
+  const RESULTS = [
+    { id: "Goal", icon: "i-star", color: "#15803d" },
+    { id: "Saved", icon: "i-disc", color: "#0e7490" },
+    { id: "Blocked", icon: "i-tri", color: "#57606b" },
+    { id: "Miss", icon: "i-ring", color: "#b91c1c" },
+  ];
+  const TOUCH = {
+    pass: { label: "Pass", cat: "att", outs: [["ok", "Complete"], ["bad", "Lost"], ["assist", "Assist"], ["key", "Key pass"]] },
+    cross: { label: "Cross", cat: "att", outs: [["ok", "Complete"], ["bad", "Lost"], ["assist", "Assist"], ["key", "Key pass"]] },
+    dribble: { label: "Dribble", cat: "att", outs: [["ok", "Beat man"], ["bad", "Lost"]] },
+    tackle: { label: "Tackle", cat: "def", outs: [["ok", "Won"], ["bad", "Lost"]] },
+    intercept: { label: "Intercept", cat: "def", outs: [["ok", "Won"]] },
+    clearance: { label: "Clear", cat: "def", outs: [["ok", "Cleared"], ["bad", "Failed"]] },
+    aerial: { label: "Aerial", cat: "duel", outs: [["ok", "Won"], ["bad", "Lost"]] },
+    ground: { label: "Ground", cat: "duel", outs: [["ok", "Won"], ["bad", "Lost"]] },
+    shot: { label: "Shot", cat: "att", outs: [["goal", "Goal"], ["ok", "On target"], ["bad", "Off target"], ["blocked", "Blocked"]] },
+    throwin: { label: "Throw-in", cat: "att", outs: [["ok", "Kept"], ["bad", "Lost"]] },
+    block: { label: "Block", cat: "def", outs: [["ok", "Ball won"], ["bad", "Not won"]] },
+  };
+  const CAT = { att: { label: "Attack", color: "#2563eb" }, def: { label: "Defend", color: "#be123c" }, duel: { label: "Duel", color: "#b45309" } };
+  const CHAIN_STEPS = [["pass", "Pass"], ["carry", "Carry"], ["cross", "Cross"], ["shot", "Shot"]];
+  const CHAIN_ENDS = [
+    { label: "Shot", items: [["goal", "Goal", "#15803d"], ["saved", "Saved", "#0e7490"], ["missed", "Missed", "#b91c1c"], ["blocked", "Blocked", "#57606b"]] },
+    { label: "Lost", items: [["tackled", "Tackled", "#6b4f2a"], ["intercepted", "Intercept", "#6b4f2a"], ["out", "Out", "#6b4f2a"]] },
+    { label: "Stopped", items: [["foul", "Fouled", "#475569"], ["offside", "Offside", "#475569"]] },
+  ];
+
+  // ---------- state ----------
+  const state = {
+    focus: true, tracker: "shots", half: false, halfTeam: "home",
+    clock: { running: true, base: 23 * 60 + 10, since: Date.now() },
+    shots: [
+      { id: 1, team: "home", ax: 30, ay: 11, result: "Goal", head: false, setPiece: false, pen: false, no: "9", min: 4 },
+      { id: 2, team: "home", ax: 44, ay: 19, result: "Saved", head: false, setPiece: false, pen: false, no: "", min: 11 },
+      { id: 3, team: "home", ax: 38, ay: 7, result: "Miss", head: true, setPiece: true, pen: false, no: "4", min: 15 },
+      { id: 4, team: "away", ax: 25, ay: 22, result: "Blocked", head: false, setPiece: false, pen: false, no: "", min: 9 },
+      { id: 5, team: "away", ax: 37, ay: 14, result: "Saved", head: false, setPiece: false, pen: false, no: "10", min: 18 },
+    ],
+    touches: [
+      { id: 11, x: 30, y: 60, a: "pass", o: "ok" }, { id: 12, x: 45, y: 48, a: "pass", o: "bad" },
+      { id: 13, x: 20, y: 35, a: "dribble", o: "ok" }, { id: 14, x: 40, y: 80, a: "tackle", o: "ok" },
+      { id: 15, x: 55, y: 22, a: "cross", o: "key" }, { id: 16, x: 34, y: 70, a: "aerial", o: "bad" },
+    ],
+    chains: [{ id: 21, pts: [{ x: 50, y: 85, t: "start" }, { x: 58, y: 62, t: "pass" }, { x: 45, y: 40, t: "carry" }, { x: 34, y: 14, t: "shot" }], end: "saved" }],
+    current: null, lastStep: "pass", undo: [],
+  };
+  let nextId = 100, moving = null, hintShown = false, tapPx = null;
+  const $ = (s) => document.querySelector(s);
+  const phone = $("#phone"), svg = $("#pitch"), wrap = $("#pitchWrap"), radial = $("#radial"), scrim = $("#scrim");
+  const icon = (id) => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
+
+  // ---------- helpers ----------
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const snapshot = () => { state.undo.push(clone({ shots: state.shots, touches: state.touches, chains: state.chains, current: state.current })); if (state.undo.length > 60) state.undo.shift(); };
+  const minute = () => Math.floor((state.clock.base + (state.clock.running ? (Date.now() - state.clock.since) / 1000 : 0)) / 60) + 1;
+  const buzz = () => { try { navigator.vibrate && navigator.vibrate(12); } catch (e) {} };
+  let chipTimer;
+  function chip(text, color) {
+    const c = $("#chip"); c.innerHTML = (color ? `<span class="dot" style="background:${color}"></span>` : "") + `<span>${text}</span>`;
+    c.classList.add("show"); clearTimeout(chipTimer); chipTimer = setTimeout(() => c.classList.remove("show"), 1900);
+  }
+  function xg(s) {
+    if (s.pen) return 0.76;
+    const d = Math.hypot(s.ax - 34, s.ay), ang = Math.abs(Math.atan2(37.66 - s.ax, s.ay) - Math.atan2(30.34 - s.ax, s.ay));
+    const z = -2.33 - 0.05 * d + 2.0 * ang - (s.head ? 1 : 0);
+    return 1 / (1 + Math.exp(-z));
+  }
+  const shotXY = (s) => (state.half || s.team === "away" ? { x: W - s.ax, y: L - s.ay } : { x: s.ax, y: s.ay });
+  const toAttack = (p, team) => (state.half || team === "away" ? { ax: W - p.x, ay: L - p.y } : { ax: p.x, ay: p.y });
+  const viewBox = () => (state.half && state.tracker === "shots" ? [-M, L / 2 - 1.5, W + 2 * M, L / 2 + 1.5 + M] : [-M, -M, W + 2 * M, L + 2 * M]);
+
+  // ---------- pitch ----------
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  function drawPitch() {
+    const [vx, vy, vw, vh] = viewBox();
+    svg.setAttribute("viewBox", `${vx} ${vy} ${vw} ${vh}`);
+    svg.innerHTML = "";
+    const defs = el("defs", {}, svg);
+    const f = el("filter", { id: "sh", x: "-50%", y: "-50%", width: "200%", height: "200%" }, defs);
+    el("feDropShadow", { dx: 0, dy: 0.5, stdDeviation: 0.7, "flood-opacity": 0.45 }, f);
+    const net = el("pattern", { id: "net", width: 1, height: 1, patternUnits: "userSpaceOnUse" }, defs);
+    el("path", { d: "M0 0H1M0 0V1", stroke: "rgba(255,255,255,.35)", "stroke-width": 0.12 }, net);
+    el("rect", { x: vx, y: vy, width: vw, height: vh, fill: "var(--grass-edge)" }, svg);
+    for (let i = 0; i < 14; i++) el("rect", { x: 0, y: i * (L / 14), width: W, height: L / 14, fill: i % 2 ? "var(--grass-b)" : "var(--grass-a)" }, svg);
+    const g = el("g", { fill: "none", stroke: "var(--chalk)", "stroke-width": 0.32 }, svg);
+    el("rect", { x: 0, y: 0, width: W, height: L }, g);
+    el("line", { x1: 0, y1: L / 2, x2: W, y2: L / 2 }, g);
+    el("circle", { cx: W / 2, cy: L / 2, r: 9.15 }, g);
+    el("circle", { cx: W / 2, cy: L / 2, r: 0.4, fill: "var(--chalk)" }, g);
+    [[0, 0, 1], [W, 0, 1], [0, L, -1], [W, L, -1]].forEach(([cx, cy, s]) => {
+      el("path", { d: `M ${cx === 0 ? 1 : W - 1} ${cy} A 1 1 0 0 ${(cx === 0) === (s > 0) ? 0 : 1} ${cx} ${cy + s}` }, g);
+    });
+    [[0, 1], [L, -1]].forEach(([y0, s]) => {
+      el("rect", { x: 13.84, y: s > 0 ? 0 : L - 16.5, width: 40.32, height: 16.5 }, g);
+      el("rect", { x: 24.84, y: s > 0 ? 0 : L - 5.5, width: 18.32, height: 5.5 }, g);
+      el("circle", { cx: W / 2, cy: y0 + s * 11, r: 0.4, fill: "var(--chalk)" }, g);
+      const ay = y0 + s * 16.5;
+      el("path", { d: `M ${34 - 7.31} ${ay} A 9.15 9.15 0 0 ${s > 0 ? 0 : 1} ${34 + 7.31} ${ay}` }, g);
+      el("rect", { x: 30.34, y: s > 0 ? -2 : L, width: 7.32, height: 2, fill: "url(#net)", stroke: "var(--chalk)", "stroke-width": 0.25 }, svg);
+    });
+    drawEvents(); layoutLabels();
+  }
+  const ppm = () => (svg.getBoundingClientRect().width / viewBox()[2]) || 5;
+
+  function drawEvents() {
+    svg.querySelectorAll(".ev").forEach((n) => n.remove());
+    const layer = el("g", { class: "ev" }, svg), m = (px) => px / ppm();
+    if (state.tracker === "shots") {
+      state.shots.forEach((s) => {
+        const { x, y } = shotXY(s), col = TEAMS[s.team].color, r = m(6 + Math.min(xg(s), 0.5) * 20), sw = m(1.8);
+        const g = el("g", { class: "mk", "data-id": s.id, transform: `translate(${x} ${y})` }, layer);
+        el("circle", { r: m(22), fill: "transparent" }, g);
+        const shape = el("g", { filter: "url(#sh)" }, g);
+        if (s.result === "Goal") {
+          const pts = []; for (let i = 0; i < 10; i++) { const rr = i % 2 ? r * 0.48 : r * 1.2, a = -Math.PI / 2 + (i * Math.PI) / 5; pts.push(`${rr * Math.cos(a)},${rr * Math.sin(a)}`); }
+          el("polygon", { points: pts.join(" "), fill: col, stroke: "#fff", "stroke-width": sw, "stroke-linejoin": "round" }, shape);
+        } else if (s.result === "Saved") el("circle", { r, fill: col, stroke: "#fff", "stroke-width": sw }, shape);
+        else if (s.result === "Blocked") el("polygon", { points: `0,${-r * 1.15} ${r * 1.05},${r * 0.75} ${-r * 1.05},${r * 0.75}`, fill: col, stroke: "#fff", "stroke-width": sw, "stroke-linejoin": "round" }, shape);
+        else { el("circle", { r, fill: "none", stroke: "#fff", "stroke-width": sw * 2.6 }, shape); el("circle", { r, fill: "none", stroke: col, "stroke-width": sw * 1.5 }, shape); }
+        if (s.no) {
+          const t = el("g", { transform: `translate(0 ${r + m(10)})` }, g);
+          el("rect", { x: m(-9), y: m(-6.5), width: m(18), height: m(13), rx: m(6.5), fill: "rgba(0,0,0,.55)" }, t);
+          el("text", { y: m(3.6), "text-anchor": "middle", "font-size": m(9.5), "font-weight": 700, fill: "#fff", "font-family": "Inter, sans-serif" }, t).textContent = s.no;
+        }
+      });
+    } else if (state.tracker === "touches") {
+      state.touches.forEach((t) => {
+        const col = CAT[TOUCH[t.a].cat].color, good = t.o !== "bad" && t.o !== "blocked";
+        const g = el("g", { class: "mk", "data-id": t.id, transform: `translate(${t.x} ${t.y})` }, layer);
+        el("circle", { r: m(22), fill: "transparent" }, g);
+        el("circle", { r: m(8), fill: good ? col : "rgba(255,255,255,.15)", stroke: good ? "#fff" : col, "stroke-width": m(good ? 1.8 : 3.2), filter: "url(#sh)" }, g);
+      });
+    } else {
+      const drawChain = (pts, live) => {
+        const g = el("g", { opacity: live ? 1 : 0.8 }, layer);
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1], b = pts[i];
+          el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: live ? "#facc15" : "#fff", "stroke-width": m(3), "stroke-dasharray": b.t === "carry" ? `${m(6)} ${m(5)}` : "none", "stroke-linecap": "round", filter: "url(#sh)" }, g);
+        }
+        pts.forEach((p, i) => {
+          const c = el("g", { transform: `translate(${p.x} ${p.y})`, filter: "url(#sh)" }, g);
+          el("circle", { r: m(10), fill: live ? "#facc15" : "#0e7490", stroke: "#fff", "stroke-width": m(1.8) }, c);
+          el("text", { y: m(3.6), "text-anchor": "middle", "font-size": m(10), "font-weight": 700, fill: live ? "#0b130e" : "#fff", "font-family": "Inter, sans-serif" }, c).textContent = i + 1;
+        });
+      };
+      state.chains.forEach((c) => drawChain(c.pts, false));
+      if (state.current) drawChain(state.current, true);
+    }
+    $("#hint").style.opacity = hintShown ? 0 : 1;
+  }
+
+  function layoutLabels() {
+    const top = $("#labelTop"), bot = $("#labelBottom"), r = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), mpx = ppm() * M;
+    top.style.top = r.top - wr.top + mpx + 8 + "px"; bot.style.top = r.bottom - wr.top - mpx - 24 + "px";
+    top.style.left = bot.style.left = r.left - wr.left + mpx + 10 + "px";
+    const lab = (team, dir) => `<span class="dot" style="background:${TEAMS[team].color}"></span>${TEAMS[team].name} ${dir}`;
+    if (state.tracker !== "shots") { top.innerHTML = "Attacking ↑"; bot.innerHTML = ""; }
+    else if (state.half) { top.innerHTML = ""; bot.innerHTML = `Goal ↓ · ${TEAMS[state.halfTeam].name}`; }
+    else { top.innerHTML = lab("home", "attack ↑"); bot.innerHTML = lab("away", "attack ↓"); }
+  }
+  function fit() {
+    const wr = wrap.getBoundingClientRect(), [, , vw, vh] = viewBox(), s = Math.min(wr.width / vw, wr.height / vh);
+    svg.setAttribute("width", Math.floor(vw * s)); svg.setAttribute("height", Math.floor(vh * s));
+    drawPitch();
+  }
+
+  // ---------- radial menu (sectioned) ----------
+  // Each option is its own annular segment; small gaps between options, wider gaps between sections.
+  const SEG = {
+    toggle: { fill: "rgba(255,255,255,.93)", text: "#24312a" },
+    toggleOn: { fill: "#facc15", text: "#0b130e" },
+    nav: { fill: "#dbe4ff", text: "#1e3a8a" },
+    danger: { fill: "#ffe1e1", text: "#b91c1c" },
+  };
+  function openRadial({ groups, center, onPick }) {
+    radial.innerHTML = ""; radial.hidden = false; scrim.hidden = false;
+    const pr = phone.getBoundingClientRect();
+    const n = groups.reduce((acc, g) => acc + g.items.length, 0), gap = groups.length > 1 ? 0.45 : 0;
+    const units = n + gap * groups.length, step = (2 * Math.PI) / units;
+    const ri = 44, ro = n > 9 ? 136 : n > 6 ? 128 : 118, pad = 30;
+    const cx = Math.min(Math.max(tapPx.x, ro + pad), pr.width - ro - pad);
+    const cy = Math.min(Math.max(tapPx.y, ro + pad + 26), pr.height - ro - pad - 70);
+    const deco = el("svg", { class: "deco" }, radial);
+    if (Math.hypot(cx - tapPx.x, cy - tapPx.y) > 10) el("line", { x1: tapPx.x, y1: tapPx.y, x2: cx, y2: cy, stroke: "#fff", "stroke-width": 2, "stroke-dasharray": "3 5", "stroke-linecap": "round", opacity: 0.8 }, deco);
+    el("circle", { cx: tapPx.x, cy: tapPx.y, r: 8, fill: "none", stroke: "#fff", "stroke-width": 2.5 }, deco);
+    el("circle", { cx: tapPx.x, cy: tapPx.y, r: 2.5, fill: "#fff" }, deco);
+    const ringG = el("g", { class: "ring", style: `transform-origin:${cx}px ${cy}px` }, deco);
+    el("circle", { cx, cy, r: ro + 5, fill: "rgba(6,12,8,.6)" }, ringG);
+
+    const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(2)} ${(cy + r * Math.sin(ang)).toFixed(2)}`;
+    const sector = (a0, a1) => { const lg = a1 - a0 > Math.PI ? 1 : 0;
+      return `M ${P(ro, a0)} A ${ro} ${ro} 0 ${lg} 1 ${P(ro, a1)} L ${P(ri, a1)} A ${ri} ${ri} 0 ${lg} 0 ${P(ri, a0)} Z`; };
+    const padO = 2.2 / ro, padI = 2.2 / ri; // ~2px visual gap between options
+    let a = -Math.PI / 2 - ((groups[0].items.length - 1) / 2) * step;
+    let first = null;
+    const labels = [];
+    groups.forEach((grp) => {
+      const gStart = a - step / 2, gEnd = a + (grp.items.length - 1) * step + step / 2;
+      if (groups.length > 1 && grp.label) {
+        const am = (gStart + gEnd) / 2, lr = ro + 15, tw = grp.label.length * 8.6 + 8;
+        const lx = Math.min(Math.max(cx + lr * Math.cos(am), tw / 2 + 6), pr.width - tw / 2 - 6);
+        labels.push({ x: lx, y: cy + lr * Math.sin(am) + 3.5, text: grp.label.toUpperCase() });
+      }
+      grp.items.forEach((it, i) => {
+        const mid = a + i * step, a0 = mid - step / 2 + padO * 1.2, a1 = mid + step / 2 - padO * 1.2;
+        const kind = it.kind || "action";
+        const look = kind === "action" ? { fill: it.color || "#0e7490", text: "#fff" } : kind === "toggle" ? (it.on ? SEG.toggleOn : SEG.toggle) : SEG[kind];
+        const g = el("g", { class: `seg ${kind}${it.current ? " current" : ""}`, role: "button", tabindex: 0,
+          "aria-label": it.aria || it.label, ...(kind === "toggle" ? { "aria-pressed": String(!!it.on) } : {}) }, ringG);
+        el("path", { d: sector(a0, a1), fill: look.fill, class: "shape" }, g);
+        if (it.current) el("path", { d: sector(a0, a1), fill: "none", stroke: "#fff", "stroke-width": 3, "stroke-linejoin": "round" }, g);
+        const rm = (ri + ro) / 2 + 4, tx = cx + rm * Math.cos(mid), ty = cy + rm * Math.sin(mid);
+        const words = it.label.length > 7 && it.label.includes(" ") ? it.label.split(" ") : [it.label];
+        const glyph = kind === "toggle" ? (it.on ? "i-check" : "i-plus") : it.icon;
+        const textY = ty + (glyph ? 9 : 4) - (words.length - 1) * 6;
+        if (glyph) el("use", { href: "#" + glyph, x: tx - 8, y: textY - 26 + (words.length - 1) * 0, width: 16, height: 16, color: look.text, style: `color:${look.text}` }, g);
+        const t = el("text", { x: tx, y: textY, "text-anchor": "middle", fill: look.text, class: "slabel" }, g);
+        words.forEach((w, k) => { const ts = el("tspan", { x: tx, dy: k ? 12 : 0 }, t); ts.textContent = w; });
+        const pick = (e) => { e.stopPropagation(); e.preventDefault(); onPick(it); };
+        g.addEventListener("click", pick);
+        g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") pick(e); });
+        if (!first) first = g;
+      });
+      a += grp.items.length * step + gap * step;
+    });
+    labels.forEach((l) => { el("text", { x: l.x, y: l.y, "text-anchor": "middle", class: "glabel" }, ringG).textContent = l.text; });
+    const c = document.createElement("button");
+    c.className = "center" + (center.team ? " team" : "") + (center.onClick ? "" : " static");
+    if (center.team) c.style.setProperty("--team", TEAMS[center.team].color);
+    c.style.left = cx + "px"; c.style.top = cy + "px"; c.innerHTML = center.html;
+    c.setAttribute("aria-label", center.aria || "Menu");
+    c.onclick = (e) => { e.stopPropagation(); center.onClick ? center.onClick() : null; };
+    radial.appendChild(c);
+  }
+  function closeRadial() { radial.hidden = true; scrim.hidden = true; radial.innerHTML = ""; }
+  scrim.addEventListener("click", () => { closeRadial(); moving = null; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !radial.hidden) { closeRadial(); moving = null; } });
+
+  // ---------- shots ----------
+  function shotMenu(draft, editing) {
+    const team = TEAMS[draft.team];
+    const desc = `${draft.head ? "Head" : "Foot"} · ${draft.pen ? "Pen" : draft.setPiece ? "Set pc" : "Open"}`;
+    const groups = [
+      { label: "Result", items: RESULTS.map((r) => ({ id: r.id, label: r.id, icon: r.icon, color: r.color, current: editing && draft.result === r.id })) },
+      { label: "Details", items: [
+        { id: "head", label: "Head", kind: "toggle", on: draft.head, aria: "Header" },
+        { id: "set", label: "Set piece", kind: "toggle", on: draft.setPiece },
+        { id: "pen", label: "Penalty", kind: "toggle", on: draft.pen },
+        { id: "no", label: draft.no ? `#${draft.no}` : "Shirt #", kind: "nav", aria: "Shirt number" },
+      ] },
+    ];
+    if (editing) groups.push({ label: "Edit", items: [{ id: "move", label: "Move", icon: "i-move", kind: "nav" }, { id: "del", label: "Delete", icon: "i-trash", kind: "danger" }] });
+    // order so Details sit at the bottom: Result (top), Edit (right), Details (bottom-left)
+    if (editing) groups.splice(1, 0, groups.pop());
+    openRadial({
+      groups,
+      center: { team: draft.team, aria: `Team ${team.name}. Tap to switch team`,
+        html: `<b style="color:${team.color}">${team.short}</b>${desc}<small>${icon("i-swap")}switch</small>`,
+        onClick: () => {
+          const p = shotXY(draft); draft.team = draft.team === "home" ? "away" : "home";
+          Object.assign(draft, toAttack(p, draft.team)); shotMenu(draft, editing);
+        } },
+      onPick: (it) => {
+        if (it.id === "head") { draft.head = !draft.head; return shotMenu(draft, editing); }
+        if (it.id === "set") { draft.setPiece = !draft.setPiece; if (draft.setPiece) draft.pen = false; return shotMenu(draft, editing); }
+        if (it.id === "pen") { draft.pen = !draft.pen; if (draft.pen) { draft.setPiece = false; draft.head = false; draft.ax = 34; draft.ay = 11; } return shotMenu(draft, editing); }
+        if (it.id === "no") return dialMenu(draft.no, (v) => { draft.no = v; shotMenu(draft, editing); });
+        if (it.id === "del") { snapshot(); state.shots = state.shots.filter((s) => s.id !== draft.id); closeRadial(); drawEvents(); renderFoot(); buzz(); return chip("Shot deleted · undo in the bar"); }
+        if (it.id === "move") { moving = draft.id; closeRadial(); return chip("Tap the new spot"); }
+        snapshot();
+        draft.result = it.id;
+        if (editing) state.shots = state.shots.map((s) => (s.id === draft.id ? draft : s));
+        else state.shots.push({ ...draft, id: nextId++, min: minute() });
+        closeRadial(); drawEvents(); renderFoot(); buzz();
+        chip(`<b>${it.id}</b> · ${team.short}${draft.head ? " · Head" : ""}${draft.pen ? " · Pen" : draft.setPiece ? " · Set piece" : ""}${draft.no ? " · #" + draft.no : ""} · ${editing ? draft.min : minute()}'`, team.color);
+      },
+    });
+  }
+  function dialMenu(value, done) {
+    let v = value || "";
+    const show = () => openRadial({
+      groups: [{ label: "", items: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map((d) => ({ id: d, label: d, kind: "nav" })) },
+        { label: "", items: [{ id: "del", label: "Del", icon: "i-back", kind: "danger", aria: "Delete digit" }, { id: "ok", label: "Done", color: "#0b130e" }] }],
+      center: { html: `<b>#${v || "–"}</b>shirt no.<small>clear</small>`, aria: "Clear shirt number", onClick: () => done("") },
+      onPick: (it) => { if (it.id === "ok") return done(v); if (it.id === "del") v = v.slice(0, -1); else if (v.length < 2) v += it.id; show(); },
+    });
+    show();
+  }
+
+  // ---------- touches ----------
+  function touchMenu(pos, more, editing) {
+    let groups;
+    if (more) groups = [{ label: "More", items: ["shot", "throwin", "block", "ground"].map((id) => ({ id, label: TOUCH[id].label, color: CAT[TOUCH[id].cat].color, current: editing && editing.a === id })) },
+      { label: "", items: [{ id: "back", label: "Back", icon: "i-back", kind: "nav" }] }];
+    else {
+      const it = (id) => ({ id, label: TOUCH[id].label, color: CAT[TOUCH[id].cat].color, current: editing && editing.a === id });
+      groups = [
+        { label: "Attack", items: ["pass", "cross", "dribble"].map(it) },
+        { label: "Defend", items: ["tackle", "intercept", "clearance"].map(it) },
+        { label: "Duel", items: ["aerial", "ground"].map(it) },
+        { label: "", items: [{ id: "more", label: "More", icon: "i-more", kind: "nav" }] },
+      ];
+      if (editing) groups.push({ label: "Edit", items: [{ id: "move", label: "Move", icon: "i-move", kind: "nav" }, { id: "del", label: "Delete", icon: "i-trash", kind: "danger" }] });
+    }
+    openRadial({
+      groups,
+      center: { html: `<b>${editing ? "EDIT" : "ACTION"}</b>${more ? "more actions" : "what happened?"}` },
+      onPick: (it) => {
+        if (it.id === "more") return touchMenu(pos, true, editing);
+        if (it.id === "back") return touchMenu(pos, false, editing);
+        if (it.id === "del") { snapshot(); state.touches = state.touches.filter((t) => t.id !== editing.id); closeRadial(); drawEvents(); renderFoot(); buzz(); return chip("Action deleted · undo in the bar"); }
+        if (it.id === "move") { moving = editing.id; closeRadial(); return chip("Tap the new spot"); }
+        outcomeMenu(pos, it.id, editing);
+      },
+    });
+  }
+  function outcomeMenu(pos, a, editing) {
+    const A = TOUCH[a], col = (id) => (id === "bad" || id === "blocked" ? "#b91c1c" : id === "ok" || id === "goal" ? "#15803d" : "#7c3aed");
+    openRadial({
+      groups: [{ label: "Outcome", items: A.outs.map(([id, label]) => ({ id, label, color: col(id), current: editing && editing.a === a && editing.o === id })) },
+        { label: "", items: [{ id: "back", label: "Back", icon: "i-back", kind: "nav" }] }],
+      center: { html: `<b style="color:${CAT[A.cat].color === "#be123c" ? "#fb7185" : CAT[A.cat].color === "#b45309" ? "#fbbf24" : "#93c5fd"}">${A.label.toUpperCase()}</b>outcome?` },
+      onPick: (it) => {
+        if (it.id === "back") return touchMenu(pos, false, editing);
+        snapshot();
+        if (editing) state.touches = state.touches.map((t) => (t.id === editing.id ? { ...t, a, o: it.id } : t));
+        else state.touches.push({ id: nextId++, x: pos.x, y: pos.y, a, o: it.id });
+        closeRadial(); drawEvents(); renderFoot(); buzz();
+        chip(`<b>${A.label}</b> · ${it.label} · ${minute()}'`, CAT[A.cat].color);
+      },
+    });
+  }
+
+  // ---------- chains ----------
+  function chainTap(pos) {
+    if (!state.current) { snapshot(); state.current = [{ ...pos, t: "start" }]; drawEvents(); buzz(); return chip("Chain started · tap where the ball goes", "#facc15"); }
+    openRadial({
+      groups: [{ label: "Step", items: CHAIN_STEPS.map(([id, label]) => ({ id, label, color: "#0e7490", current: id === state.lastStep })) },
+        { label: "", items: [{ id: "end", label: "End chain", icon: "i-flag", kind: "danger" }] }],
+      center: { html: `<b>STEP ${state.current.length + 1}</b>how did it get here?` },
+      onPick: (it) => {
+        if (it.id === "end") return endMenu();
+        snapshot(); state.lastStep = it.id; state.current.push({ ...pos, t: it.id });
+        closeRadial(); drawEvents(); buzz(); chip(`<b>${it.label}</b> · step ${state.current.length}`, "#facc15");
+      },
+    });
+  }
+  function endMenu() {
+    openRadial({
+      groups: CHAIN_ENDS.map((g) => ({ label: g.label, items: g.items.map(([id, label, color]) => ({ id, label, color })) })),
+      center: { html: `<b>END</b>how did it end?` },
+      onPick: (it) => {
+        snapshot(); state.chains.push({ id: nextId++, pts: state.current, end: it.id }); state.current = null;
+        closeRadial(); drawEvents(); renderFoot(); buzz(); chip(`<b>Chain saved</b> · ${it.label} · ${state.chains.at(-1).pts.length} points`, "#0e7490");
+      },
+    });
+  }
+
+  // ---------- pitch input ----------
+  function svgPoint(evt) { const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  svg.addEventListener("click", (evt) => {
+    wake();
+    const pr = phone.getBoundingClientRect(); tapPx = { x: evt.clientX - pr.left, y: evt.clientY - pr.top };
+    const p = svgPoint(evt);
+    if (p.x < 0 || p.x > W || p.y < 0 || p.y > L) return;
+    if (!hintShown) { hintShown = true; $("#hint").style.opacity = 0; }
+    const mk = evt.target.closest(".mk");
+    if (moving != null) {
+      snapshot();
+      if (state.tracker === "shots") state.shots = state.shots.map((s) => (s.id === moving ? { ...s, ...toAttack(p, s.team) } : s));
+      else state.touches = state.touches.map((t) => (t.id === moving ? { ...t, x: p.x, y: p.y } : t));
+      moving = null; drawEvents(); buzz(); return chip("Moved");
+    }
+    if (state.tracker === "shots") {
+      if (mk) return shotMenu(clone(state.shots.find((x) => x.id === +mk.dataset.id)), true);
+      const team = state.half ? state.halfTeam : p.y < L / 2 ? "home" : "away";
+      return shotMenu({ team, ...toAttack(p, team), head: false, setPiece: false, pen: false, no: "", result: null }, false);
+    }
+    if (state.tracker === "touches") {
+      if (mk) { const t = state.touches.find((x) => x.id === +mk.dataset.id); return touchMenu({ x: t.x, y: t.y }, false, t); }
+      return touchMenu({ x: p.x, y: p.y }, false, null);
+    }
+    chainTap({ x: p.x, y: p.y });
+  });
+
+  // ---------- bar + review ----------
+  const TRACKER = { shots: ["i-ball", "Shots"], touches: ["i-boot", "Touches · one player"], chains: ["i-chain", "Pass chains"] };
+  const order = ["shots", "touches", "chains"];
+  function setTracker(t) {
+    state.tracker = t; if (t !== "shots") state.half = false; closeRadial(); moving = null;
+    document.querySelectorAll("[data-tracker]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tracker === t)));
+    renderPill(); fit(); renderFoot();
+    if (state.focus) chip(`<b>${TRACKER[t][1]}</b>`);
+  }
+  function renderPill() {
+    $("#pTracker").innerHTML = icon(TRACKER[state.tracker][0]);
+    $("#pTracker").setAttribute("aria-label", `Tracker: ${TRACKER[state.tracker][1]}. Tap to switch`);
+    $("#pView").hidden = state.tracker !== "shots";
+    $("#pView").innerHTML = icon(state.half ? "i-full" : "i-half");
+    $("#pView").setAttribute("aria-label", state.half ? "Show full pitch" : "Show half pitch");
+    $("#pTeam").hidden = !(state.tracker === "shots" && state.half);
+    const t = TEAMS[state.halfTeam]; $("#pTeam").innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.short}`;
+    const c = $("#pClock"); c.innerHTML = `<i></i>${minute()}'`; c.classList.toggle("paused", !state.clock.running);
+    $("#reviewClock").textContent = `Premier League · ${minute()}' · ${state.clock.running ? "1st half" : "clock paused"}`;
+  }
+  function renderFoot() {
+    const f = $("#reviewFoot");
+    if (state.tracker === "shots") {
+      const s = (team) => { const l = state.shots.filter((x) => x.team === team); return `<span><span class="dot" style="background:${TEAMS[team].color}"></span> ${TEAMS[team].short} <b>${l.length}</b> shots · <b>${l.reduce((a, x) => a + xg(x), 0).toFixed(2)}</b> xG</span>`; };
+      f.innerHTML = `<div class="lbl">This match</div><div class="stats">${s("home")}${s("away")}</div>`;
+    } else if (state.tracker === "touches") {
+      const ok = state.touches.filter((t) => t.o !== "bad").length;
+      f.innerHTML = `<div class="lbl">This match</div><div class="stats"><span><b>${state.touches.length}</b> actions</span><span><b>${state.touches.length ? Math.round((ok / state.touches.length) * 100) : 0}%</b> successful</span></div>`;
+    } else f.innerHTML = `<div class="lbl">This match</div><div class="stats"><span><b>${state.chains.length}</b> chains</span><span>Lists, stats and filters live here</span></div>`;
+  }
+  $("#pTracker").onclick = () => setTracker(order[(order.indexOf(state.tracker) + 1) % 3]);
+  $("#pClock").onclick = () => {
+    const c = state.clock;
+    if (c.running) { c.base += (Date.now() - c.since) / 1000; c.running = false; chip("<b>Clock paused</b>", "#fbbf24"); }
+    else { c.since = Date.now(); c.running = true; chip("<b>Clock running</b>", "#4ade80"); }
+    renderPill();
+  };
+  $("#pView").onclick = () => { state.half = !state.half; renderPill(); fit(); chip(state.half ? "<b>Half pitch</b> · goal at the bottom" : "<b>Full pitch</b> · team from the half you tap"); };
+  $("#pTeam").onclick = () => { state.halfTeam = state.halfTeam === "home" ? "away" : "home"; renderPill(); layoutLabels(); chip(`Recording <b>${TEAMS[state.halfTeam].name}</b> shots`, TEAMS[state.halfTeam].color); };
+  $("#pUndo").onclick = () => {
+    const prev = state.undo.pop(); if (!prev) return chip("Nothing to undo");
+    Object.assign(state, prev); closeRadial(); drawEvents(); renderFoot(); buzz(); chip("<b>Undone</b>");
+  };
+  function setFocus(on) { state.focus = on; phone.classList.toggle("focus", on); closeRadial(); renderFoot(); requestAnimationFrame(fit); }
+  $("#pExit").onclick = () => setFocus(false);
+  $("#enterFocus").onclick = () => setFocus(true);
+  document.querySelectorAll("[data-tracker]").forEach((b) => (b.onclick = () => setTracker(b.dataset.tracker)));
+
+  let idle;
+  function wake() { $("#pill").classList.remove("dim"); clearTimeout(idle); idle = setTimeout(() => $("#pill").classList.add("dim"), 3500); }
+  phone.addEventListener("pointerdown", wake);
+  window.addEventListener("resize", fit);
+  setInterval(renderPill, 5000);
+  renderPill(); renderFoot(); fit(); wake();
+})();
+</script>
