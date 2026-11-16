@@ -1,15 +1,17 @@
-import React, { useState } from "react";
-import ActionForm from "../components/ActionForm/ActionForm";
+import React, { useEffect, useRef, useState } from "react";
 import { ClearButton } from "../components/common";
 import TouchStatsPanel from "../components/Stats/TouchStatsPanel";
 import { TouchesSummaryBar } from "../components/Stats/SummaryBar";
 import { TouchList } from "../components/TouchList/TouchList";
 import TouchMap from "../components/TouchMap/TouchMap";
+import TouchRadial from "../components/TouchMap/TouchRadial";
+import { Point } from "../components/RadialMenu";
+import { actionTypeInfo } from "../constants/actionTypes";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
 import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
-import { Action } from "../types/Action";
+import { Action, ActionOutcome, ActionType } from "../types/Action";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
 
 const TOUCHES_VIEWS = ["pitch", "list", "stats"] as const;
@@ -32,12 +34,18 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   getEventStamp = defaultEventStamp,
   focus = false,
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // The action open in the form for editing; null when adding a new one
-  const [editingAction, setEditingAction] = useState<Action | null>(null);
-  const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
+  // The open radial menu: where it points and the action it edits (if any)
+  const [radial, setRadial] = useState<{
+    anchor: Point;
+    /** Full-pitch % position of a new action. */
+    at: { x: number; y: number };
+    editing?: Action;
+  } | null>(null);
   // Match minute and period taken when the pitch is tapped
   const [pendingStamp, setPendingStamp] = useState<EventStamp | null>(null);
+  // An action waiting for the pitch tap that moves it
+  const [moving, setMoving] = useState<Action | null>(null);
+  const pitchRef = useRef<HTMLDivElement>(null);
   const [currentView, setCurrentView] = useUrlState<TouchesView>(
     "view",
     "pitch",
@@ -53,50 +61,71 @@ const TouchesView: React.FC<TouchesViewProps> = ({
     canUndo: actionList.canUndo,
   });
 
-  const handlePitchClick = (x: number, y: number) => {
-    setCurrentPosition({ x, y });
-    setPendingStamp(getEventStamp());
-    setIsModalOpen(true);
+  // Esc cancels a pending move
+  useEffect(() => {
+    if (!moving) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoving(null);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [moving]);
+
+  /** Viewport px of a full-pitch % point, where the ring opens. */
+  const anchorAt = (x: number, y: number): Point => {
+    const rect = pitchRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
+    return {
+      x: rect.left + (x / 100) * rect.width,
+      y: rect.top + (y / 100) * rect.height,
+    };
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingAction(null);
+  const handlePitchClick = (x: number, y: number) => {
+    if (moving) {
+      actionList.update(moving.id, { x, y }, "Action moved");
+      setMoving(null);
+      return;
+    }
+    setPendingStamp(getEventStamp());
+    setRadial({ anchor: anchorAt(x, y), at: { x, y } });
   };
 
   const handleActionClick = (action: Action) => {
-    setEditingAction(action);
-    setCurrentPosition({ x: action.x, y: action.y });
-    setIsModalOpen(true);
+    setMoving(null);
+    setRadial({
+      anchor: anchorAt(action.x, action.y),
+      at: { x: action.x, y: action.y },
+      editing: action,
+    });
   };
 
   const handleActionMove = (id: string, x: number, y: number) => {
     actionList.update(id, { x, y }, "Action moved");
   };
 
-  const handleFormSubmit = (details: Omit<Action, "id" | "timestamp">) => {
-    if (editingAction) {
-      actionList.update(editingAction.id, details);
+  const closeRadial = () => setRadial(null);
+
+  const handleSave = (actionType: ActionType, outcome: ActionOutcome) => {
+    if (!radial) return;
+    const { category } = actionTypeInfo(actionType);
+    if (radial.editing) {
+      actionList.update(radial.editing.id, { category, actionType, outcome });
     } else {
-      handleAddAction(details);
+      actionList.add({
+        ...(pendingStamp ?? getEventStamp()),
+        ...radial.at,
+        category,
+        actionType,
+        outcome,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        timestamp: Date.now(),
+      });
     }
+    closeRadial();
   };
 
-  const handleDeleteEditingAction = () => {
-    if (editingAction) actionList.remove(editingAction.id);
-    handleCloseModal();
-  };
-
-  const handleAddAction = (details: Omit<Action, "id" | "timestamp">) => {
-    const newAction: Action = {
-      ...(pendingStamp ?? getEventStamp()),
-      ...details,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-      timestamp: Date.now(),
-    };
-
-    actionList.add(newAction);
-  };
+  const editing = radial?.editing;
 
   const handleRemoveAction = actionList.remove;
   const handleClearAllActions = actionList.clearAll;
@@ -126,7 +155,12 @@ const TouchesView: React.FC<TouchesViewProps> = ({
             actions={actions}
             onActionClick={handleActionClick}
             onActionMove={handleActionMove}
-            hint={actions.length === 0 && "Tap where the player made an action"}
+            pitchRef={pitchRef}
+            hint={
+              moving
+                ? "Tap the new spot for the action"
+                : actions.length === 0 && "Tap where the player made an action"
+            }
           />
         </>
       ) : currentView === "stats" ? (
@@ -144,17 +178,29 @@ const TouchesView: React.FC<TouchesViewProps> = ({
         </div>
       )}
 
-      <ActionForm
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleFormSubmit}
-        initialCoords={currentPosition}
-        action={editingAction ?? undefined}
-        onDelete={handleDeleteEditingAction}
-        defaultMinute={
-          editingAction ? editingAction.minute : pendingStamp?.minute
-        }
-      />
+      {radial && (
+        <TouchRadial
+          anchor={radial.anchor}
+          editing={editing}
+          insets={{ top: 8, bottom: focus ? 80 : 64 }}
+          onSave={handleSave}
+          onMove={() => {
+            setMoving(editing ?? null);
+            closeRadial();
+          }}
+          onMinute={(minute) => {
+            if (editing) {
+              actionList.update(editing.id, { minute }, "Minute changed");
+            }
+            closeRadial();
+          }}
+          onDelete={() => {
+            if (editing) actionList.remove(editing.id);
+            closeRadial();
+          }}
+          onClose={closeRadial}
+        />
+      )}
     </>
   );
 };

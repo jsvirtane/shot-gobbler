@@ -27,10 +27,6 @@ vi.mock("../components/TouchList/TouchList", () => ({
   ),
 }));
 
-vi.mock("../components/ActionForm/ActionForm", () => ({
-  default: () => <div data-testid="action-form">Action Form</div>,
-}));
-
 vi.mock("../components/ViewToggle/ViewToggle", () => ({
   default: () => <div data-testid="view-toggle">View Toggle</div>,
 }));

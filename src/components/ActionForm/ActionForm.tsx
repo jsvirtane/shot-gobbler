@@ -6,6 +6,7 @@ import {
   ActionType,
 } from "../../types/Action";
 import { ActionFormColors } from "../../constants/actionFormColors";
+import { ACTION_OUTCOMES, actionTypesIn } from "../../constants/actionTypes";
 import {
   getCancelButtonStyle,
   getSecondaryButtonStyle,
@@ -25,96 +26,31 @@ const CATEGORY_OPTIONS: SegmentedOption<ActionCategory>[] = (
 }));
 
 /** Action types per category; the first one is selected by default. */
-const ACTION_TYPES: Record<ActionCategory, SegmentedOption<ActionType>[]> = {
-  attacking: [
-    { value: "pass", label: "Pass" },
-    { value: "cross", label: "Cross" },
-    { value: "dribble", label: "Dribble" },
-    { value: "shot", label: "Shot" },
-    { value: "throw-in", label: "Throw-in" },
-  ],
-  defensive: [
-    { value: "tackle", label: "Tackle" },
-    { value: "block", label: "Block" },
-    { value: "interception", label: "Interception" },
-    { value: "clearance", label: "Clearance" },
-    { value: "other", label: "Other" },
-  ],
-  duel: [
-    { value: "aerial", label: "Aerial Duel" },
-    { value: "ground", label: "Ground Duel" },
-  ],
-};
+const actionTypeOptions = (
+  category: ActionCategory,
+): SegmentedOption<ActionType>[] =>
+  actionTypesIn(category).map(({ value, label }) => ({ value, label }));
 
-const outcome = (
-  value: ActionOutcome,
-  label: string,
-  icon: string,
-  successful = true,
-): SegmentedOption<ActionOutcome> => ({
-  value,
-  label,
-  icon,
-  activeClassName: successful
-    ? ActionFormColors.outcome.active.successful
-    : ActionFormColors.outcome.active.unsuccessful,
-});
-
-const SUCCESSFUL = outcome("successful", "Successful", "✅");
-const UNSUCCESSFUL = outcome("unsuccessful", "Unsuccessful", "❌", false);
 type OutcomeGroup = {
   options: SegmentedOption<ActionOutcome>[];
   columns: 1 | 2 | 3;
 };
 
-const SUCCESS_OR_NOT: OutcomeGroup = {
-  options: [SUCCESSFUL, UNSUCCESSFUL],
-  columns: 2,
-};
-const PASS_OUTCOMES: OutcomeGroup = {
-  options: [
-    SUCCESSFUL,
-    UNSUCCESSFUL,
-    outcome("assist", "Assist", "🅰️"),
-    outcome("key-pass", "Key Pass", "🔑"),
-  ],
-  columns: 2,
-};
-
-/** Outcomes per action type; the first one is selected by default. */
-const OUTCOMES: Record<ActionType, OutcomeGroup> = {
-  pass: PASS_OUTCOMES,
-  cross: PASS_OUTCOMES,
-  dribble: SUCCESS_OR_NOT,
-  shot: {
-    options: [
-      outcome("goal", "Goal", "⚽"),
-      outcome("on-target", "On Target", "🎯"),
-      outcome("off-target", "Off Target", "↪️", false),
-      outcome("blocked", "Blocked", "🛑", false),
-    ],
-    columns: 3,
-  },
-  "throw-in": SUCCESS_OR_NOT,
-  tackle: {
-    options: [
-      outcome("won", "Won", "✅"),
-      outcome("lost", "Lost", "❌", false),
-    ],
-    columns: 2,
-  },
-  block: {
-    options: [outcome("possession-won", "Possession Won", "🔄"), UNSUCCESSFUL],
-    columns: 2,
-  },
-  interception: { options: [SUCCESSFUL], columns: 1 },
-  clearance: {
-    options: [outcome("cleared", "Cleared", "🧹"), UNSUCCESSFUL],
-    columns: 2,
-  },
-  other: SUCCESS_OR_NOT,
-  aerial: SUCCESS_OR_NOT,
-  ground: SUCCESS_OR_NOT,
+/** Outcomes of an action type; the first one is selected by default. */
+const outcomeGroup = (type: ActionType): OutcomeGroup => {
+  const outcomes = ACTION_OUTCOMES[type];
+  return {
+    options: outcomes.map(({ value, label, icon, tone }) => ({
+      value,
+      label,
+      icon,
+      activeClassName:
+        tone === "failure"
+          ? ActionFormColors.outcome.active.unsuccessful
+          : ActionFormColors.outcome.active.successful,
+    })),
+    columns: outcomes.length === 1 ? 1 : type === "shot" ? 3 : 2,
+  };
 };
 
 type ActionFormProps = {
@@ -172,13 +108,13 @@ const ActionForm: React.FC<ActionFormProps> = ({
   // Changing the action type picks its first (default) outcome
   const handleActionChange = (action: ActionType) => {
     setSelectedAction(action);
-    setSelectedOutcome(OUTCOMES[action].options[0].value);
+    setSelectedOutcome(ACTION_OUTCOMES[action][0].value);
   };
 
   // Changing the category picks its first action type
   const handleCategoryChange = (category: ActionCategory) => {
     setSelectedCategory(category);
-    handleActionChange(ACTION_TYPES[category][0].value);
+    handleActionChange(actionTypesIn(category)[0].value);
   };
 
   const handleActionSubmit = (e: React.FormEvent) => {
@@ -194,7 +130,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
     onClose();
   };
 
-  const outcomes = OUTCOMES[selectedAction];
+  const outcomes = outcomeGroup(selectedAction);
 
   return (
     <Modal
@@ -229,7 +165,7 @@ const ActionForm: React.FC<ActionFormProps> = ({
           <label className="mb-2 block text-sm font-medium">Action Type</label>
           <SegmentedControl
             ariaLabel="Action type"
-            options={ACTION_TYPES[selectedCategory]}
+            options={actionTypeOptions(selectedCategory)}
             value={selectedAction}
             onChange={handleActionChange}
             columns={2}

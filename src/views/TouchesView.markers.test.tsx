@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "../components/Toast";
@@ -22,6 +22,9 @@ const ACTION: Action = {
   actionType: "clearance",
   outcome: "unsuccessful",
   timestamp: 1,
+  matchId: "m1",
+  minute: 12,
+  period: "1H",
 };
 
 let latestActions: Action[] = [];
@@ -38,12 +41,11 @@ const Harness: React.FC = () => {
 
 const marker = () =>
   screen.getByRole("button", {
-    name: "defensive - clearance (unsuccessful)",
+    name: /^defensive - clearance/,
   });
-const checked = (group: string) =>
-  within(screen.getByRole("radiogroup", { name: group }))
-    .getAllByRole("radio")
-    .find((r) => r.getAttribute("aria-checked") === "true")?.textContent;
+const option = (name: string) => screen.getByRole("button", { name });
+const isCurrent = (name: string) =>
+  option(name).getAttribute("aria-current") === "true";
 
 describe("TouchesView marker editing", () => {
   beforeEach(() => {
@@ -56,31 +58,103 @@ describe("TouchesView marker editing", () => {
     vi.restoreAllMocks();
   });
 
-  it("tapping a marker opens the edit form pre-filled", () => {
+  it("tapping a marker opens the edit ring with the current values outlined", () => {
     render(<Harness />);
     fireEvent.click(marker());
 
     expect(screen.getByRole("dialog", { name: "Edit action" })).toBeTruthy();
-    expect(checked("Action category")).toBe("Defensive");
-    expect(checked("Action type")).toBe("Clearance");
-    expect(checked("Outcome")).toBe("❌ Unsuccessful");
-    expect(latestActions).toHaveLength(1);
+    expect(isCurrent("Clearance")).toBe(true);
+    expect(isCurrent("Pass")).toBe(false);
+    expect(option("Move")).toBeTruthy();
+    expect(option("Minute 12")).toBeTruthy();
+    expect(option("Delete")).toBeTruthy();
+
+    fireEvent.click(option("Clearance"));
+    expect(isCurrent("Unsuccessful")).toBe(true);
+    expect(isCurrent("Cleared")).toBe(false);
+    expect(latestActions).toEqual([ACTION]);
   });
 
-  it("Save updates the action in place", () => {
+  it("picking an outcome updates the action in place", () => {
     render(<Harness />);
     fireEvent.click(marker());
-    fireEvent.click(screen.getByRole("radio", { name: "🧹 Cleared" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(option("Clearance"));
+    fireEvent.click(option("Cleared"));
 
     expect(latestActions).toEqual([{ ...ACTION, outcome: "cleared" }]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("can change to an action under More, with its category", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    fireEvent.click(option("More actions"));
+    fireEvent.click(option("Shot"));
+    fireEvent.click(option("Goal"));
+
+    expect(latestActions).toEqual([
+      { ...ACTION, category: "attacking", actionType: "shot", outcome: "goal" },
+    ]);
+  });
+
+  it("Move places the action at the next pitch tap", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    fireEvent.click(option("Move"));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByTestId("pitch-hint").textContent).toMatch(/new spot/);
+
+    fireEvent.click(screen.getByTestId("pitch"), { clientX: 60, clientY: 20 });
+    expect(latestActions).toEqual([{ ...ACTION, x: 60, y: 20 }]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("pitch-hint")).toBeNull();
+  });
+
+  it("Esc cancels a pending move", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    fireEvent.click(option("Move"));
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    fireEvent.click(screen.getByTestId("pitch"), { clientX: 60, clientY: 20 });
+    expect(latestActions[0].x).toBe(30);
+    // The tap opened the ring for a new action instead
+    expect(screen.getByRole("dialog", { name: "Record action" })).toBeTruthy();
+  });
+
+  it("Minute opens a dial that sets the minute", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    fireEvent.click(option("Minute 12"));
+
+    expect(screen.getByRole("dialog", { name: "Minute" })).toBeTruthy();
+    fireEvent.click(option("Delete digit"));
+    fireEvent.click(option("Delete digit"));
+    fireEvent.click(option("7"));
+    fireEvent.click(option("4"));
+    fireEvent.click(option("Done"));
+
+    expect(latestActions).toEqual([{ ...ACTION, minute: 74 }]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the minute dial's centre clears the minute", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    fireEvent.click(option("Minute 12"));
+    fireEvent.click(option("Clear the minute"));
+    fireEvent.click(option("Done"));
+
+    expect(latestActions[0].minute).toBeUndefined();
   });
 
   it("Delete removes the action and Undo restores it", () => {
     render(<Harness />);
     fireEvent.click(marker());
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(option("Delete"));
     expect(latestActions).toHaveLength(0);
+    expect(screen.queryByRole("dialog")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(latestActions).toEqual([ACTION]);
