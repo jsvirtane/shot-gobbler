@@ -1,5 +1,6 @@
 import { ChainActionType, ChainTerminationReason } from "../../types/PassChain";
 import { RadialItem, RadialSection } from "../RadialMenu";
+import { SHOT_RESULT_FILLS } from "../../utils/shotResult";
 
 /*
  * Options of the pass chain rings: the Step ring (how the ball got to the
@@ -18,6 +19,8 @@ export type ChainEndItem = RadialItem & { reason: ChainTerminationReason };
 
 /** Id of the Step ring option that opens the End ring. */
 export const END_CHAIN_ID = "end-chain";
+/** Id of the Step ring option that drops the chain being recorded. */
+export const CANCEL_CHAIN_ID = "cancel-chain";
 /** Id of the saved-chain ring's Delete option. */
 export const DELETE_CHAIN_ID = "delete-chain";
 /** Id of the saved-chain ring's Close option. */
@@ -40,8 +43,8 @@ const STEP_COLORS: Record<ChainStepType, string> = {
 const STEP_ORDER: ChainStepType[] = ["pass", "carry", "cross", "shot"];
 
 /**
- * The Step ring: the four steps, with the last-used one outlined, and a
- * separate End chain option (which adds no point).
+ * The Step ring: the four steps, with the last-used one outlined, and
+ * separate End chain (which adds no point) and Cancel chain options.
  */
 export const stepSections = (
   lastStep: ChainStepType | null,
@@ -61,13 +64,25 @@ export const stepSections = (
       { id: END_CHAIN_ID, label: "End chain", icon: "flag", kind: "danger" },
     ],
   },
+  {
+    items: [
+      {
+        id: CANCEL_CHAIN_ID,
+        label: "Cancel",
+        ariaLabel: "Cancel chain",
+        icon: "trash",
+        kind: "nav",
+      },
+    ],
+  },
 ];
 
+/** Shot endings use the shot tracker's result colours. */
 const SHOT_COLORS = {
-  goal: "#16a34a", // green-600
-  saved: "#0891b2", // cyan-600
-  missed: "#dc2626", // red-600
-  blocked: "#4b5563", // gray-600
+  goal: SHOT_RESULT_FILLS.Goal,
+  saved: SHOT_RESULT_FILLS.Saved,
+  missed: SHOT_RESULT_FILLS.Miss,
+  blocked: SHOT_RESULT_FILLS.Blocked,
 };
 const LOST_COLOR = "#b45309"; // amber-700
 const STOPPED_COLOR = "#475569"; // slate-600

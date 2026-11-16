@@ -139,6 +139,31 @@ describe("TouchesView marker editing", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("Back on the minute dial returns to the edit ring unchanged", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    fireEvent.click(option("Minute 12"));
+    fireEvent.click(option("7"));
+    fireEvent.click(option("Back"));
+
+    expect(screen.getByRole("dialog", { name: "Edit action" })).toBeTruthy();
+    expect(latestActions).toEqual([ACTION]);
+  });
+
+  it("keeps More among the actions, away from the Edit section", () => {
+    render(<Harness />);
+    fireEvent.click(marker());
+    const before = (a: string, b: string) =>
+      Boolean(
+        option(a).compareDocumentPosition(option(b)) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    // Ring order: Attack, Defend, More, Duel, Edit
+    expect(before("Interception", "More actions")).toBe(true);
+    expect(before("More actions", "Ground Duel")).toBe(true);
+    expect(before("Ground Duel", "Move")).toBe(true);
+  });
+
   it("the minute dial's centre clears the minute", () => {
     render(<Harness />);
     fireEvent.click(marker());

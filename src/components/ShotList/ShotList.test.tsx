@@ -86,7 +86,7 @@ describe("ShotList Component", () => {
     ];
     render(<ShotList shots={shots} onRemoveShot={mockOnRemoveShot} />);
 
-    expect(screen.getByText("saved").className).toContain("text-orange-600");
+    expect(screen.getByText("saved").className).toContain("text-cyan-600");
     expect(screen.getByText("blocked").className).toContain("text-gray-600");
     expect(screen.getByText("goal").className).toContain("text-green-600");
     expect(screen.queryByText("miss")).toBeNull();

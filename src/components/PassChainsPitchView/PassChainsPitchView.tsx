@@ -9,6 +9,7 @@ import {
   ChainEndItem,
   ChainStepItem,
   ChainStepType,
+  CANCEL_CHAIN_ID,
   CLOSE_CHAIN_ID,
   DELETE_CHAIN_ID,
   END_CHAIN_ID,
@@ -30,6 +31,8 @@ type PassChainsPitchViewProps = {
   onAddStep: (x: number, y: number, step: ChainStepType) => void;
   /** An option picked in the End ring saves the chain. */
   onEndChain: (reason: ChainTerminationReason) => void;
+  /** Cancel chain in the Step ring drops the chain being recorded. */
+  onCancelChain: () => void;
   /** Saved chain selected by tapping one of its markers. */
   selectedChainId?: string | null;
   onSelectChain?: (id: string | null) => void;
@@ -60,6 +63,7 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
   onStartChain,
   onAddStep,
   onEndChain,
+  onCancelChain,
   selectedChainId,
   onSelectChain,
   onDeleteChain,
@@ -131,7 +135,8 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
         setRing({ kind: "end", anchor: ring.anchor });
         return;
       }
-      onAddStep(ring.x, ring.y, (item as ChainStepItem).step);
+      if (item.id === CANCEL_CHAIN_ID) onCancelChain();
+      else onAddStep(ring.x, ring.y, (item as ChainStepItem).step);
     } else if (ring.kind === "end") {
       onEndChain((item as ChainEndItem).reason);
     } else {

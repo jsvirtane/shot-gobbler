@@ -207,6 +207,31 @@ describe("PassChainsView radial entry", () => {
     expect(points()).toBe(1);
   });
 
+  it.each([false, true])(
+    "Cancel chain drops the chain being recorded (focus %s), Undo restores it",
+    (focus) => {
+      render(<Harness focus={focus} />);
+      tapPitch(50, 90);
+      tapPitch(55, 65);
+      pick("Pass");
+      tapPitch(45, 40);
+      pick("Cancel chain");
+
+      expect(ring()).toBeNull();
+      expect(points()).toBe(0);
+      expect(latestChains).toHaveLength(0);
+      expect(status()).toContain("Chain cancelled");
+
+      pick("Undo");
+      expect(points()).toBe(2);
+      // The next tap starts no new chain: it continues the restored one
+      tapPitch(45, 40);
+      pick("End chain");
+      pick("Goal");
+      expect(latestChains[0].actions).toHaveLength(2);
+    },
+  );
+
   it("undo removes the last point, then reopens the last saved chain", () => {
     render(<Harness focus />);
     recordChain();

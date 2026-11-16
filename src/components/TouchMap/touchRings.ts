@@ -133,30 +133,37 @@ export const touchSections = (
   editing?: Action,
 ): RadialSection<TouchItem>[] => {
   switch (step.ring) {
-    case "action":
+    case "action": {
+      const category = (c: ActionCategory): RadialSection<TouchItem> => ({
+        label: CATEGORY_RING_LABELS[c],
+        items: MAIN_TYPES[c].map((type) =>
+          actionItem(actionTypeInfo(type), editing),
+        ),
+      });
+      const more: RadialSection<TouchItem> = {
+        items: [
+          {
+            id: "more",
+            label: "More",
+            icon: "more",
+            kind: "nav",
+            ariaLabel: "More actions",
+            // Outlined when the action being edited is under More
+            current: editing ? !isMain(editing.actionType) : false,
+            pick: { type: "more" },
+          },
+        ],
+      };
+      // More sits among the actions (between Defend and Duel), so the
+      // Edit section never has it as a neighbour
       return [
-        ...(["attacking", "defensive", "duel"] as const).map((category) => ({
-          label: CATEGORY_RING_LABELS[category],
-          items: MAIN_TYPES[category].map((type) =>
-            actionItem(actionTypeInfo(type), editing),
-          ),
-        })),
-        {
-          items: [
-            {
-              id: "more",
-              label: "More",
-              icon: "more",
-              kind: "nav",
-              ariaLabel: "More actions",
-              // Outlined when the action being edited is under More
-              current: editing ? !isMain(editing.actionType) : false,
-              pick: { type: "more" },
-            },
-          ],
-        },
+        category("attacking"),
+        category("defensive"),
+        more,
+        category("duel"),
         ...(editing ? [editSection(editing)] : []),
       ];
+    }
     case "more":
       return [
         {
@@ -197,11 +204,12 @@ export const touchSections = (
         },
         {
           items: [
+            BACK,
             {
               id: "erase",
               label: "Del",
               ariaLabel: "Delete digit",
-              icon: "back",
+              icon: "erase",
               kind: "danger",
               pick: { type: "erase" },
             },
