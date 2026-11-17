@@ -3,7 +3,6 @@ import { Accordion } from "../components/Accordion";
 import { ClearButton } from "../components/common";
 import ShotCard from "../components/ShotCard";
 import ShotList from "../components/ShotList/ShotList";
-import XgTotals from "../components/ShotList/XgTotals";
 import ShotMap, { ScreenPoint } from "../components/ShotMap/ShotMap";
 import ShotRadial from "../components/ShotRadial/ShotRadial";
 import ShotStatsPanel from "../components/Stats/ShotStatsPanel";
@@ -12,6 +11,11 @@ import SegmentedControl, {
   SegmentedOption,
 } from "../components/SegmentedControl";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import {
+  CardChipButton,
+  HeaderSlot,
+  ReviewCard,
+} from "../components/ReviewLayout";
 import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useLocalStorageState } from "../hooks/useLocalStorageState";
 import { useUndoableList } from "../hooks/useUndoableList";
@@ -236,31 +240,27 @@ const ShotsView: React.FC<ShotsViewProps> = ({
 
   // UI components
   const filterOptions: SegmentedOption<DisplayFilter>[] = [
-    { value: "all", label: "All Shots" },
+    { value: "all", label: "All" },
     // The match's team names (or Home / Away)
     ...getTeamOptions(teamNames).map(({ value, label }) => ({
       value,
       label,
     })),
   ];
-  const filterButtonsUI = (
-    <div className="mb-4 flex justify-center">
-      <SegmentedControl
-        variant="joined"
-        size="sm"
-        ariaLabel="Show shots"
-        options={filterOptions}
-        value={shotDisplayFilter}
-        onChange={setShotDisplayFilter}
-        activeClassName="bg-neutral-900 text-white"
-      />
-    </div>
+  const filterChips = (
+    <SegmentedControl
+      variant="chips"
+      ariaLabel="Show shots"
+      options={filterOptions}
+      value={shotDisplayFilter}
+      onChange={setShotDisplayFilter}
+    />
   );
 
   const viewOptions = [
-    { id: "pitch", label: "Pitch View", icon: "⚽" },
-    { id: "list", label: "List View", icon: "📋" },
-    { id: "stats", label: "Stats", icon: "📊" },
+    { id: "pitch", label: "Pitch" },
+    { id: "list", label: "List" },
+    { id: "stats", label: "Stats" },
   ];
 
   // Teams shown by the filter
@@ -324,71 +324,70 @@ const ShotsView: React.FC<ShotsViewProps> = ({
     );
   }
 
+  const isPitch = shotsView === "pitch";
+
   return (
     <>
-      <ViewToggle
-        currentView={shotsView}
-        options={viewOptions}
-        onViewChange={(view) => setShotsView(view as ShotsView)}
-        className="mb-4"
-      />
-      {filterButtonsUI}
-      {/* Not on the pitch view: the pitch has no vertical room to spare */}
-      {shotsView !== "pitch" && (
-        <ShotsSummaryBar
-          shots={filteredShots}
-          teamNames={teamNames}
-          teams={shownTeams}
+      <HeaderSlot>
+        <ViewToggle
+          currentView={shotsView}
+          options={viewOptions}
+          onViewChange={(view) => setShotsView(view as ShotsView)}
         />
-      )}
-
-      {shotsView === "pitch" ? (
-        <>
-          {/* In half view both teams attack the goal at the bottom, so the
-              team name labels give way to the team of new shots */}
-          <div className="relative flex min-h-6 items-end justify-center">
-            {pitchView === "full" && (
-              <p className="max-w-[60%] truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
-                {teamNames.home}
-              </p>
-            )}
-            {isHalf && (
-              <button
-                type="button"
-                onClick={toggleHalfTeam}
-                aria-label={`Team for new shots: ${teamNames[halfTeam]}. Switch team`}
-                className="absolute bottom-0 left-0 flex max-w-[45%] items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-900 hover:bg-gray-100"
+      </HeaderSlot>
+      <ReviewCard
+        toolbar={filterChips}
+        toolbarEnd={
+          isPitch && (
+            <>
+              {/* In half view both teams attack the goal at the bottom, so
+                  new shots take this team */}
+              {isHalf && (
+                <CardChipButton
+                  onClick={toggleHalfTeam}
+                  aria-label={`Team for new shots: ${teamNames[halfTeam]}. Switch team`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: TEAM_MARKER_COLORS[halfTeam] }}
+                  />
+                  <span className="truncate">{teamNames[halfTeam]}</span>
+                </CardChipButton>
+              )}
+              <CardChipButton
+                onClick={togglePitchView}
+                aria-label={isHalf ? "Full pitch" : "Half pitch"}
               >
-                <span
-                  aria-hidden="true"
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: TEAM_MARKER_COLORS[halfTeam] }}
-                />
-                <span className="truncate">{teamNames[halfTeam]}</span>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={togglePitchView}
-              className="absolute right-0 bottom-0 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-900 hover:bg-gray-100"
-            >
-              {pitchView === "full" ? "Half pitch" : "Full pitch"}
-            </button>
-          </div>
+                {isHalf ? "Full" : "Half"}
+              </CardChipButton>
+            </>
+          )
+        }
+        footer={
+          <ShotsSummaryBar
+            shots={filteredShots}
+            teamNames={teamNames}
+            teams={shownTeams}
+          />
+        }
+      >
+        {isPitch && (
           <ShotMap
             {...shotMapProps}
-            endLabels={isHalf ? halfEndLabels : undefined}
-            // Right under the pitch, above the legend
-            belowPitch={
-              pitchView === "full" && (
-                <p className="w-full truncate text-center text-base text-black uppercase md:text-lg lg:text-xl">
-                  {teamNames.away}
-                </p>
-              )
+            // The team attacking each goal; in half view the team of new
+            // shots instead
+            endLabels={
+              isHalf
+                ? halfEndLabels
+                : { top: teamNames.home, bottom: teamNames.away }
             }
+            endLabelsInShare={!isHalf}
           />
-        </>
-      ) : shotsView === "stats" ? (
+        )}
+      </ReviewCard>
+
+      {isPitch ? null : shotsView === "stats" ? (
         <ShotStatsPanel
           shots={filteredShots}
           teamNames={teamNames}
@@ -396,7 +395,6 @@ const ShotsView: React.FC<ShotsViewProps> = ({
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <XgTotals shots={filteredShots} teamNames={teamNames} />
           {filteredShots.length > 0 && (
             <Accordion
               header={<h3 className="text-lg font-semibold">Shot details</h3>}

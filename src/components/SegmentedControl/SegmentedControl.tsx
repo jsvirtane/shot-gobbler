@@ -12,8 +12,12 @@ export interface SegmentedOption<T extends string> {
 
 /** sm: compact text-sm; md: text-base; lg: text-sm with a tall (44px) tap target. */
 type Size = "sm" | "md" | "lg";
-/** "tiles": separate buttons with gaps; "joined": one pill split into segments. */
-type Variant = "tiles" | "joined";
+/**
+ * "tiles": separate buttons with gaps; "joined": one pill split into
+ * segments; "pill": a grey track with the choice as a white pill (view
+ * switches); "chips": small rounded chips (filters).
+ */
+type Variant = "tiles" | "joined" | "pill" | "chips";
 
 interface SegmentedControlProps<T extends string> {
   options: SegmentedOption<T>[];
@@ -55,6 +59,25 @@ const JOINED_SIZE: Record<Size, string> = {
 const JOINED_ACTIVE = "bg-blue-600 text-white";
 const JOINED_INACTIVE =
   "border border-gray-200 bg-white text-gray-900 hover:bg-gray-100";
+
+const PILL_OPTION = "flex-1 rounded-md px-3 py-1.5 text-sm font-medium";
+const PILL_ACTIVE = "bg-white text-gray-900 shadow-sm";
+const PILL_INACTIVE = "text-gray-600 hover:text-gray-900";
+
+const CHIP_OPTION =
+  "min-w-0 shrink-0 rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap";
+const CHIP_ACTIVE = "border-blue-300 bg-blue-50 text-blue-700";
+const CHIP_INACTIVE = "border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
+
+const VARIANT_COLOURS: Record<Variant, { active: string; inactive: string }> = {
+  tiles: {
+    active: ShotFormColors.active,
+    inactive: ShotFormColors.inactive,
+  },
+  joined: { active: JOINED_ACTIVE, inactive: JOINED_INACTIVE },
+  pill: { active: PILL_ACTIVE, inactive: PILL_INACTIVE },
+  chips: { active: CHIP_ACTIVE, inactive: CHIP_INACTIVE },
+};
 
 const FOCUS_RING =
   "focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
@@ -115,7 +138,11 @@ function SegmentedControl<T extends string>({
 
   const layout = joined
     ? "inline-flex rounded-md shadow-sm"
-    : `${columns ? GRID_COLUMNS[columns] : "flex"} gap-2`;
+    : variant === "pill"
+      ? "flex gap-0.5 rounded-lg bg-gray-100 p-0.5"
+      : variant === "chips"
+        ? "flex min-w-0 gap-1.5"
+        : `${columns ? GRID_COLUMNS[columns] : "flex"} gap-2`;
 
   return (
     <div
@@ -128,12 +155,15 @@ function SegmentedControl<T extends string>({
         const colours = isActive
           ? (option.activeClassName ??
             activeClassName ??
-            (joined ? JOINED_ACTIVE : ShotFormColors.active))
-          : (inactiveClassName ??
-            (joined ? JOINED_INACTIVE : ShotFormColors.inactive));
+            VARIANT_COLOURS[variant].active)
+          : (inactiveClassName ?? VARIANT_COLOURS[variant].inactive);
         const shape = joined
           ? `${JOINED_SIZE[size]} ${index === 0 ? "rounded-l-lg" : ""} ${index === options.length - 1 ? "rounded-r-lg" : ""}`
-          : `${TILE_SIZE[size]} ${columns ? "" : "flex-1"}`;
+          : variant === "pill"
+            ? PILL_OPTION
+            : variant === "chips"
+              ? CHIP_OPTION
+              : `${TILE_SIZE[size]} ${columns ? "" : "flex-1"}`;
 
         return (
           <button

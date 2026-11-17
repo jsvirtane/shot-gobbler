@@ -35,10 +35,8 @@ export const PassChainMap: React.FC<PassChainMapProps> = ({
     !!selectedChainId && passChains.some((c) => c.id === selectedChainId);
 
   return (
-    // Reserved height includes the match bar and the two-row legend
     <PitchContainer
       onCoordinateClick={onPitchClick}
-      reservedHeight="23rem"
       legend={!focus && <PassChainLegend />}
       hint={hint}
       fill={focus}

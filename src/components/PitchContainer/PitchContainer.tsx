@@ -11,12 +11,14 @@ import { PitchApi, PitchContext } from "./pitchContext";
 const PITCH_RATIO = 74 / 110;
 
 /**
- * Default vertical space (the 3.75rem nav bar, page padding, view controls
- * and labels) reserved outside the pitch so that the whole pitch fits in the
- * viewport. The nav bar is at the top on wide screens and at the bottom on
- * phones; the safe-area insets around it are added on top of this.
+ * Vertical space reserved outside the pitch in review mode so that the
+ * whole pitch fits in the viewport: the 3.75rem nav bar, the header (match
+ * row and view switch), page padding, and the review card's filter bar,
+ * legend and summary. The nav bar is at the top on wide screens and at the
+ * bottom on phones; the safe-area insets around it are added on top of
+ * this.
  */
-const DEFAULT_RESERVED_HEIGHT = "16rem";
+export const REVIEW_RESERVED_HEIGHT = "20.25rem";
 
 /** Narrowest shared-image area, so a legend fits in two rows. */
 const LEGEND_MIN_WIDTH = "22rem";
@@ -66,6 +68,11 @@ interface PitchContainerProps {
    * (e.g. team names). Left out of shared images.
    */
   endLabels?: { top?: React.ReactNode; bottom?: React.ReactNode };
+  /**
+   * Keep the end labels in shared images (e.g. team names). By default they
+   * are left out, as they describe how to track rather than the data.
+   */
+  endLabelsInShare?: boolean;
   /** Markers positioned with `left: x%` / `top: y%` of the full pitch. */
   children?: React.ReactNode;
 }
@@ -80,12 +87,13 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     {
       onCoordinateClick,
       variant = "full",
-      reservedHeight = DEFAULT_RESERVED_HEIGHT,
+      reservedHeight = REVIEW_RESERVED_HEIGHT,
       legend,
       belowPitch,
       hint,
       fill = false,
       endLabels,
+      endLabelsInShare = false,
       children,
     },
     ref,
@@ -217,7 +225,7 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
             )}
             {endLabels?.top && (
               <div
-                data-html2canvas-ignore="true"
+                data-html2canvas-ignore={endLabelsInShare ? undefined : "true"}
                 data-testid="pitch-label-top"
                 className={`${END_LABEL_CLASS} top-1`}
               >
@@ -226,7 +234,7 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
             )}
             {endLabels?.bottom && (
               <div
-                data-html2canvas-ignore="true"
+                data-html2canvas-ignore={endLabelsInShare ? undefined : "true"}
                 data-testid="pitch-label-bottom"
                 className={`${END_LABEL_CLASS} bottom-1`}
               >

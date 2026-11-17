@@ -4,7 +4,6 @@ import SegmentedControl from "../SegmentedControl";
 type ViewOption = {
   id: string;
   label: string;
-  icon?: string;
 };
 
 interface ViewToggleProps {
@@ -15,29 +14,22 @@ interface ViewToggleProps {
   ariaLabel?: string;
 }
 
+/** The Pitch / List / Stats switch: a grey track with a white pill. */
 const ViewToggle: React.FC<ViewToggleProps> = ({
   currentView,
   options,
   onViewChange,
   className = "",
   ariaLabel = "View",
-}) => {
-  return (
-    <div className={`flex justify-center ${className}`}>
-      <SegmentedControl
-        variant="joined"
-        size="sm"
-        ariaLabel={ariaLabel}
-        options={options.map(({ id, label, icon }) => ({
-          value: id,
-          label,
-          icon,
-        }))}
-        value={currentView}
-        onChange={onViewChange}
-      />
-    </div>
-  );
-};
+}) => (
+  <SegmentedControl
+    variant="pill"
+    ariaLabel={ariaLabel}
+    options={options.map(({ id, label }) => ({ value: id, label }))}
+    value={currentView}
+    onChange={onViewChange}
+    className={className}
+  />
+);
 
 export default ViewToggle;

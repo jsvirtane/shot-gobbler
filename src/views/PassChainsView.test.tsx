@@ -296,10 +296,10 @@ describe("PassChainsView radial entry", () => {
   it("keeps the view toggle while recording, and the chain survives a switch", () => {
     render(<Harness />);
     tapPitch(50, 90);
-    expect(screen.getByRole("radio", { name: /List View/ })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "List" })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("radio", { name: /List View/ }));
-    fireEvent.click(screen.getByRole("radio", { name: /Pitch View/ }));
+    fireEvent.click(screen.getByRole("radio", { name: "List" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Pitch" }));
     expect(points()).toBe(1);
   });
 
@@ -307,7 +307,7 @@ describe("PassChainsView radial entry", () => {
     render(<Harness />);
     recordChain();
     recordChain();
-    fireEvent.click(screen.getByRole("radio", { name: /List View/ }));
+    fireEvent.click(screen.getByRole("radio", { name: "List" }));
     fireEvent.click(screen.getAllByTitle("Remove this pass chain")[0]);
     expect(latestChains).toHaveLength(1);
     fireEvent.click(screen.getByTestId("clear-all"));
