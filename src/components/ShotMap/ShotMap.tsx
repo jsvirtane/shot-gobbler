@@ -40,6 +40,8 @@ type ShotMapProps = {
   focus?: boolean;
   /** Labels inside the pitch at the goal ends. */
   endLabels?: { top?: React.ReactNode; bottom?: React.ReactNode };
+  /** Keep the end labels in shared images. */
+  endLabelsInShare?: boolean;
   /** A shot being recorded (stored coordinates), marked on the pitch. */
   pending?: PitchPoint & { team: Team };
   /** The shot saved or edited last, whose marker pulses once. */
@@ -57,6 +59,7 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   hint,
   focus = false,
   endLabels,
+  endLabelsInShare,
   pending,
   pulse,
 }) => {
@@ -76,17 +79,16 @@ export const ShotMap: React.FC<ShotMapProps> = ({
   const pendingShown = pending && storedToDisplay(pending, variant);
 
   return (
-    // Reserved height includes the match bar and the two-row legend
     <PitchContainer
       ref={pitchRef}
       onCoordinateClick={(x, y) => onPitchClick(x, y, toScreen({ x, y }))}
       variant={variant}
-      reservedHeight="21.75rem"
       legend={!focus && <ShotLegend teamLabels={teamLabels} />}
       belowPitch={!focus && belowPitch}
       hint={hint}
       fill={focus}
       endLabels={endLabels}
+      endLabelsInShare={endLabelsInShare}
     >
       {shots.map((shot) => {
         // In half view both teams attack the same goal, so shots at the

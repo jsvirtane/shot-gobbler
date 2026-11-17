@@ -172,13 +172,13 @@ const MatchBar: React.FC<MatchBarProps> = ({
         : "Matches";
 
   return (
-    <div className="mb-3 flex h-10 shrink-0 items-center gap-2">
+    <div className="flex h-10 min-w-0 items-center gap-2">
       <button
         type="button"
         onClick={() => setMode({ kind: "list" })}
         aria-haspopup="dialog"
         aria-label={`Match: ${title} · ${currentMatch.date}. Change match`}
-        className="flex h-full min-w-0 flex-1 items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 text-left shadow-sm hover:bg-gray-50"
+        className="-ml-1.5 flex h-full min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 text-left hover:bg-gray-100"
       >
         <span className="flex min-w-0 flex-col leading-tight">
           <span className="truncate text-sm font-semibold text-gray-900">
@@ -188,17 +188,20 @@ const MatchBar: React.FC<MatchBarProps> = ({
             {currentMatch.date}
           </span>
         </span>
-        <span aria-hidden="true" className="ml-auto shrink-0 text-gray-400">
+        <span
+          aria-hidden="true"
+          className="shrink-0 self-start pt-0.5 text-xs text-gray-400"
+        >
           ▾
         </span>
       </button>
-      <div className="flex h-full shrink-0 items-center rounded-md border border-gray-200 bg-white shadow-sm">
+      <div className="flex h-8 shrink-0 items-center rounded-full bg-gray-100">
         <button
           type="button"
           onClick={() => onClockChange(toggleClock)}
           disabled={clock?.period === "PEN"}
           aria-label={running ? "Pause clock" : "Start clock"}
-          className="flex h-full w-9 items-center justify-center rounded-l-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-30"
+          className="flex h-full w-8 items-center justify-center rounded-l-full text-xs text-gray-700 hover:bg-gray-200 disabled:opacity-30"
         >
           {running ? "❚❚" : "▶"}
         </button>
@@ -206,7 +209,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
           type="button"
           onClick={() => setMode({ kind: "list" })}
           aria-label={`Match clock ${clockText}. Clock settings`}
-          className={`h-full rounded-r-md border-l border-gray-200 px-2 text-sm font-semibold tabular-nums hover:bg-gray-50 ${running ? "text-green-700" : "text-gray-700"}`}
+          className={`h-full rounded-r-full pr-3 pl-0.5 text-sm font-semibold tabular-nums hover:bg-gray-200 ${running ? "text-green-700" : "text-gray-700"}`}
           data-testid="match-clock"
         >
           {clockText}
@@ -218,7 +221,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
           onClick={onTrack}
           aria-label="Track: full-screen pitch"
           title="Full-screen pitch for tracking"
-          className="flex h-full shrink-0 items-center gap-1 rounded-md bg-blue-600 px-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+          className="flex h-9 shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
         >
           <span aria-hidden="true">⤢</span>
           Track

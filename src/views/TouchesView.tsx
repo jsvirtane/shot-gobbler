@@ -8,6 +8,10 @@ import TouchRadial from "../components/TouchMap/TouchRadial";
 import { Point } from "../components/RadialMenu";
 import { actionTypeInfo } from "../constants/actionTypes";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { HeaderSlot, ReviewCard } from "../components/ReviewLayout";
+import SegmentedControl, {
+  SegmentedOption,
+} from "../components/SegmentedControl";
 import { useTrackerControls } from "../components/FocusMode/trackerControls";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
@@ -17,6 +21,21 @@ import { actionSummary } from "../utils/feedbackSummary";
 
 const TOUCHES_VIEWS = ["pitch", "list", "stats"] as const;
 type TouchesView = (typeof TOUCHES_VIEWS)[number];
+const TOUCH_FILTERS = ["all", "attacking", "defensive", "duel"] as const;
+type TouchFilter = (typeof TOUCH_FILTERS)[number];
+
+const filterOptions: SegmentedOption<TouchFilter>[] = [
+  { value: "all", label: "All" },
+  { value: "attacking", label: "Attack" },
+  { value: "defensive", label: "Defend" },
+  { value: "duel", label: "Duel" },
+];
+
+const viewOptions = [
+  { id: "pitch", label: "Pitch" },
+  { id: "list", label: "List" },
+  { id: "stats", label: "Stats" },
+];
 
 interface TouchesViewProps {
   actions: Action[];
@@ -52,6 +71,16 @@ const TouchesView: React.FC<TouchesViewProps> = ({
     "pitch",
     TOUCHES_VIEWS,
   );
+  const [filter, setFilter] = useUrlState<TouchFilter>(
+    "filter",
+    "all",
+    TOUCH_FILTERS,
+  );
+  // Focus mode has no filter, so it shows every action
+  const shownActions =
+    focus || filter === "all"
+      ? actions
+      : actions.filter((action) => action.category === filter);
   const actionList = useUndoableList(actions, setActions, {
     one: "Action",
     many: "actions",
@@ -137,53 +166,67 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   const handleRemoveAction = actionList.remove;
   const handleClearAllActions = actionList.clearAll;
 
-  const viewOptions = [
-    { id: "pitch", label: "Pitch View", icon: "⚽️" },
-    { id: "list", label: "List View", icon: "📋" },
-    { id: "stats", label: "Stats", icon: "📊" },
-  ];
+  const touchMap = (
+    <TouchMap
+      focus={focus}
+      onPitchClick={handlePitchClick}
+      actions={shownActions}
+      pulse={actionList.pulse}
+      onActionClick={handleActionClick}
+      onActionMove={handleActionMove}
+      pitchRef={pitchRef}
+      hint={
+        moving
+          ? "Tap the new spot for the action"
+          : actions.length === 0 && "Tap where the player made an action"
+      }
+    />
+  );
 
   return (
     <>
-      {!focus && (
-        <ViewToggle
-          currentView={currentView}
-          options={viewOptions}
-          onViewChange={(view) => setCurrentView(view as TouchesView)}
-          className="mb-4"
-        />
-      )}
-
-      {focus || currentView === "pitch" ? (
-        <>
-          <TouchMap
-            focus={focus}
-            onPitchClick={handlePitchClick}
-            actions={actions}
-            pulse={actionList.pulse}
-            onActionClick={handleActionClick}
-            onActionMove={handleActionMove}
-            pitchRef={pitchRef}
-            hint={
-              moving
-                ? "Tap the new spot for the action"
-                : actions.length === 0 && "Tap where the player made an action"
-            }
-          />
-        </>
-      ) : currentView === "stats" ? (
-        <>
-          <TouchesSummaryBar actions={actions} />
-          <TouchStatsPanel actions={actions} />
-        </>
+      {focus ? (
+        touchMap
       ) : (
-        <div className="flex flex-col gap-4">
-          <TouchesSummaryBar actions={actions} />
-          <TouchList actions={actions} onRemoveAction={handleRemoveAction} />
-          {actions.length > 0 && (
-            <ClearButton onClick={handleClearAllActions}>Clear All</ClearButton>
+        <>
+          <HeaderSlot>
+            <ViewToggle
+              currentView={currentView}
+              options={viewOptions}
+              onViewChange={(view) => setCurrentView(view as TouchesView)}
+            />
+          </HeaderSlot>
+          <ReviewCard
+            toolbar={
+              <SegmentedControl
+                variant="chips"
+                ariaLabel="Show actions"
+                options={filterOptions}
+                value={filter}
+                onChange={setFilter}
+              />
+            }
+            footer={<TouchesSummaryBar actions={shownActions} />}
+          >
+            {currentView === "pitch" && touchMap}
+          </ReviewCard>
+          {currentView === "stats" && (
+            <TouchStatsPanel actions={shownActions} />
           )}
-        </div>
+          {currentView === "list" && (
+            <div className="flex flex-col gap-4">
+              <TouchList
+                actions={shownActions}
+                onRemoveAction={handleRemoveAction}
+              />
+              {actions.length > 0 && filter === "all" && (
+                <ClearButton onClick={handleClearAllActions}>
+                  Clear All
+                </ClearButton>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {radial && (

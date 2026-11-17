@@ -33,11 +33,9 @@ export const TouchMap = ({
   pulse,
 }: TouchMapProps) => {
   return (
-    // Reserved height includes the match bar and the two-row legend
     <PitchContainer
       ref={pitchRef as React.Ref<HTMLDivElement>}
       onCoordinateClick={onPitchClick}
-      reservedHeight="15.75rem"
       legend={!focus && <TouchLegend />}
       hint={hint}
       fill={focus}

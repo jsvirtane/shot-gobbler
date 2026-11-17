@@ -209,13 +209,15 @@ describe("Stats view", () => {
     expect(window.location.search).toBe("?view=stats");
   });
 
-  it("does not show the summary on the pitch view", () => {
+  it("shows the summary under the pitch too", () => {
     setView("pitch");
     render(
       <ToastProvider>
         <ShotsView shots={SHOTS} setShots={vi.fn()} />
       </ToastProvider>,
     );
-    expect(screen.queryByTestId("stats-summary")).toBeNull();
+    const card = screen.getByTestId("review-card");
+    expect(card.contains(screen.getByTestId("stats-summary"))).toBe(true);
+    expect(card.contains(screen.getByTestId("pitch"))).toBe(true);
   });
 });

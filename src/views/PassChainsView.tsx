@@ -8,6 +8,10 @@ import PassChainStatsPanel from "../components/Stats/PassChainStatsPanel";
 import { ChainsSummaryBar } from "../components/Stats/SummaryBar";
 import { useToast } from "../components/Toast";
 import ViewToggle from "../components/ViewToggle/ViewToggle";
+import { HeaderSlot, ReviewCard } from "../components/ReviewLayout";
+import SegmentedControl, {
+  SegmentedOption,
+} from "../components/SegmentedControl";
 import { useUndoableList } from "../hooks/useUndoableList";
 import { useUrlState } from "../hooks/useUrlState";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
@@ -27,9 +31,18 @@ const PASS_CHAINS_VIEWS = ["pitch", "list", "stats"] as const;
 type PassChainsView = (typeof PASS_CHAINS_VIEWS)[number];
 
 const viewOptions = [
-  { id: "pitch", label: "Pitch View", icon: "⚽️" },
-  { id: "list", label: "List View", icon: "📋" },
-  { id: "stats", label: "Stats", icon: "📊" },
+  { id: "pitch", label: "Pitch" },
+  { id: "list", label: "List" },
+  { id: "stats", label: "Stats" },
+];
+
+const CHAIN_FILTERS = ["all", "goal", "no-goal"] as const;
+type ChainFilter = (typeof CHAIN_FILTERS)[number];
+
+const filterOptions: SegmentedOption<ChainFilter>[] = [
+  { value: "all", label: "All" },
+  { value: "goal", label: "Goal" },
+  { value: "no-goal", label: "No goal" },
 ];
 
 interface PassChainsViewProps {
@@ -78,6 +91,20 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
     "pitch",
     PASS_CHAINS_VIEWS,
   );
+
+  const [filter, setFilter] = useUrlState<ChainFilter>(
+    "filter",
+    "all",
+    CHAIN_FILTERS,
+  );
+  // Focus mode has no filter, so it shows every chain
+  const shownChains =
+    focus || filter === "all"
+      ? passChains
+      : passChains.filter(
+          (chain) =>
+            (chain.terminationReason === "goal") === (filter === "goal"),
+        );
 
   const chainList = useUndoableList(passChains, setPassChains, {
     one: "Pass chain",
@@ -191,45 +218,58 @@ const PassChainsView: React.FC<PassChainsViewProps> = ({
     setSelectedChainId(null);
   };
 
+  const pitchView = (
+    <PassChainsPitchView
+      focus={focus}
+      pulse={chainList.pulse}
+      passChains={shownChains}
+      currentPassChain={currentPassChain}
+      lastStep={lastStep}
+      onStartChain={handleStartChain}
+      onAddStep={handleAddStep}
+      onEndChain={handleEndChain}
+      onCancelChain={handleCancelChain}
+      selectedChainId={selectedChainId}
+      onSelectChain={setSelectedChainId}
+      onDeleteChain={handleDeleteChain}
+    />
+  );
+
+  if (focus) return pitchView;
+
   return (
     <>
-      {!focus && (
+      <HeaderSlot>
         <ViewToggle
           currentView={currentView}
           options={viewOptions}
           onViewChange={(view) => setCurrentView(view as PassChainsView)}
-          className="mb-4"
         />
+      </HeaderSlot>
+      <ReviewCard
+        toolbar={
+          <SegmentedControl
+            variant="chips"
+            ariaLabel="Show pass chains"
+            options={filterOptions}
+            value={filter}
+            onChange={setFilter}
+          />
+        }
+        footer={<ChainsSummaryBar passChains={shownChains} />}
+      >
+        {currentView === "pitch" && pitchView}
+      </ReviewCard>
+      {currentView === "stats" && (
+        <PassChainStatsPanel passChains={shownChains} />
       )}
-
-      {focus || currentView === "pitch" ? (
-        <PassChainsPitchView
-          focus={focus}
-          pulse={chainList.pulse}
-          passChains={passChains}
-          currentPassChain={currentPassChain}
-          lastStep={lastStep}
-          onStartChain={handleStartChain}
-          onAddStep={handleAddStep}
-          onEndChain={handleEndChain}
-          onCancelChain={handleCancelChain}
-          selectedChainId={selectedChainId}
-          onSelectChain={setSelectedChainId}
-          onDeleteChain={handleDeleteChain}
-        />
-      ) : currentView === "stats" ? (
-        <>
-          <ChainsSummaryBar passChains={passChains} />
-          <PassChainStatsPanel passChains={passChains} />
-        </>
-      ) : (
+      {currentView === "list" && (
         <div className="flex flex-col gap-4">
-          <ChainsSummaryBar passChains={passChains} />
           <PassChainsListView
-            passChains={passChains}
+            passChains={shownChains}
             onRemovePassChain={handleRemovePassChain}
           />
-          {passChains.length > 0 && (
+          {passChains.length > 0 && filter === "all" && (
             <ClearButton
               onClick={handleClearAllPassChains}
               data-testid="clear-all"

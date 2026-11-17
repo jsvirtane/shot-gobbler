@@ -30,7 +30,7 @@ const Responsive: React.FC<{ text: SummaryText }> = ({ text }) => (
 );
 
 const lineClass =
-  "mb-2 flex min-w-0 justify-center gap-1.5 text-xs tracking-tight whitespace-nowrap text-gray-700 sm:gap-2 sm:text-sm sm:tracking-normal";
+  "flex min-w-0 justify-center gap-1.5 text-xs tracking-tight whitespace-nowrap text-gray-700 sm:gap-2 sm:text-sm sm:tracking-normal";
 
 /**
  * One line of shot totals per team, e.g.
