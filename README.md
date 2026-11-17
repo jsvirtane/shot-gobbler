@@ -20,7 +20,7 @@ Shot Gobbler helps football analysts, fans, and data enthusiasts gather touch an
 - Result ring (goal, saved, blocked, miss) with details: header, set piece, penalty, shirt number
 - Both teams on the full pitch, or one half with a remembered team toggle
 - xG per shot, shown by marker size, with totals
-- List, stats and team filters
+- List and stats views, with filters on every tab (team, action category, chains that ended in a goal)
 
 ### Touch map
 
