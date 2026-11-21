@@ -1,11 +1,11 @@
 import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
-import { Shot } from "../types/Shot";
+import { isSpotKick, Shot, SpotKickType } from "../types/Shot";
 import { attackedGoal, distanceToGoal, shotAngle } from "./pitchGeometry";
 
 /*
  * Expected goals (xG): the probability that a shot is scored.
  *
- * Penalties use a fixed conversion rate. Other shots use a logistic
+ * Spot kicks use a fixed conversion rate. Other shots use a logistic
  * regression on distance and angle to goal, the standard shape of simple
  * public xG models (e.g. the distance + angle models in "Soccermatics" /
  * Friends of Tracking tutorials):
@@ -26,9 +26,22 @@ import { attackedGoal, distanceToGoal, shotAngle } from "./pitchGeometry";
  * Futsal shots are measured on the futsal pitch (a 3 m goal, a 6 m
  * penalty spot) with the same coefficients. That gives plausible values
  * (about 0.16 from the penalty mark, 0.1 from 10 m) but the model has not
- * been tuned for futsal.
+ * been fitted on futsal data.
+ *
+ * Spot kicks have fixed values (`SPOT_KICK_XG`). Published
+ * futsal conversion rates are scarce, so the futsal ones are estimates:
+ * the penalty matches football, and the 10 m kick (a longer kick at a
+ * smaller goal) is put well below it.
  */
 export const PENALTY_XG = 0.76;
+/** Futsal's second penalty, from the 10 m mark (an estimate). */
+export const TEN_METRE_KICK_XG = 0.45;
+
+/** Fixed xG of each spot kick. */
+export const SPOT_KICK_XG: Record<SpotKickType, number> = {
+  Penalty: PENALTY_XG,
+  "10m Kick": TEN_METRE_KICK_XG,
+};
 const INTERCEPT = -2.33;
 /** Per metre from the centre of the goal. */
 const DISTANCE_COEFFICIENT = -0.05;
@@ -46,7 +59,7 @@ export const shotXg = (
   shot: XgShot,
   pitch: PitchType = DEFAULT_PITCH_TYPE,
 ): number => {
-  if (shot.shotType === "Penalty") return PENALTY_XG;
+  if (isSpotKick(shot.shotType)) return SPOT_KICK_XG[shot.shotType];
 
   const goal = attackedGoal(shot);
   const distance = distanceToGoal(shot, goal, pitch);

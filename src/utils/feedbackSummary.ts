@@ -4,6 +4,7 @@ import {
 } from "../constants/markerColors";
 import { actionTypeInfo, outcomeInfo } from "../constants/actionTypes";
 import { Action } from "../types/Action";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
 import { TeamNames } from "../types/Match";
 import { PassChain } from "../types/PassChain";
 import { Shot } from "../types/Shot";
@@ -45,8 +46,11 @@ export const shotSummary = (
   dot: TEAM_MARKER_COLORS[shot.team],
 });
 
-export const actionSummary = (action: Action): FeedbackSummary => ({
-  lead: actionTypeInfo(action.actionType).label,
+export const actionSummary = (
+  action: Action,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): FeedbackSummary => ({
+  lead: actionTypeInfo(action.actionType, pitch).label,
   message: join([
     outcomeInfo(action.actionType, action.outcome)?.label,
     minuteText(action.minute),

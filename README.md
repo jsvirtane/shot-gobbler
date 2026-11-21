@@ -14,7 +14,7 @@ Shot Gobbler helps football analysts, fans, and data enthusiasts gather touch an
 - Focus mode: a full-screen pitch with a floating bar for the match clock, undo, tracker switch and half pitch
 - Tap a marker to edit it in the same ring (move, minute, delete); press and hold to drag it
 - Matches with team names and a running clock; events are stamped with minute and period
-- Football or futsal per match: the futsal pitch (40 x 20 m) has its own markings, 6 m penalty spot, goal size for xG and 2 x 20 min clock
+- Football or futsal per match: the futsal pitch (40 x 20 m) has its own markings, 6 m penalty spot, goal size for xG and 2 x 20 min clock, plus the 10 m kick, kick-ins (for throw-ins) and no offside
 
 ### Shot map
 

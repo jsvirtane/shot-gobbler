@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BodyPart, ShotType } from "../types/Shot";
 import { fromMetres } from "./pitchGeometry";
-import { formatXg, PENALTY_XG, shotXg, totalXg } from "./xg";
+import { formatXg, PENALTY_XG, shotXg, TEN_METRE_KICK_XG, totalXg } from "./xg";
 
 // A shot at the top goal, position in metres from the top-left corner
 const shotAt = (
@@ -112,5 +112,17 @@ describe("shotXg on a futsal pitch", () => {
 
   it("gives penalties the fixed value", () => {
     expect(shotXg(futsalShot(10, 6, "Penalty"), "futsal")).toBe(PENALTY_XG);
+  });
+});
+
+describe("spot kicks", () => {
+  it("gives the futsal 10 m kick its fixed value", () => {
+    const ten = {
+      ...fromMetres({ x: 10, y: 10 }, "futsal"),
+      bodyPart: "Foot" as BodyPart,
+      shotType: "10m Kick" as ShotType,
+    };
+    expect(shotXg(ten, "futsal")).toBe(TEN_METRE_KICK_XG);
+    expect(TEN_METRE_KICK_XG).toBeLessThan(PENALTY_XG);
   });
 });

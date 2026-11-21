@@ -18,6 +18,7 @@ import { useUrlState } from "../hooks/useUrlState";
 import { Action, ActionOutcome, ActionType } from "../types/Action";
 import { DEFAULT_MATCH_ID, EventStamp } from "../types/Match";
 import { actionSummary } from "../utils/feedbackSummary";
+import { usePitchType } from "../components/PitchContainer/pitchTypeContext";
 
 const TOUCHES_VIEWS = ["pitch", "list", "stats"] as const;
 type TouchesView = (typeof TOUCHES_VIEWS)[number];
@@ -54,6 +55,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
   getEventStamp = defaultEventStamp,
   focus = false,
 }) => {
+  const pitchType = usePitchType();
   // The open radial menu: where it points and the action it edits (if any)
   const [radial, setRadial] = useState<{
     anchor: Point;
@@ -144,7 +146,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
         radial.editing.id,
         { category, actionType, outcome },
         undefined,
-        actionSummary,
+        (a) => actionSummary(a, pitchType),
       );
     } else {
       const action: Action = {
@@ -156,7 +158,7 @@ const TouchesView: React.FC<TouchesViewProps> = ({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         timestamp: Date.now(),
       };
-      actionList.add(action, actionSummary(action));
+      actionList.add(action, actionSummary(action, pitchType));
     }
     closeRadial();
   };

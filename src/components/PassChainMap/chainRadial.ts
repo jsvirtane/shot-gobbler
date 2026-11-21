@@ -1,6 +1,8 @@
 import { ChainActionType, ChainTerminationReason } from "../../types/PassChain";
 import { RadialItem, RadialSection } from "../RadialMenu";
 import { SHOT_RESULT_FILLS } from "../../utils/shotResult";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../../types/Pitch";
+import { pitchSpec } from "../../utils/pitchSpecs";
 
 /*
  * Options of the pass chain rings: the Step ring (how the ball got to the
@@ -120,16 +122,21 @@ const END_GROUPS: { label: string; options: EndOption[] }[] = [
   },
 ];
 
-export const endSections = (): RadialSection<ChainEndItem>[] =>
+/** The end ring; offside is left out where the pitch has no offside rule. */
+export const endSections = (
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): RadialSection<ChainEndItem>[] =>
   END_GROUPS.map((group) => ({
     label: group.label,
-    items: group.options.map(([reason, label, color, ariaLabel]) => ({
-      id: reason,
-      reason,
-      label,
-      ariaLabel,
-      color,
-    })),
+    items: group.options
+      .filter(([reason]) => reason !== "offside" || pitchSpec(pitch).hasOffside)
+      .map(([reason, label, color, ariaLabel]) => ({
+        id: reason,
+        reason,
+        label,
+        ariaLabel,
+        color,
+      })),
   }));
 
 /** Ring of a saved chain: Delete, and Close to keep it. */

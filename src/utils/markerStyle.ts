@@ -4,7 +4,7 @@ import {
 } from "../constants/markerColors";
 import { Action } from "../types/Action";
 import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
-import { Shot, ShotResult } from "../types/Shot";
+import { isSpotKick, Shot, ShotResult } from "../types/Shot";
 import { isSuccessfulActionOutcome } from "./isSuccessfulActionOutcome";
 import { getShotResult } from "./shotResult";
 import { shotXg } from "./xg";
@@ -45,8 +45,8 @@ export const SHOT_MARKER_MAX_SIZE = 26;
 /** xG at which a marker reaches its full size. */
 export const SHOT_MARKER_FULL_XG = 0.5;
 /**
- * Penalties all have the same high xG; capping their size keeps them from
- * dominating the map.
+ * Spot kicks (penalties, futsal 10 m kicks) all have the same high xG;
+ * capping their size keeps them from dominating the map.
  */
 export const PENALTY_MARKER_SIZE = 20;
 
@@ -60,7 +60,9 @@ export const shotMarkerSize = (
     SHOT_MARKER_MIN_SIZE +
       share * (SHOT_MARKER_MAX_SIZE - SHOT_MARKER_MIN_SIZE),
   );
-  return shotType === "Penalty" ? Math.min(size, PENALTY_MARKER_SIZE) : size;
+  return shotType && isSpotKick(shotType)
+    ? Math.min(size, PENALTY_MARKER_SIZE)
+    : size;
 };
 
 export interface MarkerStyle {

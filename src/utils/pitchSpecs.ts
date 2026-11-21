@@ -16,6 +16,15 @@ export type PitchSpec = {
   /** Distance of the penalty spot from the goal line. */
   penaltySpotM: number;
   /**
+   * Distance of the second penalty mark (the 10 m kick) from the goal
+   * line; only futsal has one.
+   */
+  secondPenaltySpotM?: number;
+  /** Whether the offside rule applies (not in futsal). */
+  hasOffside: boolean;
+  /** Label of the throw-in restart (futsal restarts with a kick-in). */
+  throwInLabel: string;
+  /**
    * Margin drawn around the playing area in the pitch image, in metres. The
    * image's viewBox is (width + 2 * margin) x (length + 2 * margin), with
    * 1 unit = 1 m.
@@ -37,6 +46,8 @@ export const PITCH_SPECS: Record<PitchType, PitchSpec> = {
     lengthM: 105,
     goalWidthM: 7.32,
     penaltySpotM: 11,
+    hasOffside: true,
+    throwInLabel: "Throw-in",
     marginM: 3,
     // Slightly wider than the 74:111 image (see pitchGeometry)
     boxAspectRatio: 74 / 110,
@@ -50,6 +61,9 @@ export const PITCH_SPECS: Record<PitchType, PitchSpec> = {
     lengthM: 40,
     goalWidthM: 3,
     penaltySpotM: 6,
+    secondPenaltySpotM: 10,
+    hasOffside: false,
+    throwInLabel: "Kick-in",
     marginM: 2,
     boxAspectRatio: 24 / 44,
     periodMinutes: { "1H": 20, "2H": 20, ET1: 5, ET2: 5, PEN: 0 },

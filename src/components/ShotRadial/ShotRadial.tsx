@@ -6,12 +6,14 @@ import { getShotResult, SHOT_RESULT_FILLS } from "../../utils/shotResult";
 import {
   dialAppend,
   DIAL_MAX_DIGITS,
+  hasSpotKick,
   ShotDraft,
   shirtLabel,
   switchDraftTeam,
   toggleHead,
   togglePenalty,
   toggleSetPiece,
+  toggleSpotKick,
 } from "../../utils/shotDraft";
 import { shortTeamName } from "../../utils/teamLabels";
 import { usePitchType } from "../PitchContainer/pitchTypeContext";
@@ -36,6 +38,7 @@ const SHOT_TYPE_SHORT = {
   "Open Play": "Open",
   "Set Piece": "Set pc",
   Penalty: "Pen",
+  "10m Kick": "10 m",
 } as const;
 
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
@@ -182,6 +185,18 @@ const ShotRadial: React.FC<ShotRadialProps> = ({
         kind: "toggle",
         on: draft.shotType === "Penalty",
       },
+      // Futsal's second penalty, from the 10 m mark
+      ...(hasSpotKick("10m Kick", pitchType)
+        ? [
+            {
+              id: "ten",
+              label: "10m kick",
+              ariaLabel: "10 metre kick",
+              kind: "toggle" as const,
+              on: draft.shotType === "10m Kick",
+            },
+          ]
+        : []),
       {
         id: "shirt",
         label: shirtLabel(draft.playerName),
@@ -247,6 +262,8 @@ const ShotRadial: React.FC<ShotRadialProps> = ({
         return onDraftChange(toggleSetPiece(draft));
       case "pen":
         return onDraftChange(togglePenalty(draft, pitchType));
+      case "ten":
+        return onDraftChange(toggleSpotKick(draft, "10m Kick", pitchType));
       case "shirt":
         return setDial({
           kind: "shirt",

@@ -12,6 +12,7 @@ import {
   ActionType,
 } from "../../types/Action";
 import { RadialItem, RadialSection } from "../RadialMenu";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../../types/Pitch";
 
 /*
  * The rings of the touch tracker's radial menu, built from the action-type
@@ -131,13 +132,14 @@ const editSection = (editing: Action): RadialSection<TouchItem> => ({
 export const touchSections = (
   step: TouchStep,
   editing?: Action,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
 ): RadialSection<TouchItem>[] => {
   switch (step.ring) {
     case "action": {
       const category = (c: ActionCategory): RadialSection<TouchItem> => ({
         label: CATEGORY_RING_LABELS[c],
         items: MAIN_TYPES[c].map((type) =>
-          actionItem(actionTypeInfo(type), editing),
+          actionItem(actionTypeInfo(type, pitch), editing),
         ),
       });
       const more: RadialSection<TouchItem> = {
@@ -169,7 +171,7 @@ export const touchSections = (
         {
           label: "More",
           items: MORE_TYPES.map((type) =>
-            actionItem(actionTypeInfo(type), editing),
+            actionItem(actionTypeInfo(type, pitch), editing),
           ),
         },
         { items: [BACK] },

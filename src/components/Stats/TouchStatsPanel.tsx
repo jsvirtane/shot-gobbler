@@ -1,9 +1,11 @@
 import React from "react";
+import { actionTypeName } from "../../constants/actionTypes";
 import { Action, ActionCategory } from "../../types/Action";
 import { formatPercent } from "../../utils/stats/format";
 import { ACTION_CATEGORIES, getTouchStats } from "../../utils/stats/touches";
 import { StatSection, StatTable, StatTile, StatTiles } from "./StatBlocks";
 import ZoneGrid from "./ZoneGrid";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 const CATEGORY_LABELS: Record<ActionCategory, string> = {
   attacking: "Attacking",
@@ -15,6 +17,7 @@ const capitalize = (text: string) =>
   text.charAt(0).toUpperCase() + text.slice(1);
 
 const TouchStatsPanel: React.FC<{ actions: Action[] }> = ({ actions }) => {
+  const pitchType = usePitchType();
   const stats = getTouchStats(actions);
 
   return (
@@ -54,7 +57,7 @@ const TouchStatsPanel: React.FC<{ actions: Action[] }> = ({ actions }) => {
             headers={["Action", "Total", "Success", "%"]}
             rows={stats.byActionType.map((row) => ({
               key: row.actionType,
-              label: capitalize(row.actionType),
+              label: capitalize(actionTypeName(row.actionType, pitchType)),
               cells: [row.total, row.successful, formatPercent(row.rate)],
             }))}
           />

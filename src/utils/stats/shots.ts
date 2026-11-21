@@ -3,6 +3,7 @@ import { Period, PERIODS } from "../../types/Match";
 import { DEFAULT_PITCH_TYPE, PitchType } from "../../types/Pitch";
 import { BodyPart, Shot, ShotType } from "../../types/Shot";
 import { periodEndMinute } from "../matchClock";
+import { hasSpotKick } from "../shotDraft";
 import { getShotResult } from "../shotResult";
 import { TEAMS } from "../teamLabels";
 import { shotXg } from "../xg";
@@ -51,6 +52,7 @@ export const SHOT_TYPES: readonly ShotType[] = [
   "Open Play",
   "Set Piece",
   "Penalty",
+  "10m Kick",
 ];
 
 const emptyTotals = (): ShotTotals => ({
@@ -154,7 +156,18 @@ export const getShotStats = (
       away: getTeamShotStats(shots, "away", pitch),
     },
     byBodyPart: breakdown(shots, BODY_PARTS, (shot) => shot.bodyPart, pitch),
-    byShotType: breakdown(shots, SHOT_TYPES, (shot) => shot.shotType, pitch),
+    // The 10 m kick row only where the pitch has one, or a shot uses it
+    byShotType: breakdown(
+      shots,
+      SHOT_TYPES.filter(
+        (type) =>
+          type !== "10m Kick" ||
+          hasSpotKick(type, pitch) ||
+          shots.some((shot) => shot.shotType === type),
+      ),
+      (shot) => shot.shotType,
+      pitch,
+    ),
     byPeriod: timed
       ? breakdown(
           shots,

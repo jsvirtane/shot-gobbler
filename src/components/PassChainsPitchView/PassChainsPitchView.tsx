@@ -19,6 +19,7 @@ import {
 } from "../PassChainMap/chainRadial";
 import { PassChainMap } from "../PassChainMap/PassChainMap";
 import RadialMenu, { Point, RadialItem } from "../RadialMenu";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 type PassChainsPitchViewProps = {
   passChains: PassChain[];
@@ -70,6 +71,7 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
   focus = false,
   pulse,
 }) => {
+  const pitchType = usePitchType();
   const isActivePassChain = currentPassChain.length > 0;
   const [ring, setRing] = useState<Ring | null>(null);
   const areaRef = useRef<HTMLDivElement>(null);
@@ -174,7 +176,7 @@ const PassChainsPitchView: React.FC<PassChainsPitchViewProps> = ({
       return (
         <RadialMenu
           anchor={ring.anchor}
-          sections={endSections()}
+          sections={endSections(pitchType)}
           ariaLabel="End chain"
           center={{
             content: centerContent("End", "how did it end?"),

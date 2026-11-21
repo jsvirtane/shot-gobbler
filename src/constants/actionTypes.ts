@@ -1,4 +1,6 @@
 import { ActionCategory, ActionOutcome, ActionType } from "../types/Action";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
+import { pitchSpec } from "../utils/pitchSpecs";
 
 /**
  * The touch tracker's action types and the outcomes of each: the one table
@@ -49,8 +51,28 @@ export const ACTION_TYPES: readonly ActionTypeInfo[] = [
   { value: "ground", category: "duel", label: "Ground Duel", short: "Ground" },
 ];
 
-export const actionTypeInfo = (type: ActionType): ActionTypeInfo =>
-  ACTION_TYPES.find((t) => t.value === type) ?? ACTION_TYPES[0];
+/**
+ * The action type's info. The throw-in keeps its stored value on every
+ * pitch but is labelled as the pitch's restart (a kick-in in futsal).
+ */
+export const actionTypeInfo = (
+  type: ActionType,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): ActionTypeInfo => {
+  const info = ACTION_TYPES.find((t) => t.value === type) ?? ACTION_TYPES[0];
+  return info.value === "throw-in"
+    ? { ...info, label: pitchSpec(pitch).throwInLabel }
+    : info;
+};
+
+/**
+ * The action type as lists and stats name it: the stored value, except
+ * the throw-in, which follows the pitch ("Kick-in" in futsal).
+ */
+export const actionTypeName = (
+  type: ActionType,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): string => (type === "throw-in" ? pitchSpec(pitch).throwInLabel : type);
 
 export const actionTypesIn = (category: ActionCategory): ActionTypeInfo[] =>
   ACTION_TYPES.filter((t) => t.category === category);

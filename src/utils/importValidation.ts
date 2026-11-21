@@ -37,7 +37,12 @@ const SHOT_RESULTS: readonly ShotResult[] = [
   "Blocked",
 ];
 const BODY_PARTS: readonly BodyPart[] = ["Foot", "Head", "Other"];
-const SHOT_TYPES: readonly ShotType[] = ["Open Play", "Set Piece", "Penalty"];
+const SHOT_TYPES: readonly ShotType[] = [
+  "Open Play",
+  "Set Piece",
+  "Penalty",
+  "10m Kick",
+];
 
 const ACTION_TYPES_BY_CATEGORY: Record<ActionCategory, readonly ActionType[]> =
   {
