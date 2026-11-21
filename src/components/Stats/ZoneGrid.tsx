@@ -4,6 +4,8 @@ import {
   VERTICAL_ZONES,
   ZoneCounts,
 } from "../../utils/stats/touches";
+import { pitchSpec } from "../../utils/pitchSpecs";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 interface ZoneGridProps {
   title: string;
@@ -24,6 +26,7 @@ const ZoneGrid: React.FC<ZoneGridProps> = ({
   counts,
   shade = "250, 204, 21",
 }) => {
+  const { widthM, lengthM } = pitchSpec(usePitchType());
   const max = Math.max(
     0,
     ...VERTICAL_ZONES.flatMap((v) => HORIZONTAL_ZONES.map((h) => counts[v][h])),
@@ -34,8 +37,12 @@ const ZoneGrid: React.FC<ZoneGridProps> = ({
       <div
         role="group"
         aria-label={title}
-        className="relative grid aspect-[68/105] w-full max-w-40 overflow-hidden rounded border-2 border-white bg-green-700 outline outline-green-800"
-        style={{ gridTemplateRows: TRACKS, gridTemplateColumns: TRACKS }}
+        style={{
+          gridTemplateRows: TRACKS,
+          gridTemplateColumns: TRACKS,
+          aspectRatio: `${widthM} / ${lengthM}`,
+        }}
+        className="relative grid w-full max-w-40 overflow-hidden rounded border-2 border-white bg-green-700 outline outline-green-800"
       >
         {/* Halfway line and centre circle */}
         <div

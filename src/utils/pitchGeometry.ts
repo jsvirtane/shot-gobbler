@@ -1,8 +1,13 @@
 import { Coordinates } from "../types/common";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
+import { PITCH_SPECS, pitchSpec } from "./pitchSpecs";
 
 /*
  * Calibration of stored pitch % coordinates (0-100 of the pitch box) to
- * metres on the playing area.
+ * metres on the playing area. Each pitch type (`PITCH_SPECS`) has its own
+ * image and box; the football one is described here, futsal follows the
+ * same layout (`futsal_pitch.svg`, 24 x 44 with a 2 m margin, in a box of
+ * the same ratio).
  *
  * `src/assets/football_pitch.svg` has `viewBox="0 0 74 111"` (1 unit = 1 m)
  * and draws the playing area as a 68 x 105 rectangle translated by (3, 3):
@@ -15,38 +20,59 @@ import { Coordinates } from "../types/common";
  * and is centred horizontally with a thin strip on each side. In image units
  * the box is therefore 111 tall and 111 * 74 / 110 wide.
  */
-const IMAGE_WIDTH = 74;
-const IMAGE_HEIGHT = 111;
-const BOX_ASPECT_RATIO = 74 / 110;
-const BOX_HEIGHT = IMAGE_HEIGHT;
-const BOX_WIDTH = BOX_HEIGHT * BOX_ASPECT_RATIO;
-const IMAGE_OFFSET_X = (BOX_WIDTH - IMAGE_WIDTH) / 2;
-/** Margin around the playing area inside the image, in metres. */
-const PLAYING_AREA_MARGIN = 3;
+export const PITCH_WIDTH_M = PITCH_SPECS.football.widthM;
+export const PITCH_LENGTH_M = PITCH_SPECS.football.lengthM;
+export const GOAL_WIDTH_M = PITCH_SPECS.football.goalWidthM;
 
-export const PITCH_WIDTH_M = 68;
-export const PITCH_LENGTH_M = 105;
-export const GOAL_WIDTH_M = 7.32;
+/**
+ * Size of the pitch box in image units (metres): the box is as tall as the
+ * image and `boxAspectRatio` wide, with the image centred in it.
+ */
+const boxGeometry = (pitch: PitchType) => {
+  const spec = pitchSpec(pitch);
+  const imageWidth = spec.widthM + 2 * spec.marginM;
+  const boxHeight = spec.lengthM + 2 * spec.marginM;
+  const boxWidth = boxHeight * spec.boxAspectRatio;
+  return {
+    spec,
+    boxWidth,
+    boxHeight,
+    imageOffsetX: (boxWidth - imageWidth) / 2,
+  };
+};
 
 export type Goal = "top" | "bottom";
 
 /**
  * Converts a stored % point to metres on the playing area: x from the left
- * touchline (0-68), y from the top goal line (0-105). Points tapped in the
+ * touchline (0-68 on a football pitch), y from the top goal line (0-105). Points tapped in the
  * margin outside the lines fall slightly outside those ranges.
  */
-export const toMetres = ({ x, y }: Coordinates): Coordinates => ({
-  x: (x / 100) * BOX_WIDTH - IMAGE_OFFSET_X - PLAYING_AREA_MARGIN,
-  y: (y / 100) * BOX_HEIGHT - PLAYING_AREA_MARGIN,
-});
+export const toMetres = (
+  { x, y }: Coordinates,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): Coordinates => {
+  const { spec, boxWidth, boxHeight, imageOffsetX } = boxGeometry(pitch);
+  return {
+    x: (x / 100) * boxWidth - imageOffsetX - spec.marginM,
+    y: (y / 100) * boxHeight - spec.marginM,
+  };
+};
 
 /** Inverse of `toMetres`. */
-export const fromMetres = ({ x, y }: Coordinates): Coordinates => ({
-  x: ((x + PLAYING_AREA_MARGIN + IMAGE_OFFSET_X) / BOX_WIDTH) * 100,
-  y: ((y + PLAYING_AREA_MARGIN) / BOX_HEIGHT) * 100,
-});
+export const fromMetres = (
+  { x, y }: Coordinates,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): Coordinates => {
+  const { spec, boxWidth, boxHeight, imageOffsetX } = boxGeometry(pitch);
+  return {
+    x: ((x + spec.marginM + imageOffsetX) / boxWidth) * 100,
+    y: ((y + spec.marginM) / boxHeight) * 100,
+  };
+};
 
-const goalLineY = (goal: Goal) => (goal === "top" ? 0 : PITCH_LENGTH_M);
+const goalLineY = (goal: Goal, pitch: PitchType) =>
+  goal === "top" ? 0 : pitchSpec(pitch).lengthM;
 
 /**
  * The goal a shot from this point is aimed at. Shots are almost always taken
@@ -56,9 +82,16 @@ export const attackedGoal = ({ y }: Coordinates): Goal =>
   y < 50 ? "top" : "bottom";
 
 /** Straight-line distance in metres from the point to the centre of the goal. */
-export const distanceToGoal = (point: Coordinates, goal: Goal): number => {
-  const m = toMetres(point);
-  return Math.hypot(m.x - PITCH_WIDTH_M / 2, m.y - goalLineY(goal));
+export const distanceToGoal = (
+  point: Coordinates,
+  goal: Goal,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number => {
+  const m = toMetres(point, pitch);
+  return Math.hypot(
+    m.x - pitchSpec(pitch).widthM / 2,
+    m.y - goalLineY(goal, pitch),
+  );
 };
 
 /**
@@ -66,12 +99,17 @@ export const distanceToGoal = (point: Coordinates, goal: Goal): number => {
  * the width of goal the shooter can see. 0 on the goal line outside the
  * posts, 180 on the goal line between them.
  */
-export const shotAngle = (point: Coordinates, goal: Goal): number => {
-  const m = toMetres(point);
+export const shotAngle = (
+  point: Coordinates,
+  goal: Goal,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number => {
+  const { widthM, goalWidthM } = pitchSpec(pitch);
+  const m = toMetres(point, pitch);
   // Distance out from the goal line, towards the pitch
-  const depth = Math.abs(m.y - goalLineY(goal));
-  const centre = PITCH_WIDTH_M / 2;
-  const toLeftPost = Math.atan2(centre - GOAL_WIDTH_M / 2 - m.x, depth);
-  const toRightPost = Math.atan2(centre + GOAL_WIDTH_M / 2 - m.x, depth);
+  const depth = Math.abs(m.y - goalLineY(goal, pitch));
+  const centre = widthM / 2;
+  const toLeftPost = Math.atan2(centre - goalWidthM / 2 - m.x, depth);
+  const toRightPost = Math.atan2(centre + goalWidthM / 2 - m.x, depth);
   return ((toRightPost - toLeftPost) * 180) / Math.PI;
 };

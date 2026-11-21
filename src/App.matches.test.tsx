@@ -450,3 +450,53 @@ describe("App - matches", () => {
     });
   });
 });
+
+describe("App - futsal matches", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, "", "/?tab=shots");
+    localStorage.setItem(
+      "shot-gobbler-matches",
+      envelope("matches", 1, twoMatches),
+    );
+    localStorage.setItem("shot-gobbler-current-match", JSON.stringify("m1"));
+  });
+
+  it("creates a futsal match with futsal periods", () => {
+    render(<App />);
+    openSheet();
+    fireEvent.click(within(sheet()).getByText("+ New match"));
+    fireEvent.change(within(sheet()).getByLabelText("Home team"), {
+      target: { value: "Ilves" },
+    });
+    fireEvent.click(within(sheet()).getByRole("radio", { name: "Futsal" }));
+    fireEvent.click(within(sheet()).getByText("Create"));
+
+    expect(storedMatches()[2]).toMatchObject({
+      homeTeam: "Ilves",
+      pitchType: "futsal",
+    });
+    openSheet();
+    expect(within(sheet()).getByText(/· Futsal$/)).toBeTruthy();
+    // The second half starts at 20 minutes
+    fireEvent.click(within(sheet()).getByText("Next: 2H"));
+    expect(screen.getByTestId("match-clock").textContent).toBe("21' 2H");
+  });
+
+  it("stores nothing for football and drops futsal when edited back", () => {
+    localStorage.setItem(
+      "shot-gobbler-matches",
+      envelope("matches", 1, [
+        { ...twoMatches[0], pitchType: "futsal" },
+        twoMatches[1],
+      ]),
+    );
+    render(<App />);
+    openSheet();
+    fireEvent.click(within(sheet()).getByLabelText("Edit Arsenal vs Chelsea"));
+    fireEvent.click(within(sheet()).getByRole("radio", { name: "Football" }));
+    fireEvent.click(within(sheet()).getByText("Save"));
+
+    expect(storedMatches()[0]).not.toHaveProperty("pitchType");
+  });
+});

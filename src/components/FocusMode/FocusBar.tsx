@@ -4,6 +4,7 @@ import { MatchClock } from "../../types/Match";
 import { DataTab } from "../../types/Tab";
 import { formatClock } from "../../utils/matchClock";
 import { shortTeamName } from "../../utils/teamLabels";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 import { FADE_AFTER_MS, nextTracker, TrackerControls } from "./trackerControls";
 
 const TRACKERS: Record<DataTab, { icon: string; label: string }> = {
@@ -82,9 +83,10 @@ const FocusBar: React.FC<FocusBarProps> = ({
   onExit,
 }) => {
   const idle = useIdle();
+  const pitchType = usePitchType();
   const running = clock?.running ?? false;
   const now = useNow(running);
-  const clockText = formatClock(clock, now);
+  const clockText = formatClock(clock, now, pitchType);
   const current = TRACKERS[tracker];
   const next = TRACKERS[nextTracker(tracker)];
   const pitch = controls?.pitch;

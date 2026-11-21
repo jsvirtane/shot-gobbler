@@ -1,10 +1,9 @@
 import { Team } from "../types/common";
 import { BodyPart, Shot, ShotResult, ShotType } from "../types/Shot";
-import { fromMetres, PITCH_LENGTH_M, PITCH_WIDTH_M } from "./pitchGeometry";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
+import { fromMetres } from "./pitchGeometry";
+import { pitchSpec } from "./pitchSpecs";
 import { mirrorPoint, PitchPoint, toAttackingHalf } from "./pitchView";
-
-/** Distance (m) of the penalty spot from the goal line. */
-const PENALTY_SPOT_M = 11;
 
 /**
  * A shot being recorded or edited in the radial menu. Coordinates are
@@ -24,11 +23,19 @@ export type ShotDraft = PitchPoint & {
 };
 
 /** Penalty spot (stored %) of the goal the team attacks. */
-export const penaltySpot = (team: Team): PitchPoint =>
-  fromMetres({
-    x: PITCH_WIDTH_M / 2,
-    y: team === "home" ? PENALTY_SPOT_M : PITCH_LENGTH_M - PENALTY_SPOT_M,
-  });
+export const penaltySpot = (
+  team: Team,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): PitchPoint => {
+  const { widthM, lengthM, penaltySpotM } = pitchSpec(pitch);
+  return fromMetres(
+    {
+      x: widthM / 2,
+      y: team === "home" ? penaltySpotM : lengthM - penaltySpotM,
+    },
+    pitch,
+  );
+};
 
 /**
  * A new shot at a pitch point (stored %). The team defaults to the one
@@ -101,7 +108,10 @@ export const toggleSetPiece = (draft: ShotDraft): ShotDraft => {
  * Penalty on: moves the shot to the penalty spot and clears Head and Set
  * piece. Off: back to open play at the spot it was before.
  */
-export const togglePenalty = (draft: ShotDraft): ShotDraft => {
+export const togglePenalty = (
+  draft: ShotDraft,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): ShotDraft => {
   if (draft.shotType === "Penalty") {
     return {
       ...draft,
@@ -112,7 +122,7 @@ export const togglePenalty = (draft: ShotDraft): ShotDraft => {
   }
   return {
     ...draft,
-    ...penaltySpot(draft.team),
+    ...penaltySpot(draft.team, pitch),
     // Remember where it was, unless that already was the spot
     spot: { x: draft.x, y: draft.y },
     shotType: "Penalty",

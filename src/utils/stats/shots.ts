@@ -1,6 +1,8 @@
 import { Team } from "../../types/common";
 import { Period, PERIODS } from "../../types/Match";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../../types/Pitch";
 import { BodyPart, Shot, ShotType } from "../../types/Shot";
+import { periodEndMinute } from "../matchClock";
 import { getShotResult } from "../shotResult";
 import { TEAMS } from "../teamLabels";
 import { shotXg } from "../xg";
@@ -62,12 +64,15 @@ const emptyTotals = (): ShotTotals => ({
 });
 
 /** Counts and xG of the shots. */
-export const getShotTotals = (shots: Shot[]): ShotTotals => {
+export const getShotTotals = (
+  shots: Shot[],
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): ShotTotals => {
   const totals = emptyTotals();
   for (const shot of shots) {
     const result = getShotResult(shot);
     totals.shots += 1;
-    totals.xg += shotXg(shot);
+    totals.xg += shotXg(shot, pitch);
     if (result === "Goal") totals.goals += 1;
     else if (result === "Saved") totals.saved += 1;
     else if (result === "Blocked") totals.blocked += 1;
@@ -78,8 +83,15 @@ export const getShotTotals = (shots: Shot[]): ShotTotals => {
 };
 
 /** Totals and rates for one team's shots. */
-export const getTeamShotStats = (shots: Shot[], team: Team): TeamShotStats => {
-  const totals = getShotTotals(shots.filter((shot) => shot.team === team));
+export const getTeamShotStats = (
+  shots: Shot[],
+  team: Team,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): TeamShotStats => {
+  const totals = getShotTotals(
+    shots.filter((shot) => shot.team === team),
+    pitch,
+  );
   return {
     ...totals,
     team,
@@ -94,49 +106,62 @@ const breakdown = <K extends string>(
   shots: Shot[],
   keys: readonly K[],
   keyOf: (shot: Shot) => K,
+  pitch: PitchType,
 ): ShotBreakdownRow<K>[] =>
   keys.map((key) => {
     const matching = shots.filter((shot) => keyOf(shot) === key);
     const byTeam = Object.fromEntries(
       TEAMS.map((team) => [
         team,
-        getShotTotals(matching.filter((shot) => shot.team === team)),
+        getShotTotals(
+          matching.filter((shot) => shot.team === team),
+          pitch,
+        ),
       ]),
     ) as Record<Team, ShotTotals>;
     return { key, byTeam };
   });
 
 /** The period of an event; from its minute when the period is missing. */
-export const getEventPeriod = (event: {
-  minute?: number;
-  period?: Period;
-}): PeriodKey => {
+export const getEventPeriod = (
+  event: {
+    minute?: number;
+    period?: Period;
+  },
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): PeriodKey => {
   if (event.period) return event.period;
   if (event.minute === undefined) return "unknown";
-  if (event.minute <= 45) return "1H";
-  if (event.minute <= 90) return "2H";
-  if (event.minute <= 105) return "ET1";
+  if (event.minute <= periodEndMinute("1H", pitch)) return "1H";
+  if (event.minute <= periodEndMinute("2H", pitch)) return "2H";
+  if (event.minute <= periodEndMinute("ET1", pitch)) return "ET1";
   return "ET2";
 };
 
 const PERIOD_KEYS: readonly PeriodKey[] = [...PERIODS, "unknown"];
 
 /** Everything the shots stats view shows. */
-export const getShotStats = (shots: Shot[]): ShotStats => {
+export const getShotStats = (
+  shots: Shot[],
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): ShotStats => {
   const timed = shots.some(
     (shot) => shot.minute !== undefined || shot.period !== undefined,
   );
   return {
     teams: {
-      home: getTeamShotStats(shots, "home"),
-      away: getTeamShotStats(shots, "away"),
+      home: getTeamShotStats(shots, "home", pitch),
+      away: getTeamShotStats(shots, "away", pitch),
     },
-    byBodyPart: breakdown(shots, BODY_PARTS, (shot) => shot.bodyPart),
-    byShotType: breakdown(shots, SHOT_TYPES, (shot) => shot.shotType),
+    byBodyPart: breakdown(shots, BODY_PARTS, (shot) => shot.bodyPart, pitch),
+    byShotType: breakdown(shots, SHOT_TYPES, (shot) => shot.shotType, pitch),
     byPeriod: timed
-      ? breakdown(shots, PERIOD_KEYS, getEventPeriod).filter((row) =>
-          TEAMS.some((team) => row.byTeam[team].shots > 0),
-        )
+      ? breakdown(
+          shots,
+          PERIOD_KEYS,
+          (shot) => getEventPeriod(shot, pitch),
+          pitch,
+        ).filter((row) => TEAMS.some((team) => row.byTeam[team].shots > 0))
       : [],
   };
 };

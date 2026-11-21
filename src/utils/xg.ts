@@ -1,3 +1,4 @@
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
 import { Shot } from "../types/Shot";
 import { attackedGoal, distanceToGoal, shotAngle } from "./pitchGeometry";
 
@@ -21,6 +22,11 @@ import { attackedGoal, distanceToGoal, shotAngle } from "./pitchGeometry";
  *
  * xG is computed when displayed and never stored, so the model can change
  * without migrating saved data.
+ *
+ * Futsal shots are measured on the futsal pitch (a 3 m goal, a 6 m
+ * penalty spot) with the same coefficients. That gives plausible values
+ * (about 0.16 from the penalty mark, 0.1 from 10 m) but the model has not
+ * been tuned for futsal.
  */
 export const PENALTY_XG = 0.76;
 const INTERCEPT = -2.33;
@@ -36,12 +42,15 @@ const OTHER_BODY_PART_ADJUSTMENT = -0.5;
 type XgShot = Pick<Shot, "x" | "y" | "bodyPart" | "shotType">;
 
 /** Expected goals for a shot, between 0 and 1. */
-export const shotXg = (shot: XgShot): number => {
+export const shotXg = (
+  shot: XgShot,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number => {
   if (shot.shotType === "Penalty") return PENALTY_XG;
 
   const goal = attackedGoal(shot);
-  const distance = distanceToGoal(shot, goal);
-  const angle = (shotAngle(shot, goal) * Math.PI) / 180;
+  const distance = distanceToGoal(shot, goal, pitch);
+  const angle = (shotAngle(shot, goal, pitch) * Math.PI) / 180;
 
   let z =
     INTERCEPT + DISTANCE_COEFFICIENT * distance + ANGLE_COEFFICIENT * angle;
@@ -52,8 +61,10 @@ export const shotXg = (shot: XgShot): number => {
 };
 
 /** Total xG of the shots. */
-export const totalXg = (shots: XgShot[]): number =>
-  shots.reduce((sum, shot) => sum + shotXg(shot), 0);
+export const totalXg = (
+  shots: XgShot[],
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number => shots.reduce((sum, shot) => sum + shotXg(shot, pitch), 0);
 
 /** xG with two decimals, e.g. "0.27". */
 export const formatXg = (xg: number): string => xg.toFixed(2);

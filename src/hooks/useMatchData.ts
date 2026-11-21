@@ -23,6 +23,7 @@ import { clockStamp, NEW_CLOCK } from "../utils/matchClock";
 import {
   cleanDetails,
   createDefaultMatch,
+  getPitchType,
   createMatch,
   createMatchExport,
   createUntitledMatch,
@@ -168,11 +169,15 @@ export function useMatchData() {
   );
 
   const clock = currentMatch.clock;
+  const pitchType = getPitchType(currentMatch);
 
   /** Fields a new event gets from the current match and its clock. */
   const getEventStamp = useCallback(
-    (): EventStamp => ({ matchId, ...clockStamp(clock, Date.now()) }),
-    [matchId, clock],
+    (): EventStamp => ({
+      matchId,
+      ...clockStamp(clock, Date.now(), pitchType),
+    }),
+    [matchId, clock, pitchType],
   );
 
   /** Changes the current match's clock (created on first use). */
@@ -214,9 +219,10 @@ export function useMatchData() {
       setMatches((prev) =>
         prev.map((m) => {
           if (m.id !== id) return m;
-          // Drop a cleared competition instead of keeping the old one
+          // Drop a cleared competition (or a pitch type set back to the
+          // default) instead of keeping the old one
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { competition, ...rest } = m;
+          const { competition, pitchType, ...rest } = m;
           return { ...rest, ...cleaned };
         }),
       );
@@ -234,6 +240,7 @@ export function useMatchData() {
         awayTeam: source.awayTeam,
         date: source.date,
         competition: source.competition,
+        pitchType: source.pitchType,
       });
     },
     [matches, addMatch],

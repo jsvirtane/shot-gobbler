@@ -17,6 +17,7 @@ import {
 import { DEFAULT_TEAM_LABELS, TEAMS } from "../../utils/teamLabels";
 import { formatXg } from "../../utils/xg";
 import { StatSection, StatTable } from "./StatBlocks";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 interface ShotStatsPanelProps {
   /** Shots of the current match, already filtered by team. */
@@ -54,7 +55,8 @@ const ShotStatsPanel: React.FC<ShotStatsPanelProps> = ({
   teamNames = DEFAULT_TEAM_LABELS,
   teams = TEAMS,
 }) => {
-  const stats = getShotStats(shots);
+  const pitchType = usePitchType();
+  const stats = getShotStats(shots, pitchType);
   const teamHeaders = teams.map((team) => (
     <span key={team} className={`font-semibold ${TEAM_TEXT[team]}`}>
       {teamNames[team]}

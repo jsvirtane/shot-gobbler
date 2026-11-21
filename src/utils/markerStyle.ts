@@ -3,6 +3,7 @@ import {
   TEAM_MARKER_COLORS,
 } from "../constants/markerColors";
 import { Action } from "../types/Action";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
 import { Shot, ShotResult } from "../types/Shot";
 import { isSuccessfulActionOutcome } from "./isSuccessfulActionOutcome";
 import { getShotResult } from "./shotResult";
@@ -69,10 +70,13 @@ export interface MarkerStyle {
 }
 
 /** Shape (result), colour (team) and size (xG) of a shot marker. */
-export const getShotMarkerStyle = (shot: Shot): MarkerStyle => ({
+export const getShotMarkerStyle = (
+  shot: Shot,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): MarkerStyle => ({
   shape: getShotMarkerShape(getShotResult(shot)),
   color: TEAM_MARKER_COLORS[shot.team],
-  size: shotMarkerSize(shotXg(shot), shot.shotType),
+  size: shotMarkerSize(shotXg(shot, pitch), shot.shotType),
 });
 
 /** Visible size (px) of a touch marker. */

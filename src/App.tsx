@@ -13,11 +13,12 @@ import { PASS_CHAINS_TAB, SHOTS_TAB, TOUCHES_TAB } from "./config/dataTabs";
 import { useFocusMode } from "./hooks/useFocusMode";
 import { useMatchData } from "./hooks/useMatchData";
 import { useUrlState } from "./hooks/useUrlState";
+import { PitchTypeContext } from "./components/PitchContainer/pitchTypeContext";
 import { DataTab, Tab, TABS } from "./types/Tab";
 import { MatchClock } from "./types/Match";
 import { DataTabHandle, toDataTabHandle } from "./utils/dataTransfer";
 import { NEW_CLOCK, toggleClock } from "./utils/matchClock";
-import { getTeamNames, isMatchExport } from "./utils/matches";
+import { getPitchType, getTeamNames, isMatchExport } from "./utils/matches";
 import { notify } from "./utils/notify";
 import DocsView from "./views/DocsView";
 import PassChainsView from "./views/PassChainsView";
@@ -166,107 +167,111 @@ function AppContent() {
   }, []);
 
   return (
-    <TrackerControlsContext.Provider value={setTrackerControls}>
-      <HeaderSlotContext.Provider value={isFocused ? null : headerSlot}>
-        {/* On phones the bottom padding keeps content clear of the fixed
+    <PitchTypeContext.Provider value={getPitchType(currentMatch)}>
+      <TrackerControlsContext.Provider value={setTrackerControls}>
+        <HeaderSlotContext.Provider value={isFocused ? null : headerSlot}>
+          {/* On phones the bottom padding keeps content clear of the fixed
           bottom tab bar (3.75rem plus the safe area). In focus mode it
           keeps the pitch clear of the floating bar (3.5rem plus margins).
           The tree stays the same in both modes, so views keep their state
           (e.g. a chain being recorded). */}
-        <div
-          data-focus-mode={isFocused || undefined}
-          className={`mx-auto flex h-dvh flex-col bg-gray-100 pt-[env(safe-area-inset-top)] ${
-            isFocused
-              ? "pb-[calc(4.75rem+env(safe-area-inset-bottom))]"
-              : "pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0"
-          }`}
-        >
-          {!isFocused && (
-            <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
-          )}
-          {activeDataTab && !isFocused && (
-            // One header for the tab: the match row (match, clock, Track and
-            // the data menu) and, under it, the view's own switch
-            <header
-              aria-label="Match and view"
-              className="flex shrink-0 flex-col gap-2.5 border-b border-gray-200 bg-white px-4 pt-2.5 pb-3"
-            >
-              <div className="flex items-center gap-1">
-                <div className="min-w-0 flex-1">
-                  <MatchBar
-                    matches={matchData.matches}
-                    currentMatch={currentMatch}
-                    onSelect={matchData.selectMatch}
-                    onCreate={matchData.addMatch}
-                    onUpdate={matchData.updateMatch}
-                    onDuplicate={matchData.duplicateMatch}
-                    onDelete={matchData.deleteMatch}
-                    onExport={matchData.exportMatch}
-                    onClockChange={handleClockChange}
-                    onTrack={() => setFocusMode(true)}
+          <div
+            data-focus-mode={isFocused || undefined}
+            className={`mx-auto flex h-dvh flex-col bg-gray-100 pt-[env(safe-area-inset-top)] ${
+              isFocused
+                ? "pb-[calc(4.75rem+env(safe-area-inset-bottom))]"
+                : "pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0"
+            }`}
+          >
+            {!isFocused && (
+              <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
+            )}
+            {activeDataTab && !isFocused && (
+              // One header for the tab: the match row (match, clock, Track and
+              // the data menu) and, under it, the view's own switch
+              <header
+                aria-label="Match and view"
+                className="flex shrink-0 flex-col gap-2.5 border-b border-gray-200 bg-white px-4 pt-2.5 pb-3"
+              >
+                <div className="flex items-center gap-1">
+                  <div className="min-w-0 flex-1">
+                    <MatchBar
+                      matches={matchData.matches}
+                      currentMatch={currentMatch}
+                      onSelect={matchData.selectMatch}
+                      onCreate={matchData.addMatch}
+                      onUpdate={matchData.updateMatch}
+                      onDuplicate={matchData.duplicateMatch}
+                      onDelete={matchData.deleteMatch}
+                      onExport={matchData.exportMatch}
+                      onClockChange={handleClockChange}
+                      onTrack={() => setFocusMode(true)}
+                    />
+                  </div>
+                  <ShareButton
+                    title={activeDataTab.shareTitle}
+                    className="h-10 w-10 rounded-lg hover:bg-gray-100"
+                    hasData={activeDataTab.hasData}
+                    onExportJSON={activeDataTab.exportData}
+                    onExportMatch={matchData.exportMatch}
+                    onImport={handleImport}
+                    onBeforeShare={handleBeforeShare}
                   />
                 </div>
-                <ShareButton
-                  title={activeDataTab.shareTitle}
-                  className="h-10 w-10 rounded-lg hover:bg-gray-100"
-                  hasData={activeDataTab.hasData}
-                  onExportJSON={activeDataTab.exportData}
-                  onExportMatch={matchData.exportMatch}
-                  onImport={handleImport}
-                  onBeforeShare={handleBeforeShare}
-                />
-              </div>
-              <div ref={setHeaderSlot} data-testid="header-slot" />
-            </header>
-          )}
-          <div className="relative min-h-0 flex-1">
-            <main
-              id="main-content"
-              className={`flex h-full w-full flex-col bg-gray-100 ${
-                isFocused ? "overflow-hidden" : "overflow-y-auto px-4 pt-3 pb-4"
-              }`}
-            >
-              {activeTab === "docs" && <DocsView />}
-              {activeTab === "shots" && (
-                <ShotsView
-                  shots={shots}
-                  setShots={setShots}
-                  teamNames={teamNames}
-                  getEventStamp={getEventStamp}
-                  focus={isFocused}
-                />
-              )}
-              {activeTab === "touches" && (
-                <TouchesView
-                  actions={actions}
-                  setActions={setActions}
-                  getEventStamp={getEventStamp}
-                  focus={isFocused}
-                />
-              )}
-              {activeTab === "pass-chains" && (
-                <PassChainsView
-                  passChains={passChains}
-                  setPassChains={setPassChains}
-                  getEventStamp={getEventStamp}
-                  focus={isFocused}
-                />
-              )}
-            </main>
+                <div ref={setHeaderSlot} data-testid="header-slot" />
+              </header>
+            )}
+            <div className="relative min-h-0 flex-1">
+              <main
+                id="main-content"
+                className={`flex h-full w-full flex-col bg-gray-100 ${
+                  isFocused
+                    ? "overflow-hidden"
+                    : "overflow-y-auto px-4 pt-3 pb-4"
+                }`}
+              >
+                {activeTab === "docs" && <DocsView />}
+                {activeTab === "shots" && (
+                  <ShotsView
+                    shots={shots}
+                    setShots={setShots}
+                    teamNames={teamNames}
+                    getEventStamp={getEventStamp}
+                    focus={isFocused}
+                  />
+                )}
+                {activeTab === "touches" && (
+                  <TouchesView
+                    actions={actions}
+                    setActions={setActions}
+                    getEventStamp={getEventStamp}
+                    focus={isFocused}
+                  />
+                )}
+                {activeTab === "pass-chains" && (
+                  <PassChainsView
+                    passChains={passChains}
+                    setPassChains={setPassChains}
+                    getEventStamp={getEventStamp}
+                    focus={isFocused}
+                  />
+                )}
+              </main>
+            </div>
           </div>
-        </div>
-        {isFocused && (
-          <FocusBar
-            tracker={activeTab}
-            onSwitchTracker={setActiveTab}
-            clock={clock}
-            onToggleClock={() => handleClockChange(toggleClock)}
-            controls={trackerControls}
-            onExit={() => setFocusMode(false)}
-          />
-        )}
-      </HeaderSlotContext.Provider>
-    </TrackerControlsContext.Provider>
+          {isFocused && (
+            <FocusBar
+              tracker={activeTab}
+              onSwitchTracker={setActiveTab}
+              clock={clock}
+              onToggleClock={() => handleClockChange(toggleClock)}
+              controls={trackerControls}
+              onExit={() => setFocusMode(false)}
+            />
+          )}
+        </HeaderSlotContext.Provider>
+      </TrackerControlsContext.Provider>
+    </PitchTypeContext.Provider>
   );
 }
 

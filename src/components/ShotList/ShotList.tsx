@@ -4,6 +4,7 @@ import { formatEventTime } from "../../utils/matchClock";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 import { formatXg, shotXg } from "../../utils/xg";
 import { RemoveItemButton } from "../common";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 interface ShotListProps {
   shots: Shot[];
@@ -11,6 +12,7 @@ interface ShotListProps {
 }
 
 const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
+  const pitchType = usePitchType();
   if (shots.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-6 text-center">
@@ -40,7 +42,7 @@ const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
                     {getShotResult(shot).toLowerCase()}
                   </p>
                   <p className="text-sm text-gray-500 capitalize">
-                    {[formatEventTime(shot), shot.shotType]
+                    {[formatEventTime(shot, pitchType), shot.shotType]
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
@@ -49,7 +51,7 @@ const ShotList: React.FC<ShotListProps> = ({ shots, onRemoveShot }) => {
                 <div className="flex items-center gap-3">
                   <span className="text-right text-sm text-gray-600">
                     <span className="block text-base font-semibold text-gray-900">
-                      {formatXg(shotXg(shot))}
+                      {formatXg(shotXg(shot, pitchType))}
                     </span>
                     xG
                   </span>

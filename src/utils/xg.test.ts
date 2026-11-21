@@ -87,3 +87,30 @@ describe("totalXg and formatXg", () => {
     expect(formatXg(totalXg([]))).toBe("0.00");
   });
 });
+
+describe("shotXg on a futsal pitch", () => {
+  const futsalShot = (
+    x: number,
+    y: number,
+    shotType: ShotType = "Open Play",
+  ) => ({
+    ...fromMetres({ x, y }, "futsal"),
+    bodyPart: "Foot" as BodyPart,
+    shotType,
+  });
+
+  it("measures to the futsal goal", () => {
+    const fromSpot = shotXg(futsalShot(10, 6), "futsal");
+    expect(fromSpot).toBeGreaterThan(0.13);
+    expect(fromSpot).toBeLessThan(0.2);
+    const tenMetres = shotXg(futsalShot(10, 10), "futsal");
+    expect(tenMetres).toBeGreaterThan(0.08);
+    expect(tenMetres).toBeLessThan(fromSpot);
+    // The same stored point is a different shot on a football pitch
+    expect(shotXg(futsalShot(10, 6))).not.toBeCloseTo(fromSpot, 2);
+  });
+
+  it("gives penalties the fixed value", () => {
+    expect(shotXg(futsalShot(10, 6, "Penalty"), "futsal")).toBe(PENALTY_XG);
+  });
+});

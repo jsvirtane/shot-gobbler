@@ -122,3 +122,27 @@ describe("matchClock", () => {
     expect(parseMinuteInput("67")).toEqual({ minute: 67 });
   });
 });
+
+describe("futsal clock", () => {
+  it("counts 20-minute halves and 5-minute extra time", () => {
+    const stopped = (period: MatchClock["period"]): MatchClock => ({
+      ...NEW_CLOCK,
+      period,
+    });
+    expect(clockMinute(stopped("2H"), 0, "futsal")).toBe(21);
+    expect(clockMinute(stopped("ET1"), 0, "futsal")).toBe(41);
+    expect(clockMinute(stopped("ET2"), 0, "futsal")).toBe(46);
+    expect(clockStamp(stopped("2H"), 0, "futsal")).toEqual({
+      minute: 21,
+      period: "2H",
+    });
+  });
+
+  it("shows minutes past the period end as added time", () => {
+    expect(formatMinute(22, "1H", "futsal")).toBe("20+2'");
+    expect(formatMinute(22, "2H", "futsal")).toBe("22'");
+    expect(formatEventTime({ minute: 43, period: "ET1" }, "futsal")).toBe(
+      "43' ET1",
+    );
+  });
+});

@@ -1,4 +1,5 @@
 import type { Team } from "./common";
+import type { PitchType } from "./Pitch";
 /** Match periods: halves, extra-time halves and the penalty shoot-out. */
 export const PERIODS = ["1H", "2H", "ET1", "ET2", "PEN"] as const;
 export type Period = (typeof PERIODS)[number];
@@ -24,6 +25,8 @@ export type Match = {
   /** Match day as YYYY-MM-DD. */
   date: string;
   competition?: string;
+  /** Missing for football (the default and every match made before). */
+  pitchType?: PitchType;
   createdAt: number;
   /** Missing until the clock is first used. */
   clock?: MatchClock;
@@ -32,7 +35,7 @@ export type Match = {
 /** Editable match details (everything except id and creation time). */
 export type MatchDetails = Pick<
   Match,
-  "homeTeam" | "awayTeam" | "date" | "competition"
+  "homeTeam" | "awayTeam" | "date" | "competition" | "pitchType"
 >;
 
 /** Team names shown in place of "Home" / "Away". */

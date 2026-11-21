@@ -1,14 +1,21 @@
 import React, { forwardRef, useCallback, useMemo, useRef } from "react";
 import football_pitch from "../../assets/football_pitch.svg";
+import futsal_pitch from "../../assets/futsal_pitch.svg";
+import { PitchType } from "../../types/Pitch";
+import { pitchSpec } from "../../utils/pitchSpecs";
 import {
   fromVisibleShare,
   PITCH_WINDOW,
   PitchVariant,
 } from "../../utils/pitchView";
 import { PitchApi, PitchContext } from "./pitchContext";
+import { usePitchType } from "./pitchTypeContext";
 
-/** Width:height ratio of the full pitch image. */
-const PITCH_RATIO = 74 / 110;
+/** Image and alt text of each pitch type, drawn in its box. */
+const PITCH_IMAGES: Record<PitchType, { src: string; alt: string }> = {
+  football: { src: football_pitch, alt: "Football Pitch" },
+  futsal: { src: futsal_pitch, alt: "Futsal Pitch" },
+};
 
 /**
  * Vertical space reserved outside the pitch in review mode so that the
@@ -101,10 +108,16 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
     const localRef = useRef<HTMLDivElement>(null);
     const pitchRef = (ref || localRef) as React.RefObject<HTMLDivElement>;
 
+    // The current match's pitch: its image and box shape (width:height of
+    // the full pitch)
+    const pitchType = usePitchType();
+    const pitchImage = PITCH_IMAGES[pitchType];
+    const pitchRatio = pitchSpec(pitchType).boxAspectRatio;
+
     const pitchWindow = PITCH_WINDOW[variant];
     // Share of the full pitch height that is visible
     const visibleHeight = pitchWindow.height / 100;
-    const aspectRatio = PITCH_RATIO / visibleHeight;
+    const aspectRatio = pitchRatio / visibleHeight;
     // Shrink the width when the height would overflow: the parent's height
     // (a size container, so cq units are its real size) or the viewport's
     const pitchWidth = fill
@@ -191,6 +204,7 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
           <div
             ref={pitchRef}
             data-testid="pitch"
+            data-pitch-type={pitchType}
             className="relative cursor-crosshair overflow-hidden"
             style={{ aspectRatio, width: pitchWidth }}
           >
@@ -204,8 +218,8 @@ export const PitchContainer = forwardRef<HTMLDivElement, PitchContainerProps>(
               }}
             >
               <img
-                src={football_pitch}
-                alt="Football Pitch"
+                src={pitchImage.src}
+                alt={pitchImage.alt}
                 className="block h-full w-full bg-green-700"
               />
               <PitchContext.Provider value={pitchApi}>

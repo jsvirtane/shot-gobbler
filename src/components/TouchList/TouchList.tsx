@@ -1,6 +1,7 @@
 import { Action } from "../../types/Action";
 import { isSuccessfulActionOutcome } from "../../utils/isSuccessfulActionOutcome";
 import { formatEventTime } from "../../utils/matchClock";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 import { RemoveItemButton } from "../common";
 
 type TouchListProps = {
@@ -9,6 +10,7 @@ type TouchListProps = {
 };
 
 export const TouchList = ({ actions, onRemoveAction }: TouchListProps) => {
+  const pitchType = usePitchType();
   return (
     <>
       <h3 className="text-lg font-semibold">Actions List</h3>
@@ -35,8 +37,8 @@ export const TouchList = ({ actions, onRemoveAction }: TouchListProps) => {
                       {action.outcome}
                     </p>
                     <p className="text-sm text-gray-500 capitalize">
-                      {formatEventTime(action) &&
-                        `${formatEventTime(action)} · `}
+                      {formatEventTime(action, pitchType) &&
+                        `${formatEventTime(action, pitchType)} · `}
                       Category: {action.category}
                     </p>
                   </div>

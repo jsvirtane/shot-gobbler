@@ -5,6 +5,7 @@ import { getShotResult } from "../../utils/shotResult";
 import MarkerShape from "../Markers/MarkerShape";
 import Pulse from "../Markers/Pulse";
 import PitchMarker from "../PitchContainer/PitchMarker";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 interface ShotMarkerProps {
   shot: Shot;
@@ -23,7 +24,8 @@ export const ShotMarker: React.FC<ShotMarkerProps> = ({
   pulseKey,
 }) => {
   const result = getShotResult(shot);
-  const style = getShotMarkerStyle(shot);
+  const pitchType = usePitchType();
+  const style = getShotMarkerStyle(shot, pitchType);
 
   return (
     <PitchMarker
