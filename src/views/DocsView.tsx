@@ -86,6 +86,10 @@ const DocsView: React.FC = () => {
             Matches with team names and a running clock; every event is stamped
             with its minute and period
           </li>
+          <li>
+            Football or futsal per match: futsal gets its own pitch, 20-minute
+            halves, the 10 m kick, kick-ins and no offside
+          </li>
           <li>Lists, stats, filters and map legends for reviewing a match</li>
           <li>Share the map as an image; export and import data as JSON</li>
         </ul>
@@ -149,8 +153,8 @@ const DocsView: React.FC = () => {
                 Saved, Blocked or Miss
               </li>
               <li>
-                Set <b>Details</b> first if needed: Head, Set piece, Penalty and
-                the shirt number (a number dial)
+                Set <b>Details</b> first if needed: Head, Set piece, Penalty (10
+                m kick too in futsal) and the shirt number (a number dial)
               </li>
               <li>
                 The team comes from the half you tap; the ring&apos;s centre
@@ -244,8 +248,8 @@ const DocsView: React.FC = () => {
           </li>
           <li>Filter shots by team and see xG totals</li>
           <li>
-            The match bar: pick or create a match, set team names and run the
-            clock
+            The match bar: pick or create a match, set team names and the pitch
+            (football or futsal) and run the clock
           </li>
           <li>
             The data menu: share the map as an image, export or import JSON

@@ -11,6 +11,7 @@ import {
   TouchStep,
   typeDigit,
 } from "./touchRings";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 interface TouchRadialProps {
   /** Tap point in viewport px. */
@@ -58,6 +59,7 @@ const TouchRadial: React.FC<TouchRadialProps> = ({
   onDelete,
   onClose,
 }) => {
+  const pitchType = usePitchType();
   const [step, setStep] = useState<TouchStep>({ ring: "action" });
 
   const handlePick = ({ pick }: TouchItem) => {
@@ -106,7 +108,7 @@ const TouchRadial: React.FC<TouchRadialProps> = ({
             ariaLabel: "Choose an action",
             content: <Center title="ACTION">what happened?</Center>,
           };
-        const type = actionTypeInfo(editing.actionType);
+        const type = actionTypeInfo(editing.actionType, pitchType);
         const outcome = outcomeInfo(editing.actionType, editing.outcome);
         return {
           ariaLabel: `Editing ${type.label}, ${outcome?.label ?? editing.outcome}`,
@@ -125,7 +127,7 @@ const TouchRadial: React.FC<TouchRadialProps> = ({
           content: <Center title="MORE">actions</Center>,
         };
       case "outcome": {
-        const type = actionTypeInfo(step.actionType);
+        const type = actionTypeInfo(step.actionType, pitchType);
         return {
           ariaLabel: `Outcome of ${type.label}`,
           color: CATEGORY_RING_COLORS[type.category],
@@ -160,7 +162,7 @@ const TouchRadial: React.FC<TouchRadialProps> = ({
         // A new ring for each step, so focus and the opening animation reset
         key={step.ring === "outcome" ? step.actionType : step.ring}
         anchor={anchor}
-        sections={touchSections(step, editing)}
+        sections={touchSections(step, editing, pitchType)}
         center={center}
         onPick={handlePick}
         onClose={onClose}

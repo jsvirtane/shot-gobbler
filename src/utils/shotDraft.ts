@@ -1,5 +1,12 @@
 import { Team } from "../types/common";
-import { BodyPart, Shot, ShotResult, ShotType } from "../types/Shot";
+import {
+  BodyPart,
+  isSpotKick,
+  Shot,
+  ShotResult,
+  ShotType,
+  SpotKickType,
+} from "../types/Shot";
 import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
 import { fromMetres } from "./pitchGeometry";
 import { pitchSpec } from "./pitchSpecs";
@@ -16,26 +23,50 @@ export type ShotDraft = PitchPoint & {
   playerName?: string;
   minute?: number;
   /**
-   * Where the shot was before Penalty moved it to the spot, so turning
-   * Penalty off puts it back.
+   * Where the shot was before Penalty (or the 10 m kick) moved it to its
+   * mark, so turning it off puts it back.
    */
   spot: PitchPoint;
+};
+
+/** Distance (m) of the spot kick's mark from the goal line, if the pitch has one. */
+const markDistance = (
+  type: SpotKickType,
+  pitch: PitchType,
+): number | undefined => {
+  const spec = pitchSpec(pitch);
+  return type === "Penalty" ? spec.penaltySpotM : spec.secondPenaltySpotM;
+};
+
+/** Whether the spot kick exists on the pitch (the 10 m kick is futsal only). */
+export const hasSpotKick = (
+  type: SpotKickType,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): boolean => markDistance(type, pitch) !== undefined;
+
+/**
+ * The mark (stored %) a spot kick is taken from, in front of the goal the
+ * team attacks. Null when the pitch has no such mark.
+ */
+export const spotKickMark = (
+  type: SpotKickType,
+  team: Team,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): PitchPoint | null => {
+  const distance = markDistance(type, pitch);
+  if (distance === undefined) return null;
+  const { widthM, lengthM } = pitchSpec(pitch);
+  return fromMetres(
+    { x: widthM / 2, y: team === "home" ? distance : lengthM - distance },
+    pitch,
+  );
 };
 
 /** Penalty spot (stored %) of the goal the team attacks. */
 export const penaltySpot = (
   team: Team,
   pitch: PitchType = DEFAULT_PITCH_TYPE,
-): PitchPoint => {
-  const { widthM, lengthM, penaltySpotM } = pitchSpec(pitch);
-  return fromMetres(
-    {
-      x: widthM / 2,
-      y: team === "home" ? penaltySpotM : lengthM - penaltySpotM,
-    },
-    pitch,
-  );
-};
+): PitchPoint => spotKickMark("Penalty", team, pitch)!;
 
 /**
  * A new shot at a pitch point (stored %). The team defaults to the one
@@ -85,50 +116,59 @@ export const switchDraftTeam = (draft: ShotDraft): ShotDraft => {
   };
 };
 
-/** Header on / off (off is Foot). A header is never a penalty. */
+/** Where a spot kick was before it moved to its mark; otherwise unchanged. */
+const leaveMark = (draft: ShotDraft): PitchPoint =>
+  isSpotKick(draft.shotType)
+    ? { x: draft.spot.x, y: draft.spot.y }
+    : { x: draft.x, y: draft.y };
+
+/** Header on / off (off is Foot). A header is never a spot kick. */
 export const toggleHead = (draft: ShotDraft): ShotDraft => {
   if (draft.bodyPart === "Head") return { ...draft, bodyPart: "Foot" };
   const next: ShotDraft = { ...draft, bodyPart: "Head" };
-  return draft.shotType === "Penalty"
-    ? { ...next, shotType: "Open Play", x: draft.spot.x, y: draft.spot.y }
+  return isSpotKick(draft.shotType)
+    ? { ...next, ...leaveMark(draft), shotType: "Open Play" }
     : next;
 };
 
-/** Set piece on / off; it excludes Penalty. */
+/** Set piece on / off; it excludes the spot kicks. */
 export const toggleSetPiece = (draft: ShotDraft): ShotDraft => {
   if (draft.shotType === "Set Piece") {
     return { ...draft, shotType: "Open Play" };
   }
-  const restored =
-    draft.shotType === "Penalty" ? { x: draft.spot.x, y: draft.spot.y } : {};
-  return { ...draft, ...restored, shotType: "Set Piece" };
+  return { ...draft, ...leaveMark(draft), shotType: "Set Piece" };
 };
 
 /**
- * Penalty on: moves the shot to the penalty spot and clears Head and Set
- * piece. Off: back to open play at the spot it was before.
+ * A spot kick on: moves the shot to its mark and clears Head and Set
+ * piece. Off: back to open play where it was before. Unchanged when the
+ * pitch has no such mark.
  */
-export const togglePenalty = (
+export const toggleSpotKick = (
   draft: ShotDraft,
+  type: SpotKickType,
   pitch: PitchType = DEFAULT_PITCH_TYPE,
 ): ShotDraft => {
-  if (draft.shotType === "Penalty") {
-    return {
-      ...draft,
-      shotType: "Open Play",
-      x: draft.spot.x,
-      y: draft.spot.y,
-    };
+  if (draft.shotType === type) {
+    return { ...draft, ...leaveMark(draft), shotType: "Open Play" };
   }
+  const mark = spotKickMark(type, draft.team, pitch);
+  if (!mark) return draft;
   return {
     ...draft,
-    ...penaltySpot(draft.team, pitch),
-    // Remember where it was, unless that already was the spot
-    spot: { x: draft.x, y: draft.y },
-    shotType: "Penalty",
+    ...mark,
+    // Remember where it was, also when switching from the other spot kick
+    spot: leaveMark(draft),
+    shotType: type,
     bodyPart: draft.bodyPart === "Head" ? "Foot" : draft.bodyPart,
   };
 };
+
+/** Penalty on / off (see `toggleSpotKick`). */
+export const togglePenalty = (
+  draft: ShotDraft,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): ShotDraft => toggleSpotKick(draft, "Penalty", pitch);
 
 /** The shot fields a draft saves with the chosen result. */
 export const draftToShotFields = (

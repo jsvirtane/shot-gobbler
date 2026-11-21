@@ -120,6 +120,18 @@ describe("getShotStats", () => {
     expect(penalty.byTeam.away).toMatchObject({ shots: 1, goals: 1 });
   });
 
+  it("shows the 10 m kick row only in futsal or when used", () => {
+    const keys = (stats: ReturnType<typeof getShotStats>) =>
+      stats.byShotType.map((r) => r.key);
+    expect(keys(getShotStats([]))).not.toContain("10m Kick");
+    expect(keys(getShotStats([], "futsal"))).toContain("10m Kick");
+    const ten = getShotStats(
+      [shot("home", "Goal", { shotType: "10m Kick" })],
+      "futsal",
+    ).byShotType.find((r) => r.key === "10m Kick")!;
+    expect(ten.byTeam.home).toMatchObject({ shots: 1, goals: 1, xg: 0.45 });
+  });
+
   it("has no period breakdown without minutes", () => {
     expect(getShotStats([shot("home", "Goal")]).byPeriod).toEqual([]);
   });

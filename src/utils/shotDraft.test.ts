@@ -10,10 +10,13 @@ import {
   shirtLabel,
   switchDraftTeam,
   toggleHead,
+  hasSpotKick,
+  spotKickMark,
   togglePenalty,
   toggleSetPiece,
+  toggleSpotKick,
 } from "./shotDraft";
-import { PENALTY_XG, shotXg } from "./xg";
+import { PENALTY_XG, shotXg, TEN_METRE_KICK_XG } from "./xg";
 
 describe("penaltySpot", () => {
   it("is 11 m from the goal the team attacks, in the middle", () => {
@@ -154,5 +157,55 @@ describe("dialAppend", () => {
     expect(dialAppend("1", "0", 2)).toBe("10");
     expect(dialAppend("10", "4", 2)).toBe("10");
     expect(dialAppend("0", "5", 3)).toBe("5");
+  });
+});
+
+describe("futsal spot kicks", () => {
+  const draft = newShotDraft({ x: 30, y: 30 }, "home");
+
+  it("puts the penalty 6 m and the 10 m kick 10 m from the futsal goal", () => {
+    const pen = penaltySpot("home", "futsal");
+    expect(distanceToGoal(pen, "top", "futsal")).toBeCloseTo(6, 5);
+    const ten = spotKickMark("10m Kick", "away", "futsal")!;
+    expect(attackedGoal(ten)).toBe("bottom");
+    expect(distanceToGoal(ten, "bottom", "futsal")).toBeCloseTo(10, 5);
+  });
+
+  it("has a 10 m kick only in futsal", () => {
+    expect(hasSpotKick("10m Kick", "futsal")).toBe(true);
+    expect(hasSpotKick("10m Kick", "football")).toBe(false);
+    expect(spotKickMark("10m Kick", "home", "football")).toBeNull();
+    expect(toggleSpotKick(draft, "10m Kick", "football")).toBe(draft);
+  });
+
+  it("10 m kick moves to its mark, clears Head, and back", () => {
+    const ten = toggleSpotKick(toggleHead(draft), "10m Kick", "futsal");
+    expect(ten).toMatchObject({
+      ...spotKickMark("10m Kick", "home", "futsal"),
+      shotType: "10m Kick",
+      bodyPart: "Foot",
+    });
+    expect(shotXg(ten, "futsal")).toBe(TEN_METRE_KICK_XG);
+    expect(toggleSpotKick(ten, "10m Kick", "futsal")).toMatchObject({
+      x: 30,
+      y: 30,
+      shotType: "Open Play",
+    });
+  });
+
+  it("switching between the spot kicks keeps the original place", () => {
+    const pen = togglePenalty(
+      toggleSpotKick(draft, "10m Kick", "futsal"),
+      "futsal",
+    );
+    expect(pen).toMatchObject({
+      ...penaltySpot("home", "futsal"),
+      shotType: "Penalty",
+    });
+    expect(toggleSetPiece(pen)).toMatchObject({
+      x: 30,
+      y: 30,
+      shotType: "Set Piece",
+    });
   });
 });

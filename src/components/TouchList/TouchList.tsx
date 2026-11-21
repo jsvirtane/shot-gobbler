@@ -1,5 +1,6 @@
 import { Action } from "../../types/Action";
 import { isSuccessfulActionOutcome } from "../../utils/isSuccessfulActionOutcome";
+import { actionTypeName } from "../../constants/actionTypes";
 import { formatEventTime } from "../../utils/matchClock";
 import { usePitchType } from "../PitchContainer/pitchTypeContext";
 import { RemoveItemButton } from "../common";
@@ -29,7 +30,7 @@ export const TouchList = ({ actions, onRemoveAction }: TouchListProps) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-lg font-semibold uppercase">
-                      {action.actionType}
+                      {actionTypeName(action.actionType, pitchType)}
                     </span>
                     <p
                       className={` ${isSuccessfulActionOutcome(action.outcome) ? "text-green-500" : "text-red-500"} text-base capitalize`}
