@@ -74,3 +74,31 @@ describe("attackedGoal", () => {
     expect(attackedGoal({ x: 50, y: 90 })).toBe("bottom");
   });
 });
+
+describe("futsal pitch", () => {
+  const futsalAt = (x: number, y: number) => fromMetres({ x, y }, "futsal");
+
+  it("maps the playing area corners onto 20 x 40 m", () => {
+    // 24 x 44 image with a 2 m margin, in a box of the same ratio
+    const topLeft = toMetres(
+      { x: (2 / 24) * 100, y: (2 / 44) * 100 },
+      "futsal",
+    );
+    expect(topLeft.x).toBeCloseTo(0, 5);
+    expect(topLeft.y).toBeCloseTo(0, 5);
+    const centre = toMetres({ x: 50, y: 50 }, "futsal");
+    expect(centre.x).toBeCloseTo(10, 5);
+    expect(centre.y).toBeCloseTo(20, 5);
+  });
+
+  it("measures to the 3 m futsal goal", () => {
+    const spot = futsalAt(10, 6);
+    expect(distanceToGoal(spot, "top", "futsal")).toBeCloseTo(6, 5);
+    // 2 * atan(1.5 / 6)
+    expect(shotAngle(spot, "top", "futsal")).toBeCloseTo(28.07, 1);
+    expect(distanceToGoal(futsalAt(10, 30), "bottom", "futsal")).toBeCloseTo(
+      10,
+      5,
+    );
+  });
+});

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNow } from "../../hooks/useNow";
 import { Match, MatchClock, MatchDetails } from "../../types/Match";
+import { DEFAULT_PITCH_TYPE, PITCH_TYPES, PitchType } from "../../types/Pitch";
 import {
   getCancelButtonStyle,
   getSubmitButtonStyle,
@@ -13,8 +14,15 @@ import {
   PERIOD_LABELS,
   toggleClock,
 } from "../../utils/matchClock";
-import { formatMatchTitle, todayIso } from "../../utils/matches";
+import { formatMatchTitle, getPitchType, todayIso } from "../../utils/matches";
+import { PITCH_SPECS } from "../../utils/pitchSpecs";
 import Modal from "../Modal";
+import SegmentedControl from "../SegmentedControl";
+
+const PITCH_TYPE_OPTIONS = PITCH_TYPES.map((value) => ({
+  value,
+  label: PITCH_SPECS[value].label,
+}));
 
 export type MatchBarProps = {
   matches: Match[];
@@ -99,6 +107,21 @@ const MatchForm: React.FC<MatchFormProps> = ({
           autoComplete="off"
         />
       </label>
+      <div>
+        <span className="mb-1 block text-sm font-bold text-gray-600">
+          Pitch
+        </span>
+        <SegmentedControl<PitchType>
+          options={PITCH_TYPE_OPTIONS}
+          value={details.pitchType ?? DEFAULT_PITCH_TYPE}
+          onChange={(pitchType) =>
+            setDetails((prev) => ({ ...prev, pitchType }))
+          }
+          ariaLabel="Pitch"
+          variant="joined"
+          size="sm"
+        />
+      </div>
       <label className="block">
         <span className="mb-1 block text-sm font-bold text-gray-600">Date</span>
         <input
@@ -157,7 +180,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
   const clock = currentMatch.clock;
   const running = clock?.running ?? false;
   const now = useNow(running);
-  const clockText = formatClock(clock, now);
+  const clockText = formatClock(clock, now, getPitchType(currentMatch));
   const upcomingPeriod = nextPeriodOf(clock?.period ?? "1H");
   const close = () => setMode({ kind: "closed" });
   const backToList = () => setMode({ kind: "list" });
@@ -314,7 +337,11 @@ const MatchBar: React.FC<MatchBarProps> = ({
                         {matchTitle}
                       </span>
                       <span className="block truncate text-xs text-gray-500">
-                        {[match.date, match.competition]
+                        {[
+                          match.date,
+                          match.competition,
+                          match.pitchType && PITCH_SPECS[match.pitchType].label,
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
@@ -404,6 +431,7 @@ const MatchBar: React.FC<MatchBarProps> = ({
               awayTeam: mode.match.awayTeam,
               date: mode.match.date,
               competition: mode.match.competition,
+              pitchType: mode.match.pitchType,
             }}
             submitLabel="Save"
             onSubmit={(details) => {

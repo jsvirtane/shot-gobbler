@@ -4,6 +4,7 @@ import { Shot } from "../types/Shot";
 import {
   createMatchExport,
   formatMatchTitle,
+  getPitchType,
   getTeamNames,
   matchesCodec,
   normalizeMatch,
@@ -77,5 +78,32 @@ describe("matches", () => {
     expect(
       parseMatchExport({ app: "shot-gobbler", type: "match", match: null }),
     ).toEqual({ ok: false, error: expect.any(String) });
+  });
+});
+
+describe("pitch type", () => {
+  it("keeps futsal and drops football and unknown values", () => {
+    expect(normalizeMatch({ id: "x", pitchType: "futsal" })).toMatchObject({
+      pitchType: "futsal",
+    });
+    expect(
+      normalizeMatch({ id: "x", pitchType: "football" }),
+    ).not.toHaveProperty("pitchType");
+    expect(normalizeMatch({ id: "x", pitchType: "beach" })).not.toHaveProperty(
+      "pitchType",
+    );
+  });
+
+  it("defaults to football", () => {
+    expect(getPitchType(match)).toBe("football");
+    expect(getPitchType(undefined)).toBe("football");
+    expect(getPitchType({ ...match, pitchType: "futsal" })).toBe("futsal");
+  });
+
+  it("keeps the pitch type through a match export", () => {
+    const result = parseMatchExport(
+      createMatchExport({ ...match, pitchType: "futsal" }, [], [], []),
+    );
+    expect(result.ok && result.match.pitchType).toBe("futsal");
   });
 });

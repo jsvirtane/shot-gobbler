@@ -15,6 +15,7 @@ import {
 } from "../../utils/stats/summary";
 import { getTouchStats } from "../../utils/stats/touches";
 import { DEFAULT_TEAM_LABELS, TEAMS } from "../../utils/teamLabels";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 const TEAM_TEXT: Record<Team, string> = {
   home: "text-blue-700",
@@ -41,28 +42,33 @@ export const ShotsSummaryBar: React.FC<{
   teamNames?: TeamNames;
   /** Teams to show; defaults to both. */
   teams?: readonly Team[];
-}> = ({ shots, teamNames = DEFAULT_TEAM_LABELS, teams = TEAMS }) => (
-  <p className={lineClass} data-testid="stats-summary">
-    {teams.map((team, i) => (
-      <React.Fragment key={team}>
-        {i > 0 && (
-          <span aria-hidden="true" className="text-gray-400">
-            |
-          </span>
-        )}
-        <span className="min-w-0 truncate">
-          <span className={`font-semibold ${TEAM_TEXT[team]}`}>
-            <span className="sm:hidden" title={teamNames[team]}>
-              {abbreviateTeam(teamNames[team])}
+}> = ({ shots, teamNames = DEFAULT_TEAM_LABELS, teams = TEAMS }) => {
+  const pitchType = usePitchType();
+  return (
+    <p className={lineClass} data-testid="stats-summary">
+      {teams.map((team, i) => (
+        <React.Fragment key={team}>
+          {i > 0 && (
+            <span aria-hidden="true" className="text-gray-400">
+              |
             </span>
-            <span className="hidden sm:inline">{teamNames[team]}</span>
-          </span>{" "}
-          <Responsive text={shotSummary(getTeamShotStats(shots, team))} />
-        </span>
-      </React.Fragment>
-    ))}
-  </p>
-);
+          )}
+          <span className="min-w-0 truncate">
+            <span className={`font-semibold ${TEAM_TEXT[team]}`}>
+              <span className="sm:hidden" title={teamNames[team]}>
+                {abbreviateTeam(teamNames[team])}
+              </span>
+              <span className="hidden sm:inline">{teamNames[team]}</span>
+            </span>{" "}
+            <Responsive
+              text={shotSummary(getTeamShotStats(shots, team, pitchType))}
+            />
+          </span>
+        </React.Fragment>
+      ))}
+    </p>
+  );
+};
 
 export const TouchesSummaryBar: React.FC<{ actions: Action[] }> = ({
   actions,

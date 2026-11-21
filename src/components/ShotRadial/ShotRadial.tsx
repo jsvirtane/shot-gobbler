@@ -14,6 +14,7 @@ import {
   toggleSetPiece,
 } from "../../utils/shotDraft";
 import { shortTeamName } from "../../utils/teamLabels";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 import RadialMenu, {
   Insets,
   Point,
@@ -77,6 +78,7 @@ const ShotRadial: React.FC<ShotRadialProps> = ({
   onClose,
   insets,
 }) => {
+  const pitchType = usePitchType();
   const [dial, setDial] = useState<Dial | null>(null);
 
   const overlay = (menu: React.ReactNode) => (
@@ -244,7 +246,7 @@ const ShotRadial: React.FC<ShotRadialProps> = ({
       case "set":
         return onDraftChange(toggleSetPiece(draft));
       case "pen":
-        return onDraftChange(togglePenalty(draft));
+        return onDraftChange(togglePenalty(draft, pitchType));
       case "shirt":
         return setDial({
           kind: "shirt",

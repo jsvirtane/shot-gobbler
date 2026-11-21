@@ -1,6 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PitchContainer from "./PitchContainer";
+import { PitchTypeContext } from "./pitchTypeContext";
 
 vi.mock("../../assets/football_pitch.svg", () => ({
   default: "mocked-football-pitch",
@@ -106,5 +107,16 @@ describe("PitchContainer", () => {
       expect(content.style.top).toBe("-100%");
       expect(content.querySelector("[data-testid=marker]")).not.toBeNull();
     });
+  });
+
+  it("draws the futsal pitch in a futsal-shaped box", () => {
+    render(
+      <PitchTypeContext.Provider value="futsal">
+        <PitchContainer onCoordinateClick={onClick} />
+      </PitchTypeContext.Provider>,
+    );
+    expect(getVisiblePitch().dataset.pitchType).toBe("futsal");
+    expect(document.querySelector("img")!.alt).toBe("Futsal Pitch");
+    expect(getVisiblePitch().style.aspectRatio).toBe(String(24 / 44));
   });
 });

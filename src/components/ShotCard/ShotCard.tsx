@@ -8,6 +8,7 @@ import {
 import { formatEventTime } from "../../utils/matchClock";
 import { getShotResult, shotResultTextColors } from "../../utils/shotResult";
 import { formatXg, shotXg } from "../../utils/xg";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 
 interface ShotCardProps {
   shot: Shot;
@@ -24,10 +25,11 @@ const ShotCard: React.FC<ShotCardProps> = ({
   onNext,
   onPrevious,
 }) => {
+  const pitchType = usePitchType();
   const result = getShotResult(shot);
   const goal = attackedGoal(shot);
-  const distance = distanceToGoal(shot, goal);
-  const angle = shotAngle(shot, goal);
+  const distance = distanceToGoal(shot, goal, pitchType);
+  const angle = shotAngle(shot, goal, pitchType);
 
   return (
     <div
@@ -142,14 +144,17 @@ const ShotCard: React.FC<ShotCardProps> = ({
           <p className="text-xs font-semibold text-gray-500 uppercase">
             Expected goals (xG)
           </p>
-          <p className="text-lg font-semibold">{formatXg(shotXg(shot))}</p>
+          <p className="text-lg font-semibold">
+            {formatXg(shotXg(shot, pitchType))}
+          </p>
         </div>
 
         {/* Shot counter */}
         <div className="border-t pt-2">
           <p className="text-center text-sm font-medium text-gray-600">
             Shot {currentIndex + 1} of {totalShots}
-            {formatEventTime(shot) && ` · ${formatEventTime(shot)}`}
+            {formatEventTime(shot, pitchType) &&
+              ` · ${formatEventTime(shot, pitchType)}`}
           </p>
         </div>
       </div>

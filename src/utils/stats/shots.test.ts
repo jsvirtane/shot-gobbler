@@ -149,5 +149,8 @@ describe("getEventPeriod", () => {
     expect(getEventPeriod({ minute: 100 })).toBe("ET1");
     expect(getEventPeriod({ minute: 110 })).toBe("ET2");
     expect(getEventPeriod({})).toBe("unknown");
+    expect(getEventPeriod({ minute: 20 }, "futsal")).toBe("1H");
+    expect(getEventPeriod({ minute: 21 }, "futsal")).toBe("2H");
+    expect(getEventPeriod({ minute: 43 }, "futsal")).toBe("ET1");
   });
 });

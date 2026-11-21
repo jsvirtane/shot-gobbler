@@ -1,6 +1,7 @@
 import React from "react";
 import { PassChain } from "../../types/PassChain";
 import { formatEventTime } from "../../utils/matchClock";
+import { usePitchType } from "../PitchContainer/pitchTypeContext";
 import { formatPitchZoneCapitalized } from "../../utils/pitchZones";
 import { RemoveItemButton } from "../common";
 
@@ -13,6 +14,7 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
   passChains,
   onRemovePassChain = () => {},
 }) => {
+  const pitchType = usePitchType();
   const formatTerminationReason = (reason: string) => {
     return reason
       .split("_")
@@ -55,9 +57,9 @@ const PassChainsListView: React.FC<PassChainsListViewProps> = ({
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-800">
                 Chain #{index + 1}
-                {formatEventTime(chain) && (
+                {formatEventTime(chain, pitchType) && (
                   <span className="ml-2 text-sm font-normal text-gray-500">
-                    {formatEventTime(chain)}
+                    {formatEventTime(chain, pitchType)}
                   </span>
                 )}
               </h3>

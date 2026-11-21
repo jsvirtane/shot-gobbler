@@ -6,6 +6,7 @@ import {
   TeamNames,
 } from "../types/Match";
 import { PassChain } from "../types/PassChain";
+import { DEFAULT_PITCH_TYPE, isPitchType, PitchType } from "../types/Pitch";
 import { Shot } from "../types/Shot";
 import {
   APP_ID,
@@ -52,7 +53,20 @@ export const createMatch = (details: MatchDetails): Match => ({
   createdAt: Date.now(),
 });
 
-/** Trims names and drops an empty competition. */
+/**
+ * Only a non-default pitch type is stored, so football matches look the
+ * same as matches saved before pitch types existed.
+ */
+const pitchTypeField = (value: unknown): Pick<Match, "pitchType"> =>
+  isPitchType(value) && value !== DEFAULT_PITCH_TYPE
+    ? { pitchType: value }
+    : {};
+
+/** The pitch the match is played on. */
+export const getPitchType = (match: Match | undefined): PitchType =>
+  match?.pitchType ?? DEFAULT_PITCH_TYPE;
+
+/** Trims names and drops an empty competition and a default pitch type. */
 export const cleanDetails = (details: MatchDetails): MatchDetails => {
   const competition = details.competition?.trim();
   return {
@@ -60,6 +74,7 @@ export const cleanDetails = (details: MatchDetails): MatchDetails => {
     awayTeam: details.awayTeam.trim(),
     date: DATE_PATTERN.test(details.date) ? details.date : todayIso(),
     ...(competition ? { competition } : {}),
+    ...pitchTypeField(details.pitchType),
   };
 };
 
@@ -98,6 +113,7 @@ export const normalizeMatch = (item: unknown): Match | null => {
         ? item.date
         : todayIso(),
     ...(competition ? { competition } : {}),
+    ...pitchTypeField(item.pitchType),
     createdAt:
       typeof item.createdAt === "number" && Number.isFinite(item.createdAt)
         ? item.createdAt

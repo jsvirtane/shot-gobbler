@@ -1,25 +1,32 @@
 import { EventMeta } from "../types/common";
 import { MatchClock, Period, PERIODS } from "../types/Match";
+import { DEFAULT_PITCH_TYPE, PitchType } from "../types/Pitch";
+import { pitchSpec } from "./pitchSpecs";
 
 const MINUTE_MS = 60_000;
 
-/** Minutes played before each period starts. */
-export const PERIOD_BASE_MINUTE: Record<Period, number> = {
-  "1H": 0,
-  "2H": 45,
-  ET1: 90,
-  ET2: 105,
-  PEN: 120,
+/**
+ * Minutes played before the period starts: the regular lengths of the
+ * periods before it (football: 0, 45, 90, 105, 120; futsal: 0, 20, 40, 45,
+ * 50).
+ */
+export const periodBaseMinute = (
+  period: Period,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number => {
+  const lengths = pitchSpec(pitch).periodMinutes;
+  return PERIODS.slice(0, PERIODS.indexOf(period)).reduce(
+    (sum, p) => sum + lengths[p],
+    0,
+  );
 };
 
-/** Regular length of each period in minutes; later minutes are added time. */
-const PERIOD_LENGTH: Record<Period, number> = {
-  "1H": 45,
-  "2H": 45,
-  ET1: 15,
-  ET2: 15,
-  PEN: 0,
-};
+/** Regular end of the period; later minutes are added time. */
+export const periodEndMinute = (
+  period: Period,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number =>
+  periodBaseMinute(period, pitch) + pitchSpec(pitch).periodMinutes[period];
 
 export const PERIOD_LABELS: Record<Period, string> = {
   "1H": "1st half",
@@ -51,10 +58,14 @@ export const elapsedMs = (clock: MatchClock, now: number): number =>
  * minute of the match is 1, the first of the second half 46. A paused
  * clock keeps its last minute. The shoot-out has no running time.
  */
-export const clockMinute = (clock: MatchClock, now: number): number =>
+export const clockMinute = (
+  clock: MatchClock,
+  now: number,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): number =>
   clock.period === "PEN"
-    ? PERIOD_BASE_MINUTE.PEN
-    : PERIOD_BASE_MINUTE[clock.period] +
+    ? periodBaseMinute("PEN", pitch)
+    : periodBaseMinute(clock.period, pitch) +
       Math.floor(elapsedMs(clock, now) / MINUTE_MS) +
       1;
 
@@ -102,25 +113,33 @@ export const adjustClock = (
 export const clockStamp = (
   clock: MatchClock | undefined,
   now: number,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
 ): Pick<EventMeta, "minute" | "period"> =>
-  clock ? { minute: clockMinute(clock, now), period: clock.period } : {};
+  clock ? { minute: clockMinute(clock, now, pitch), period: clock.period } : {};
 
 /** "23'", or "45+2'" for added time when the period is known. */
-export const formatMinute = (minute: number, period?: Period): string => {
+export const formatMinute = (
+  minute: number,
+  period?: Period,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): string => {
   if (period === "PEN") return "PEN";
   if (period) {
-    const end = PERIOD_BASE_MINUTE[period] + PERIOD_LENGTH[period];
+    const end = periodEndMinute(period, pitch);
     if (minute > end) return `${end}+${minute - end}'`;
   }
   return `${minute}'`;
 };
 
 /** E.g. "23' 1H"; null for events recorded without a minute. */
-export const formatEventTime = (event: EventMeta): string | null => {
+export const formatEventTime = (
+  event: EventMeta,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+): string | null => {
   if (event.minute === undefined) {
     return event.period === "PEN" ? "PEN" : null;
   }
-  const minute = formatMinute(event.minute, event.period);
+  const minute = formatMinute(event.minute, event.period, pitch);
   return event.period && event.period !== "PEN"
     ? `${minute} ${event.period}`
     : minute;
@@ -163,10 +182,14 @@ export const normalizeEventTime = (
 });
 
 /** E.g. "23' 1H"; "–' 1H" before the clock is first used. */
-export const formatClock = (clock: MatchClock | undefined, now: number) => {
+export const formatClock = (
+  clock: MatchClock | undefined,
+  now: number,
+  pitch: PitchType = DEFAULT_PITCH_TYPE,
+) => {
   if (!clock) return "–' 1H";
   if (clock.period === "PEN") return "PEN";
-  return `${formatMinute(clockMinute(clock, now), clock.period)} ${clock.period}`;
+  return `${formatMinute(clockMinute(clock, now, pitch), clock.period, pitch)} ${clock.period}`;
 };
 
 /** Starts a paused clock or pauses a running one. */
